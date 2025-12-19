@@ -1,11 +1,22 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-
-# 作成した脳をインポート
 from agents.graph import ghost_brain
 
 app = FastAPI(title="ghost-squad API", version="0.1.0")
+
+# CORS設定：localhost:3000 からのアクセスを全許可する
+origins = [
+    "http://localhost:3000",
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # GET, POST, OPTIONS すべて許可
+    allow_headers=["*"],
+)
 
 class MissionRequest(BaseModel):
     instruction: str
@@ -15,6 +26,20 @@ class MissionResponse(BaseModel):
     status: str
     logs: List[str]
     energy_used: float
+
+class Task(BaseModel):
+    id: str
+    title: str
+    status: str
+    assignee: Optional[str] = None
+    energy: float
+
+class MissionResponse(BaseModel):
+    mission_id: str
+    status: str
+    logs: List[str]
+    energy_used: float
+    tasks: List[Task] = [] # 追加
 
 @app.get("/")
 async def root():
@@ -41,7 +66,9 @@ async def start_mission(req: MissionRequest):
     
     return {
         "mission_id": final_state["mission_id"],
-        "status": final_state["status"], # 多分 'done' になっているはず
+        "status": final_state["status"],
         "logs": final_state["logs"],
-        "energy_used": final_state["energy_used"]
+        "energy_used": final_state["energy_used"],
+        "tasks": final_state.get("current_plan", []) # タスクリストを返す
     }
+

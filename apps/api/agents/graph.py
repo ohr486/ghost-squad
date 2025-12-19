@@ -1,4 +1,3 @@
-# apps/api/agents/graph.py
 import time
 import random
 from langgraph.graph import StateGraph, END
@@ -7,17 +6,22 @@ from .state import AgentState
 # --- ノード（思考の各ステップ）の定義 ---
 
 def node_planner(state: AgentState):
-    """司令官の指示から作戦を立てる（Planningフェーズ）"""
+    """作戦を立て、具体的なタスクカードを生成する"""
     print("--- [GHOST] Planning Phase ---")
+    time.sleep(1.0)
     
-    # ※ここで本来はLLMを呼び出すが、今はシミュレーション
-    time.sleep(1.5) # 思考時間を演出
+    new_logs = state['logs'] + [f"司令官の指示「{state['task_input']}」を受領。"]
     
-    new_logs = state['logs'] + [f"司令官の指示「{state['task_input']}」を受領。作戦を展開します..."]
+    # ダミーのタスクカードを生成
+    generated_tasks = [
+        {"id": "t-1", "title": "要件定義書の作成", "status": "done", "assignee": "planner", "energy": 0.01},
+        {"id": "t-2", "title": "UIコンポーネント実装", "status": "working", "assignee": "tachikoma-01", "energy": 0.05},
+        {"id": "t-3", "title": "APIエンドポイント接続", "status": "backlog", "assignee": None, "energy": 0.0}
+    ]
     
     return {
         "status": "planning",
-        "current_plan": ["要件分析", "コード生成", "テスト実行"],
+        "current_plan": generated_tasks, # ここにタスクが入る
         "logs": new_logs,
         "energy_used": state['energy_used'] + 0.02
     }
