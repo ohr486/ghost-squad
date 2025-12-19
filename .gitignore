@@ -3,5 +3,7 @@
 
 # web
 apps/web/.next
-
 **/node_modules
+
+# secret
+.env
