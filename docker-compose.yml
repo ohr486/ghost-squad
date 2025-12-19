@@ -52,5 +52,17 @@ services:
     ports:
       - "6379:6379"
 
+  # --- Ghost-Terminal (CLI) ---
+  cli:
+    build: ./apps/cli
+    container_name: ghost-cli
+    environment:
+      - API_URL=http://api:8000/
+    depends_on:
+      - api
+    # TUIを表示するためにTTYを有効化
+    tty: true
+    stdin_open: true
+
 volumes:
   ghost_db_data:
