@@ -74,12 +74,11 @@ export default function Home() {
 
           {/* Living Kanban (右側 3カラム) */}
           <div className="lg:col-span-3">
-            <LivingKanban tasks={missionData.tasks} />
+            <LivingKanban initialTasks={missionData.tasks} />
           </div>
           
         </div>
       )}
-
     </main>
   );
 }
