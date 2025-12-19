@@ -1,8 +1,9 @@
-from fastapi import HTTPException
-from fastapi import FastAPI
+from typing import List, Optional
+
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+
 from agents.graph import ghost_brain
 
 app = FastAPI(title="ghost-squad API", version="0.1.0")
@@ -17,6 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # --- データモデル ---
 class Task(BaseModel):
     id: str
@@ -25,11 +27,14 @@ class Task(BaseModel):
     assignee: Optional[str] = None
     energy: float
 
+
 class TaskUpdate(BaseModel):
     status: str
 
+
 class MissionRequest(BaseModel):
     instruction: str
+
 
 class MissionResponse(BaseModel):
     mission_id: str
@@ -37,6 +42,7 @@ class MissionResponse(BaseModel):
     logs: List[str]
     energy_used: float
     tasks: List[Task] = []
+
 
 # --- ★セッションメモリ (Session Memory) ---
 # サーバー起動中はここにデータを蓄積し続ける
@@ -46,24 +52,25 @@ GHOST_SESSION = {
     "logs": [
         "SYSTEM BOOT SEQUENCE INITIATED...",
         "GHOST-MEMORY: INITIALIZED.",
-        "READY FOR MULTI-MISSION EXECUTION."
+        "READY FOR MULTI-MISSION EXECUTION.",
     ],
     "energy_used": 0.0,
-    "tasks": []
+    "tasks": [],
 }
+
 
 @app.get("/")
 async def root():
     return {"status": "online", "message": "Ghost-Squad Systems: Ready."}
 
+
 @app.post("/mission/start", response_model=MissionResponse)
 async def start_mission(req: MissionRequest):
-    global GHOST_SESSION
-    
     # ミッションID生成 (簡易版)
     import uuid
+
     mission_id = f"msn-{str(uuid.uuid4())[:4]}"
-    
+
     # ログに開始を記録
     GHOST_SESSION["logs"].append(f"--- MISSION START: {mission_id} ---")
     GHOST_SESSION["logs"].append(f"INSTRUCTION: {req.instruction}")
@@ -73,66 +80,68 @@ async def start_mission(req: MissionRequest):
         "mission_id": mission_id,
         "task_input": req.instruction,
         "current_plan": [],
-        "logs": [], # 思考ログ用の一時バッファ
+        "logs": [],  # 思考ログ用の一時バッファ
         "status": "working",
-        "energy_used": 0.0
+        "energy_used": 0.0,
     }
-    
+
     # AI脳の起動
     final_state = ghost_brain.invoke(initial_state)
-    
+
     # --- ★データのマージ（累積）処理 ---
-    
+
     # 1. ログの追記
     new_logs = final_state.get("logs", [])
     GHOST_SESSION["logs"].extend(new_logs)
-    
+
     # 2. タスクの追記（ID衝突回避のためミッションIDを付与）
     new_tasks = final_state.get("current_plan", [])
     for task in new_tasks:
         # IDをユニークにする (例: msn-a1b2-t-1)
         task["id"] = f"{mission_id}-{task['id']}"
         GHOST_SESSION["tasks"].append(task)
-        
+
     # 3. エナジー加算
     GHOST_SESSION["energy_used"] += final_state.get("energy_used", 0.0)
-    
+
     # 4. ステータス更新
     GHOST_SESSION["mission_id"] = mission_id
-    GHOST_SESSION["status"] = "idle" # 処理が終わったのでアイドルに戻す
+    GHOST_SESSION["status"] = "idle"  # 処理が終わったのでアイドルに戻す
 
     # レスポンス生成（現在のセッション全体を返す）
     return GHOST_SESSION
 
+
 # --- タスク更新 ---
 @app.patch("/mission/tasks/{task_id}")
 async def update_task_status(task_id: str, update: TaskUpdate):
-    global GHOST_SESSION
-    
     target_task = None
     for task in GHOST_SESSION["tasks"]:
         if task["id"] == task_id:
             target_task = task
             break
-            
+
     if not target_task:
         raise HTTPException(status_code=404, detail="Task not found")
-        
+
     # ステータスを更新
     old_status = target_task["status"]
     target_task["status"] = update.status
-    
+
     # ログにも記録（誰かが動かしたことがわかるように）
     if old_status != update.status:
-        GHOST_SESSION["logs"].append(f"[COMMANDER] Override: Task {task_id} -> {update.status.upper()}")
-        
+        GHOST_SESSION["logs"].append(
+            f"[COMMANDER] Override: Task {task_id} -> {update.status.upper()}"
+        )
+
     return target_task
+
 
 # --- 最新状態の取得 ---
 @app.get("/mission/current", response_model=Optional[MissionResponse])
 async def get_current_mission():
-    global GHOST_SESSION
     return GHOST_SESSION
+
 
 # --- (オプション) メモリリセット用 ---
 @app.post("/mission/reset")
@@ -143,6 +152,6 @@ async def reset_memory():
         "status": "online",
         "logs": ["--- MEMORY WIPED ---", "SYSTEM READY."],
         "energy_used": 0.0,
-        "tasks": []
+        "tasks": [],
     }
     return GHOST_SESSION

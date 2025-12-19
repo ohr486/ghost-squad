@@ -56,6 +56,8 @@ services:
   cli:
     build: ./apps/cli
     container_name: ghost-cli
+    profiles:
+      - tools
     environment:
       - API_URL=http://api:8000/
     depends_on:
