@@ -50,10 +50,10 @@ def node_planner(state: AgentState):
                 (
                     "system",
                     """
-            You are the 'Ghost-Squad' Commander AI. 
+            You are the 'Ghost-Squad' Commander AI.
             Break down the user's instruction into 3-5 concrete technical tasks.
             Assign them to agents like 'tachikoma-01', 'expert-coder', 'security-bot'.
-            
+
             {format_instructions}
             """,
                 ),

@@ -1,5 +1,4 @@
-# apps/api/agents/state.py
-from typing import List, Optional, TypedDict
+from typing import List, TypedDict
 
 
 class AgentState(TypedDict):

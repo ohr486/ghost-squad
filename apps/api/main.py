@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,8 +66,6 @@ async def root():
 
 @app.post("/mission/start", response_model=MissionResponse)
 async def start_mission(req: MissionRequest):
-    global GHOST_SESSION
-
     # ミッションID生成 (簡易版)
     import uuid
 
@@ -117,8 +115,6 @@ async def start_mission(req: MissionRequest):
 # --- タスク更新 ---
 @app.patch("/mission/tasks/{task_id}")
 async def update_task_status(task_id: str, update: TaskUpdate):
-    global GHOST_SESSION
-
     target_task = None
     for task in GHOST_SESSION["tasks"]:
         if task["id"] == task_id:
@@ -144,7 +140,6 @@ async def update_task_status(task_id: str, update: TaskUpdate):
 # --- 最新状態の取得 ---
 @app.get("/mission/current", response_model=Optional[MissionResponse])
 async def get_current_mission():
-    global GHOST_SESSION
     return GHOST_SESSION
 
 
