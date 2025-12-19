@@ -112,7 +112,7 @@ $$TotalCost = \sum_{i=1}^{n} (Usage_{i} \times Rate_{model})$$
 
 - CLI: Rust または Go による高速なTUIレンダリング。
 
-### 8. 非機能要件
+## 8. 非機能要件
 
 - 低レイテンシ同期: WebSocket（Supabase Realtime等）による、ラグのないカード操作の同期。
 
