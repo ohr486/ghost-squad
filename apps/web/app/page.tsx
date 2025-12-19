@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LivingKanban } from "../components/LivingKanban";
 
 export default function Home() {
   const [instruction, setInstruction] = useState("");
@@ -54,46 +55,31 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Mission Result (Simple Kanban View) */}
+      {/* Mission Result */}
       {missionData && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
-          {/* Logs Panel */}
-          <div className="bg-black text-green-400 p-6 rounded-xl font-mono text-sm h-96 overflow-y-auto shadow-2xl">
-            <h3 className="text-slate-500 mb-4 border-b border-slate-800 pb-2">GHOST_LOGS</h3>
-            <ul className="space-y-2">
+          {/* Logs Panel (左側 1カラム) */}
+          <div className="lg:col-span-1 bg-black text-green-400 p-6 rounded-xl font-mono text-sm h-[500px] overflow-y-auto shadow-2xl border border-slate-800">
+            <h3 className="text-slate-500 mb-4 border-b border-slate-800 pb-2 text-xs uppercase">Ghost_Logs</h3>
+            <ul className="space-y-3">
               {missionData.logs.map((log: string, i: number) => (
-                <li key={i} className="animate-pulse">
-                  <span className="opacity-50 mr-2">[{i.toString().padStart(2, '0')}]</span>
-                  {log}
+                <li key={i} className="flex gap-3 text-xs leading-relaxed opacity-80 hover:opacity-100 transition-opacity">
+                  <span className="text-slate-600">[{i.toString().padStart(2, '0')}]</span>
+                  <span>{log}</span>
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* Task List (Proto-Kanban) */}
-          <div className="space-y-4">
-            <h3 className="font-bold text-slate-400 text-sm uppercase">Generated Tasks</h3>
-            {missionData.tasks.map((task: any) => (
-              <div key={task.id} className="bg-white p-4 rounded-lg shadow-sm border-l-4 border-blue-500 flex justify-between items-center">
-                <div>
-                  <h4 className="font-bold text-slate-700">{task.title}</h4>
-                  <p className="text-xs text-slate-400 mt-1">Assignee: {task.assignee || "UNASSIGNED"}</p>
-                </div>
-                <div className="text-right">
-                  <span className={`text-xs font-bold px-2 py-1 rounded ${
-                    task.status === 'done' ? 'bg-green-100 text-green-600' :
-                    task.status === 'working' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-500'
-                  }`}>
-                    {task.status.toUpperCase()}
-                  </span>
-                  <div className="text-[10px] text-slate-400 mt-1">${task.energy}</div>
-                </div>
-              </div>
-            ))}
+          {/* Living Kanban (右側 3カラム) */}
+          <div className="lg:col-span-3">
+            <LivingKanban tasks={missionData.tasks} />
           </div>
+          
         </div>
       )}
+
     </main>
   );
 }
