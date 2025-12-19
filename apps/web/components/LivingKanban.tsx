@@ -138,19 +138,16 @@ export function LivingKanban({ initialTasks }: Props) {
   };
 
   // ドラッグ終了（ドロップ）
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      // ドロップ先のカラムIDを取得
-      // ※今回はカラム自体をDroppableにしているので、over.idがそのままstatusになる
       const newStatus = over.id as string;
 
+      // 1. まず見た目を即座に更新 (Optimistic UI)
       setTasks((prev) =>
         prev.map((t) => {
           if (t.id === active.id) {
-            // ステータス変更ロジック
-            // もしAIが担当していたら、ユーザー介入としてAssigneeを変更してもよい
             return { ...t, status: newStatus };
           }
           return t;
@@ -158,6 +155,20 @@ export function LivingKanban({ initialTasks }: Props) {
       );
       
       console.log(`[COMMANDER OVERRIDE] Task ${active.id} moved to ${newStatus}`);
+
+      // 2. バックエンドに報告 (追加部分)
+      try {
+        await fetch(`http://localhost:8000/mission/tasks/${active.id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+        });
+      } catch (e) {
+        console.error("Failed to persist task status:", e);
+        // エラーハンドリング（必要なら元の位置に戻す処理など）は今回は省略
+      }
     }
     setActiveId(null);
   };
