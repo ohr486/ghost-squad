@@ -1,9 +1,13 @@
 # api
 **/__pycache__
+**/.pytest_cache
 
 # web
-apps/web/.next
 **/node_modules
+**/.next
+
+# cli binary
+apps/cli/gs
 
 # secret
 .env
