@@ -20,17 +20,14 @@ export default function Home() {
 
   // --- 監視システム (Polling Hook) ---
   useEffect(() => {
-    // 2秒ごとに最新情報を本部(API)に取りに行く
-    const interval = setInterval(async () => {
+    // データ取得ロジックを関数化
+    const syncMission = async () => {
       try {
         const res = await fetch("http://localhost:8000/mission/current");
         if (res.ok) {
           const data = await res.json();
-          // データが存在し、かつ新しいミッションIDであれば更新
           if (data && data.mission_id) {
-             // 簡易的な比較（実際はIDなどで厳密にやるが、今回はデータがあれば上書き）
              setMissionData((prev: any) => {
-               // 既に同じログ量なら更新しない（ちらつき防止）
                if (prev.logs.length === data.logs.length && prev.tasks.length === data.tasks.length) {
                  return prev;
                }
@@ -39,10 +36,15 @@ export default function Home() {
           }
         }
       } catch (e) {
-        // 接続エラーは無視（コンソールのみ）
         console.error("Sync Error:", e);
       }
-    }, 2000); // 2000ms = 2秒間隔
+    };
+
+    // 1. マウント時に「即座に」1回実行する (これでテストが通るようになります)
+    syncMission();
+
+    // 2. その後は2秒ごとに実行する
+    const interval = setInterval(syncMission, 2000); 
 
     return () => clearInterval(interval);
   }, []);

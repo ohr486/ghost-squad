@@ -25,25 +25,45 @@ web-logs:
 	docker-compose logs -f web
 
 # --- Testing ---
+test:
+	@echo "\n=== 🧪 TESTING API (Backend) ==="
+	$(MAKE) test-api
+	@echo "\n=== 🧪 TESTING WEB (Frontend) ==="
+	$(MAKE) test-web
+	@echo "\n>>> 🎉 ALL SYSTEMS GO! Tests Completed."
+
 test-api:
-	@echo ">>> Running Pytest..."
 	@echo "-e PYTHONPATH=. でカレントディレクトリ(/app)をパスに追加して実行"
 	docker-compose exec -e PYTHONPATH=. api pytest
 
+test-web:
+	docker-compose exec web npm test
+
 # --- Code Quality ---
 format:
-	@echo ">>> Running Black (Formatter)..."
+	@echo ">>> 🎨 Formatting API (Black/Isort)..."
 	docker-compose exec api black .
-	@echo ">>> Running Isort (Import Sorter)..."
 	docker-compose exec api isort .
+	# Frontendの自動整形も入れたい場合はここに Prettier などを追加可能
 
 lint:
-	@echo ">>> Running Flake8 (Linter)..."
+	@echo "\n=== 🧹 LINTING API (Backend) ==="
+	$(MAKE) lint-api
+	@echo "\n=== 🧹 LINTING WEB (Frontend) ==="
+	$(MAKE) lint-web
+	@echo "\n>>> ✨ All code looks shiny! No issues found."
+
+lint-api:
+	@echo ">>> Running Flake8..."
 	docker-compose exec api flake8 .
 	@echo ">>> Checking Black..."
 	docker-compose exec api black --check .
 	@echo ">>> Checking Isort..."
 	docker-compose exec api isort --check-only .
+
+lint-web:
+	# Next.js 標準の ESLint を実行
+	docker-compose exec web npm run lint
 
 # --- Cleaning ---
 clean:
