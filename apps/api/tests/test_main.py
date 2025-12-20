@@ -37,4 +37,4 @@ def test_start_mission():
     # ログに指示が含まれているか確認
     # (APIの仕様上、ログのどこかに命令文が記録されているはず)
     logs_str = str(data["logs"])
-    assert "Mission Created in DB" in logs_str
+    assert "Mission Complete" in logs_str

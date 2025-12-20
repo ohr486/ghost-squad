@@ -1,3 +1,5 @@
+.PHONY: db-reset
+
 # --- Docker Control ---
 up:
 	docker-compose up -d
@@ -64,6 +66,16 @@ lint-api:
 lint-web:
 	# Next.js 標準の ESLint を実行
 	docker-compose exec web npm run lint
+
+# --- DB reset ---
+db-reset:
+	@echo "🧨 Stopping containers and removing volumes (DB Reset)..."
+	docker compose down -v
+	@echo "🚀 Restarting containers..."
+	docker compose up -d
+	@echo "⏳ Waiting for API to be ready..."
+	@sleep 5
+	@echo "✅ DB Reset Complete! You can now send requests."
 
 # --- Cleaning ---
 clean:

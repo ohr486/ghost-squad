@@ -10,7 +10,8 @@ from database import Base
 class MissionModel(Base):
     __tablename__ = "missions"
 
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
+    instruction = Column(String, nullable=True)
     title = Column(String, default="Untitled Mission")
     status = Column(String, default="planning")  # planning, running, done
     logs = Column(JSON, default=list)  # ログの配列をJSONとして保存

@@ -143,6 +143,14 @@ async def update_task_status(task_id: str, update: TaskUpdate):
     return target_task
 
 
+# --- 全てのミッションを取得 ---
+@app.get("/missions")
+async def get_missions_history(db: AsyncSession = Depends(get_db)):
+    """ミッションの履歴を取得する"""
+    missions = await services.get_all_missions(db)
+    return missions
+
+
 # --- (オプション) メモリリセット用 ---
 @app.post("/mission/reset")
 async def reset_memory():
