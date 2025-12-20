@@ -136,3 +136,16 @@ async def append_log_to_db(db: AsyncSession, mission_id: str, message: str):
         new_logs.append(message)
         mission.logs = new_logs
         await db.commit()
+
+
+async def delete_mission(db: AsyncSession, mission_id: str) -> bool:
+    """ミッションを削除する (成功したら True, 失敗/無しなら False)"""
+    stmt = select(MissionModel).where(MissionModel.id == mission_id)
+    result = await db.execute(stmt)
+    mission = result.scalar_one_or_none()
+
+    if mission:
+        await db.delete(mission)
+        await db.commit()
+        return True
+    return False

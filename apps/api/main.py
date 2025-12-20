@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import List, Optional
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -149,3 +149,14 @@ async def reset_memory():
         "tasks": [],
     }
     return GHOST_SESSION
+
+
+# --- ミッションの削除 ---
+@app.delete("/mission/{mission_id}")
+async def delete_mission(mission_id: str, db: AsyncSession = Depends(get_db)):
+    success = await services.delete_mission(db, mission_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Mission not found")
+
+    # 204 No Content を返すのが一般的です
+    return Response(status_code=204)
