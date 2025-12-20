@@ -1,10 +1,26 @@
-from typing import List, Optional
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
 from pydantic import BaseModel
+from typing import List, Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+from contextlib import asynccontextmanager
+
+from database import engine, Base, get_db
+from models import MissionModel, TaskModel
 
 from agents.graph import ghost_brain
+
+# --- 起動時の初期化処理 (Lifespan) ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 起動時: テーブルが存在しなければ作成する
+    async with engine.begin() as conn:
+        # 開発用: 全テーブル作成（既存データは消えませんが、スキーマ変更時は注意）
+        await conn.run_sync(Base.metadata.create_all)
+    print(">>> Database Tables Created (if not existed).")
+    yield
+    # 終了時: 特になし
 
 app = FastAPI(title="ghost-squad API", version="0.1.0")
 
