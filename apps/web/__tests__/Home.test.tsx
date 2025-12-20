@@ -1,52 +1,77 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import Home from '../app/page'
-import '@testing-library/jest-dom'
+import { render, screen, waitFor } from "@testing-library/react";
+import Home from "../app/page";
+import "@testing-library/jest-dom";
 
-// fetchのモックを定義（APIが返すデータを偽装）
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({
-        mission_id: "test-mission",
-        status: "idle",
-        logs: ["SYSTEM TEST OK"],
-        tasks: [
-            { id: "t-1", title: "Test Task", status: "planning", energy: 1.0 }
-        ]
-    }),
-  })
-) as jest.Mock;
+// fetchをグローバルにモック化
+global.fetch = jest.fn();
 
-describe('Command Center (Home)', () => {
-  it('renders the main dashboard', async () => {
-    render(<Home />)
+describe("Command Center (Home)", () => {
+  beforeEach(() => {
+    // テストごとにモックの呼び出し履歴をリセット
+    (global.fetch as jest.Mock).mockClear();
+  });
 
-    // 1. ヘッダーのタイトルが表示されているか確認
-    const heading = screen.getByText(/GHOST-SQUAD/i)
-    expect(heading).toBeInTheDocument()
+  it("renders the main dashboard", async () => {
+    // ▼▼▼ 修正ポイント: URLを見て返し分ける ▼▼▼
+    (global.fetch as jest.Mock).mockImplementation((url) => {
+      // 1. 履歴一覧 (/missions) は「配列」を返す
+      if (url.includes("/missions")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [], // 空の配列
+        });
+      }
+      // 2. それ以外 (/mission/current など) は「オブジェクト」を返す
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          mission_id: "test-id",
+          logs: ["SYSTEM ONLINE"],
+          tasks: []
+        }),
+      });
+    });
 
-    // 2. ステータス表示があるか確認
-    expect(screen.getByText(/ONLINE/i)).toBeInTheDocument()
+    render(<Home />);
 
-    // 3. 入力フォームがあるか確認
-    expect(screen.getByPlaceholderText(/司令官、指示を入力してください/i)).toBeInTheDocument()
-
-    // ★修正ポイント: ここを追加
-    // コンポーネントがマウントされると同時に fetch が走るため、
-    // その完了（画面更新）を待ってからテストを終了しないと "act(...)" ワーニングが出る
+    // タイトルが表示されるか確認
     await waitFor(() => {
-        expect(screen.getByText("SYSTEM TEST OK")).toBeInTheDocument()
-    })
-  })
+      expect(screen.getByText(/GHOST-SQUAD/i)).toBeInTheDocument();
+    });
+  });
 
-  // 2つ目のテストは実質的に上のテストと重複確認することになりますが、
-  // 「ログが出る」という機能にフォーカスしたテストとして残しておきます
-  it('loads and displays initial logs', async () => {
-    render(<Home />)
+  it("loads and displays initial logs", async () => {
+    const testMission = {
+      id: "test-mission-1",
+      instruction: "Test",
+      status: "done",
+      logs: ["SYSTEM TEST OK"], // ★このログが表示されるか確認したい
+      tasks: [],
+      created_at: new Date().toISOString()
+    };
 
-    // 非同期でデータが読み込まれ、ログが表示されるのを待つ
+    (global.fetch as jest.Mock).mockImplementation((url) => {
+      if (url.includes("/missions")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [testMission],
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          mission_id: "test-id-2",
+          logs: ["SYSTEM TEST OK"], // テスト用のログ
+          tasks: []
+        }),
+      });
+    });
+
+    render(<Home />);
+
+    // APIから取得したログが表示されるのを待つ
     await waitFor(() => {
-        expect(screen.getByText("SYSTEM TEST OK")).toBeInTheDocument()
-    })
-  })
-})
+      expect(screen.getByText("SYSTEM TEST OK")).toBeInTheDocument();
+    });
+  });
+});

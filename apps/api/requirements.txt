@@ -13,6 +13,11 @@ langchain-core>=0.1.0
 langchain-openai>=0.0.5
 langgraph>=0.0.10
 
+# DB関連
+sqlalchemy>=2.0.0
+asyncpg>=0.28.0
+greenlet>=3.0.0
+
 # テスト関連
 httpx>=0.24.0
 pytest>=7.0.0
@@ -20,3 +25,5 @@ black>=24.0.0
 isort>=5.0.0
 flake8>=7.0.0
 pytest-mock>=3.10.0
+
+
