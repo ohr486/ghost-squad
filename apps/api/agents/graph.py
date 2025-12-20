@@ -50,12 +50,15 @@ def node_planner(state: AgentState):
                 (
                     "system",
                     """
-            You are the 'Ghost-Squad' Commander AI.
-            Break down the user's instruction into 3-5 concrete technical tasks.
-            Assign them to agents like 'tachikoma-01', 'expert-coder', 'security-bot'.
+                    あなたはプロジェクト『Ghost-Squad』の司令官AIです。
+                    ユーザーの指示を、技術的かつ具体的な3〜5個のタスクに分解してください。
+                    それぞれのタスクを 'tachikoma-01', 'expert-coder', 'security-bot' などのエージェントに割り当ててください。
 
-            {format_instructions}
-            """,
+                    【重要】
+                    生成するタスクのタイトル(title)は、必ず「日本語」で出力してください。
+
+                    {format_instructions}
+                    """,
                 ),
                 ("user", "{instruction}"),
             ]
