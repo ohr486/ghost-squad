@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   DndContext,
   DragOverlay,
@@ -12,7 +12,6 @@ import {
   closestCorners,
 } from "@dnd-kit/core";
 
-// --- 型定義 ---
 type Task = {
   id: string;
   title: string;
@@ -31,7 +30,7 @@ const COLUMNS = [
   { id: "done", title: "Done" },
 ];
 
-// --- サブコンポーネント: ドラッグ可能なカード ---
+// --- Draggable Card ---
 function DraggableCard({ task }: { task: Task }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
@@ -43,11 +42,10 @@ function DraggableCard({ task }: { task: Task }) {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`relative p-4 rounded-lg shadow-sm border transition-all cursor-grab active:cursor-grabbing group
-        ${isDragging ? "opacity-30 border-blue-400" : "bg-white border-slate-100 hover:shadow-md"}
+      className={`relative p-3 mb-3 rounded-lg shadow-sm border transition-all cursor-grab active:cursor-grabbing group
+        ${isDragging ? "opacity-30 border-blue-400" : "bg-white border-slate-200 hover:shadow-md hover:border-blue-300"}
       `}
     >
-      {/* タチコマ風ヘッダー */}
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           {task.assignee && (
@@ -61,18 +59,18 @@ function DraggableCard({ task }: { task: Task }) {
             {task.assignee || "UNASSIGNED"}
           </span>
         </div>
-        <span className="text-[10px] font-mono text-slate-400">
-          ${task.energy}
-        </span>
+        <div className="flex items-center gap-1">
+            <span className="text-[10px] text-slate-300">⚡</span>
+            <span className="text-[10px] font-mono text-slate-400">
+                {task.energy}
+            </span>
+        </div>
       </div>
-
-      <h4 className="text-sm font-bold text-slate-700 leading-tight">
+      <h4 className="text-xs font-bold text-slate-700 leading-tight">
         {task.title}
       </h4>
-
-      {/* Workingエフェクト */}
       {task.status === "working" && !isDragging && (
-        <div className="mt-3 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+        <div className="mt-2 h-1 w-full bg-slate-100 rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-blue-400"
             initial={{ x: "-100%" }}
@@ -85,66 +83,69 @@ function DraggableCard({ task }: { task: Task }) {
   );
 }
 
-// --- サブコンポーネント: ドロップ可能なカラム ---
+// --- Droppable Column ---
 function DroppableColumn({ col, tasks }: { col: { id: string; title: string }; tasks: Task[] }) {
   const { setNodeRef } = useDroppable({
     id: col.id,
   });
 
+  // ★修正: パネル自体に背景色とボーダーを持たせ、完全に独立したカードのように見せます
+  const bgColors: Record<string, string> = {
+    planning: "bg-white",
+    working: "bg-blue-50/30",
+    done: "bg-green-50/30"
+  };
+
   return (
     <div
       ref={setNodeRef}
-      className="bg-slate-100/50 rounded-xl p-4 border border-slate-200 backdrop-blur-sm flex flex-col gap-3 min-h-[200px]"
+      // ★修正: h-full で高さいっぱいに。border, rounded-xl をここで適用。
+      className={`flex flex-col h-full overflow-hidden border border-slate-200 rounded-xl shadow-sm ${bgColors[col.id]}`}
     >
-      {/* カラムヘッダー */}
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+      {/* Header */}
+      <div className="p-3 border-b border-slate-100 flex justify-between items-center flex-none bg-white/50">
+        <h3 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
           {col.title}
         </h3>
-        <span className="text-xs font-mono bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full">
+        <span className="text-[10px] font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
           {tasks.length}
         </span>
       </div>
 
-      {/* タスクリスト */}
-      <div className="flex flex-col gap-3 flex-1">
+      {/* Task List */}
+      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar flex flex-col">
         {tasks.map((task) => (
           <DraggableCard key={task.id} task={task} />
         ))}
+        
+        {/* タスクが無い時は、余白全体を使って「NO TASKS」を中央表示 */}
         {tasks.length === 0 && (
-           <div className="h-24 border-2 border-dashed border-slate-200 rounded-lg flex items-center justify-center">
-             <span className="text-xs text-slate-300">NO SIGNAL</span>
-           </div>
+            <div className="flex-1 flex items-center justify-center border-2 border-dashed border-slate-100 rounded-lg m-2 opacity-50">
+               <span className="text-[10px] text-slate-300 tracking-widest">NO TASKS</span>
+            </div>
         )}
       </div>
     </div>
   );
 }
 
-// --- メインコンポーネント ---
+// --- Main Component ---
 export function LivingKanban({ initialTasks }: Props) {
-  // ローカルステートでタスクを管理（ドラッグ操作で書き換えるため）
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // 親から新しいタスクが来たら同期する
   useEffect(() => {
     setTasks(initialTasks);
   }, [initialTasks]);
 
-  // ドラッグ開始
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string);
   };
 
-  // ドラッグ終了（ドロップ）
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (over && active.id !== over.id) {
       const newStatus = over.id as string;
-
-      // 1. まず見た目を即座に更新 (Optimistic UI)
       setTasks((prev) =>
         prev.map((t) => {
           if (t.id === active.id) {
@@ -153,21 +154,14 @@ export function LivingKanban({ initialTasks }: Props) {
           return t;
         })
       );
-      
-      console.log(`[COMMANDER OVERRIDE] Task ${active.id} moved to ${newStatus}`);
-
-      // 2. バックエンドに報告 (追加部分)
       try {
         await fetch(`http://localhost:8000/mission/tasks/${active.id}`, {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: newStatus }),
         });
       } catch (e) {
         console.error("Failed to persist task status:", e);
-        // エラーハンドリング（必要なら元の位置に戻す処理など）は今回は省略
       }
     }
     setActiveId(null);
@@ -181,7 +175,8 @@ export function LivingKanban({ initialTasks }: Props) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+      {/* ★修正: gap-4 を復活させ、3枚のパネルが並んでいるようなデザインにします */}
+      <div className="h-full grid grid-cols-1 md:grid-cols-3 gap-4">
         {COLUMNS.map((col) => (
           <DroppableColumn
             key={col.id}
@@ -191,13 +186,11 @@ export function LivingKanban({ initialTasks }: Props) {
         ))}
       </div>
 
-      {/* ドラッグ中の浮遊カード（DragOverlay） */}
       <DragOverlay>
         {activeTask ? (
-          <div className="opacity-90 rotate-3 scale-105 transform cursor-grabbing">
-            <div className="p-4 bg-white rounded-lg shadow-xl border-2 border-blue-400">
-               <h4 className="text-sm font-bold text-slate-800">{activeTask.title}</h4>
-               <p className="text-xs text-blue-500 font-bold mt-1">MOVING...</p>
+          <div className="opacity-90 rotate-2 scale-105 cursor-grabbing w-[280px]">
+            <div className="p-3 bg-white rounded-lg shadow-2xl border-2 border-blue-500">
+               <h4 className="text-xs font-bold text-slate-800">{activeTask.title}</h4>
             </div>
           </div>
         ) : null}

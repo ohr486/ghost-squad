@@ -87,9 +87,13 @@ async def get_latest_mission(db: AsyncSession):
 
 
 async def get_all_missions(db: AsyncSession, limit: int = 10):
-    """すべてのミッションを新しい順に取得"""
-    # created_at が無い場合は id などで並び替え
-    stmt = select(MissionModel).order_by(MissionModel.created_at.desc()).limit(limit)
+    """すべてのミッションを新しい順に取得 (タスクも一緒に読み込む)"""
+    stmt = (
+        select(MissionModel)
+        .options(selectinload(MissionModel.tasks))
+        .order_by(MissionModel.created_at.desc())
+        .limit(limit)
+    )
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -107,6 +111,19 @@ async def save_tasks_to_db(db: AsyncSession, mission_id: str, tasks_data: list):
         )
         db.add(task)
     await db.commit()
+
+
+async def update_task_status(db: AsyncSession, task_id: str, status: str):
+    stmt = select(TaskModel).where(TaskModel.id == task_id)
+    result = await db.execute(stmt)
+    task = result.scalar_one_or_none()
+
+    if task:
+        task.status = status
+        await db.commit()
+        await db.refresh(task)
+        return task
+    return None
 
 
 async def append_log_to_db(db: AsyncSession, mission_id: str, message: str):

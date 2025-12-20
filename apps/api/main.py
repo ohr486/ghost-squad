@@ -10,6 +10,7 @@ import services
 
 # 内部モジュールのインポート
 from database import Base, engine, get_db
+from schemas import MissionSchema, TaskUpdate
 
 
 # --- 起動時の初期化処理 (Lifespan) ---
@@ -46,10 +47,6 @@ class Task(BaseModel):
     status: str
     assignee: Optional[str] = None
     energy: float
-
-
-class TaskUpdate(BaseModel):
-    status: str
 
 
 class MissionRequest(BaseModel):
@@ -120,31 +117,20 @@ async def get_current_mission(db: AsyncSession = Depends(get_db)):
 
 # --- タスク更新 ---
 @app.patch("/mission/tasks/{task_id}")
-async def update_task_status(task_id: str, update: TaskUpdate):
-    target_task = None
-    for task in GHOST_SESSION["tasks"]:
-        if task["id"] == task_id:
-            target_task = task
-            break
+async def update_task_status(
+    task_id: str, req: TaskUpdate, db: AsyncSession = Depends(get_db)
+):
+    """タスクのステータスを更新する (DB対応版)"""
+    updated_task = await services.update_task_status(db, task_id, req.status)
 
-    if not target_task:
+    if not updated_task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # ステータスを更新
-    old_status = target_task["status"]
-    target_task["status"] = update.status
-
-    # ログにも記録（誰かが動かしたことがわかるように）
-    if old_status != update.status:
-        GHOST_SESSION["logs"].append(
-            f"[COMMANDER] Override: Task {task_id} -> {update.status.upper()}"
-        )
-
-    return target_task
+    return updated_task
 
 
 # --- 全てのミッションを取得 ---
-@app.get("/missions")
+@app.get("/missions", response_model=list[MissionSchema])
 async def get_missions_history(db: AsyncSession = Depends(get_db)):
     """ミッションの履歴を取得する"""
     missions = await services.get_all_missions(db)
