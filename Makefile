@@ -77,6 +77,13 @@ db-reset:
 	@sleep 5
 	@echo "✅ DB Reset Complete! You can now send requests."
 
+# --- DB attach ---
+db:
+	docker compose exec db psql -U ghost -d ghost_memory
+
+dbe:
+	docker compose exec db psql -U ghost -d ghost_memory -c '$(Q)'
+
 # --- Cleaning ---
 clean:
 	@echo ">>> [1/5] Stopping and removing containers/volumes..."
