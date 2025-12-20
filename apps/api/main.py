@@ -1,15 +1,16 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-
-from pydantic import BaseModel
-from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
+from typing import List, Optional
 
-from database import engine, Base, get_db
-from models import MissionModel, TaskModel
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from agents.graph import ghost_brain
+import services
+
+# 内部モジュールのインポート
+from database import Base, engine, get_db
+
 
 # --- 起動時の初期化処理 (Lifespan) ---
 @asynccontextmanager
@@ -22,7 +23,10 @@ async def lifespan(app: FastAPI):
     yield
     # 終了時: 特になし
 
-app = FastAPI(title="ghost-squad API", version="0.1.0")
+
+# --- fast api app ---
+app = FastAPI(title="Ghost Brain API", version="1.0.0", lifespan=lifespan)
+
 
 # CORS設定
 origins = ["http://localhost:3000"]
@@ -56,23 +60,8 @@ class MissionResponse(BaseModel):
     mission_id: str
     status: str
     logs: List[str]
-    energy_used: float
+    energy_used: float = 0.0
     tasks: List[Task] = []
-
-
-# --- ★セッションメモリ (Session Memory) ---
-# サーバー起動中はここにデータを蓄積し続ける
-GHOST_SESSION = {
-    "mission_id": "INIT",
-    "status": "online",
-    "logs": [
-        "SYSTEM BOOT SEQUENCE INITIATED...",
-        "GHOST-MEMORY: INITIALIZED.",
-        "READY FOR MULTI-MISSION EXECUTION.",
-    ],
-    "energy_used": 0.0,
-    "tasks": [],
-}
 
 
 @app.get("/")
@@ -80,52 +69,53 @@ async def root():
     return {"status": "online", "message": "Ghost-Squad Systems: Ready."}
 
 
+# --- 1. ミッション開始 API ---
 @app.post("/mission/start", response_model=MissionResponse)
-async def start_mission(req: MissionRequest):
-    # ミッションID生成 (簡易版)
-    import uuid
+async def start_mission(
+    req: MissionRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+):
+    # 1. DBにミッションを作成
+    mission = await services.create_mission(db, req.instruction)
 
-    mission_id = f"msn-{str(uuid.uuid4())[:4]}"
+    # 2. バックグラウンドでAI思考プロセスを開始
+    # (注意: ここでDBセッションを渡すと閉じてしまうため、IDだけ渡して向こうで開くのが正解ですが
+    #  簡易実装として、ここでの処理は「DB保存」までとし、AI処理の統合は次のステップで行います)
 
-    # ログに開始を記録
-    GHOST_SESSION["logs"].append(f"--- MISSION START: {mission_id} ---")
-    GHOST_SESSION["logs"].append(f"INSTRUCTION: {req.instruction}")
-
-    # 思考の初期状態
-    initial_state = {
-        "mission_id": mission_id,
-        "task_input": req.instruction,
-        "current_plan": [],
-        "logs": [],  # 思考ログ用の一時バッファ
-        "status": "working",
-        "energy_used": 0.0,
+    # 暫定対応: レスポンスを返す
+    return {
+        "mission_id": mission.id,
+        "status": mission.status,
+        "logs": mission.logs,
+        "tasks": [],
     }
 
-    # AI脳の起動
-    final_state = ghost_brain.invoke(initial_state)
 
-    # --- ★データのマージ（累積）処理 ---
+# --- 2. 状況確認 API ---
+@app.get("/mission/current", response_model=Optional[MissionResponse])
+async def get_current_mission(db: AsyncSession = Depends(get_db)):
+    # DBから最新のミッションを取得して返す
+    mission = await services.get_latest_mission(db)
 
-    # 1. ログの追記
-    new_logs = final_state.get("logs", [])
-    GHOST_SESSION["logs"].extend(new_logs)
+    if not mission:
+        return None
 
-    # 2. タスクの追記（ID衝突回避のためミッションIDを付与）
-    new_tasks = final_state.get("current_plan", [])
-    for task in new_tasks:
-        # IDをユニークにする (例: msn-a1b2-t-1)
-        task["id"] = f"{mission_id}-{task['id']}"
-        GHOST_SESSION["tasks"].append(task)
-
-    # 3. エナジー加算
-    GHOST_SESSION["energy_used"] += final_state.get("energy_used", 0.0)
-
-    # 4. ステータス更新
-    GHOST_SESSION["mission_id"] = mission_id
-    GHOST_SESSION["status"] = "idle"  # 処理が終わったのでアイドルに戻す
-
-    # レスポンス生成（現在のセッション全体を返す）
-    return GHOST_SESSION
+    return {
+        "mission_id": mission.id,
+        "status": mission.status,
+        "logs": mission.logs,
+        "tasks": [
+            {
+                "id": t.id,
+                "title": t.title,
+                "status": t.status,
+                "assignee": t.assignee,
+                "energy": t.energy,
+            }
+            for t in mission.tasks
+        ],
+    }
 
 
 # --- タスク更新 ---
@@ -151,12 +141,6 @@ async def update_task_status(task_id: str, update: TaskUpdate):
         )
 
     return target_task
-
-
-# --- 最新状態の取得 ---
-@app.get("/mission/current", response_model=Optional[MissionResponse])
-async def get_current_mission():
-    return GHOST_SESSION
 
 
 # --- (オプション) メモリリセット用 ---
