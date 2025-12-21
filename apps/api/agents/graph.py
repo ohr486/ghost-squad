@@ -1,7 +1,6 @@
 import os
 import random
 import time
-from typing import List
 
 from dotenv import load_dotenv
 from langchain_core.output_parsers import PydanticOutputParser
@@ -10,7 +9,8 @@ from langchain_core.prompts import ChatPromptTemplate
 # LangChain / OpenAI 関連
 from langchain_openai import ChatOpenAI
 from langgraph.graph import END, StateGraph
-from pydantic import BaseModel, Field
+
+from schemas import PlanSchema
 
 from .state import AgentState
 
@@ -19,16 +19,6 @@ load_dotenv()
 
 
 # --- データ構造定義 ---
-class TaskSchema(BaseModel):
-    id: str = Field(description="Unique ID like t-1")
-    title: str = Field(description="Task title")
-    status: str = Field(description="Must be 'planning', 'working', or 'done'")
-    assignee: str = Field(description="Agent name e.g. 'tachikoma-01'")
-    energy: float = Field(description="Estimated cost in USD")
-
-
-class PlanSchema(BaseModel):
-    tasks: List[TaskSchema]
 
 
 # --- LLM初期化 ---

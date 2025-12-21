@@ -1,16 +1,17 @@
 from contextlib import asynccontextmanager
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+
+# from pydantic import BaseModel # Removed, as it's no longer directly used
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import services
 
 # 内部モジュールのインポート
 from database import Base, engine, get_db
-from schemas import MissionSchema, TaskUpdate
+from schemas import MissionRequest, MissionResponse, MissionSchema, TaskUpdate
 
 
 # --- 起動時の初期化処理 (Lifespan) ---
@@ -40,27 +41,6 @@ app.add_middleware(
 )
 
 
-# --- データモデル ---
-class Task(BaseModel):
-    id: str
-    title: str
-    status: str
-    assignee: Optional[str] = None
-    energy: float
-
-
-class MissionRequest(BaseModel):
-    instruction: str
-
-
-class MissionResponse(BaseModel):
-    mission_id: str
-    status: str
-    logs: List[str]
-    energy_used: float = 0.0
-    tasks: List[Task] = []
-
-
 @app.get("/")
 async def root():
     return {"status": "online", "message": "Ghost-Squad Systems: Ready."}
@@ -77,10 +57,9 @@ async def start_mission(
     mission = await services.create_mission(db, req.instruction)
 
     # 2. バックグラウンドでAI思考プロセスを開始
-    # (注意: ここでDBセッションを渡すと閉じてしまうため、IDだけ渡して向こうで開くのが正解ですが
-    #  簡易実装として、ここでの処理は「DB保存」までとし、AI処理の統合は次のステップで行います)
+    background_tasks.add_task(services.run_agent_for_mission, db, mission.id)
 
-    # 暫定対応: レスポンスを返す
+    # 3. 作成されたミッション情報をすぐに返す
     return {
         "mission_id": mission.id,
         "status": mission.status,

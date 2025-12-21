@@ -36,7 +36,7 @@ test:
 
 test-api:
 	@echo "-e PYTHONPATH=. でカレントディレクトリ(/app)をパスに追加して実行"
-	docker-compose exec -e PYTHONPATH=. api pytest
+	docker-compose exec -T -e PYTHONPATH=. api pytest
 
 test-web:
 	docker-compose exec web npm test
