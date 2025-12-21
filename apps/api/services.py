@@ -19,58 +19,64 @@ async def create_mission(db: AsyncSession, instruction: str):
     db.add(new_mission)
     await db.commit()
     await db.refresh(new_mission)
+    return new_mission
 
-    print(f"🚀 [System] Triggering Ghost Brain for Mission ID: {new_mission.id}")
 
-    # --- エージェント実行 (非同期で実行して結果を待つ場合) ---
-    # ※ 本番では BackgroundTasks 推奨ですが、まずはここで動くか確認
+async def run_agent_for_mission(db: AsyncSession, mission_id: str):
+    """特定のミッションに対してエージェントを実行し、結果をDBに保存する"""
+    # 1. ミッションを取得
+    result = await db.execute(select(MissionModel).where(MissionModel.id == mission_id))
+    mission = result.scalar_one_or_none()
+
+    if not mission:
+        print(f"❌ [System] Mission not found for agent execution: {mission_id}")
+        return
+
+    print(f"🚀 [System] Triggering Ghost Brain for Mission ID: {mission.id}")
+
     try:
+        # --- エージェント実行 ---
         inputs = {
-            "task_input": new_mission.instruction,
-            "messages": [("user", new_mission.instruction)],
+            "task_input": mission.instruction,
+            "messages": [("user", mission.instruction)],
             "logs": [],
             "tasks": [],
             "energy_used": 0.0,
         }
-        config = {"configurable": {"thread_id": str(new_mission.id)}}
+        config = {"configurable": {"thread_id": str(mission.id)}}
 
         result = await ghost_brain.ainvoke(inputs, config=config)
         print(f"✅ [System] Ghost Brain Finished: {result}")
 
         # 1. ミッション本体の更新
-        new_mission.status = "done"  # または result.get("status", "done")
-        new_mission.logs = result.get("logs", [])
+        mission.status = "done"  # または result.get("status", "done")
+        mission.logs = result.get("logs", [])
 
-        # もしMissionModelに energy_used カラムがあれば更新
-        if hasattr(new_mission, "energy_used"):
-            new_mission.energy_used = result.get("energy_used", 0.0)
-
-        # 2. タスクの保存 (TaskModelがあると仮定)
+        # 2. タスクの保存
         current_plan = result.get("current_plan", [])
         for task_data in current_plan:
             new_task = TaskModel(
-                id=str(uuid.uuid4()),
+                id=task_data.get("id", str(uuid.uuid4())),
                 title=task_data["title"],
                 status=task_data["status"],
                 assignee=task_data.get("assignee"),
                 energy=task_data.get("energy", 0.0),
-                mission_id=new_mission.id,  # 紐付け
+                mission_id=mission.id,
             )
             db.add(new_task)
 
-        # 3. 変更を確定 (コミット)
+        # 3. 変更を確定
         await db.commit()
-        await db.refresh(new_mission)
 
     except Exception as e:
         print(f"❌ [System] Error running agent: {e}")
-
-        # debug用
+        # エラーが発生した場合、ミッションのステータスを 'error' に更新
+        mission.status = "error"
+        mission.logs.append(f"Agent Execution Error: {str(e)}")
+        await db.commit()
         import traceback
 
         traceback.print_exc()
-
-    return new_mission
 
 
 async def get_latest_mission(db: AsyncSession):

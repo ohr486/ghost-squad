@@ -57,10 +57,9 @@ async def start_mission(
     mission = await services.create_mission(db, req.instruction)
 
     # 2. バックグラウンドでAI思考プロセスを開始
-    # (注意: ここでDBセッションを渡すと閉じてしまうため、IDだけ渡して向こうで開くのが正解ですが
-    #  簡易実装として、ここでの処理は「DB保存」までとし、AI処理の統合は次のステップで行います)
+    background_tasks.add_task(services.run_agent_for_mission, db, mission.id)
 
-    # 暫定対応: レスポンスを返す
+    # 3. 作成されたミッション情報をすぐに返す
     return {
         "mission_id": mission.id,
         "status": mission.status,
