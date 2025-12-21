@@ -1,16 +1,17 @@
 from contextlib import asynccontextmanager
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+
+# from pydantic import BaseModel # Removed, as it's no longer directly used
 from sqlalchemy.ext.asyncio import AsyncSession
 
 import services
 
 # 内部モジュールのインポート
 from database import Base, engine, get_db
-from schemas import MissionSchema, TaskUpdate
+from schemas import MissionRequest, MissionResponse, MissionSchema, TaskUpdate
 
 
 # --- 起動時の初期化処理 (Lifespan) ---
@@ -38,27 +39,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-# --- データモデル ---
-class Task(BaseModel):
-    id: str
-    title: str
-    status: str
-    assignee: Optional[str] = None
-    energy: float
-
-
-class MissionRequest(BaseModel):
-    instruction: str
-
-
-class MissionResponse(BaseModel):
-    mission_id: str
-    status: str
-    logs: List[str]
-    energy_used: float = 0.0
-    tasks: List[Task] = []
 
 
 @app.get("/")

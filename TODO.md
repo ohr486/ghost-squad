@@ -15,7 +15,7 @@
 
 ## ３. コードの品質と保守性
 
-- [ ] **スキーマ定義の統一**: Pydanticモデル（`Task`, `PlanSchema`など）を `schemas.py` に一元化する。
+- [x] **スキーマ定義の統一**: Pydanticモデル（`Task`, `PlanSchema`など）を `schemas.py` に一元化する。
 - [ ] **バックグラウンドタスクの不完全な実装**: `/mission/start` エンドポイントでAIエージェント（`ghost_brain`）の呼び出しを `BackgroundTasks` を利用して非同期で行う。
 - [ ] **型安全性の向上 (Frontend)**: フロントエンドのstate（`missionData`, `history`）の `any` 型を、バックエンドのPydanticスキーマからTypeScriptの型を自動生成するツール（例: `pydantic-to-typescript`）を用いて厳密な型に置き換える。
 - [ ] **コンポーネントの分割 (Frontend)**: `page.tsx` を `MissionHistory`, `LogPanel`, `InputBar` のように、関心事ごとにコンポーネントを分割する。
@@ -29,3 +29,5 @@
 
 - [ ] **不要なコードの削除**: `main.py` にある `/mission/reset` エンドポイントが不要であれば削除する。
 - [ ] **エラーハンドリングの改善**: `graph.py` のPlannerノードでのLLM通信エラーハンドリングを、より具体的なもの（リトライ、エラーログ記録など）に改善する。
+- [x] **テストコードの修正**: `make test` で失敗するテストを修正する。
+- [x] **Lint警告の修正**: `make lint` で表示される警告を修正する。

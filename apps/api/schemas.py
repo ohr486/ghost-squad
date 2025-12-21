@@ -18,6 +18,20 @@ class TaskSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MissionRequest(BaseModel):
+    instruction: str
+
+
+class MissionResponse(BaseModel):
+    mission_id: str
+    status: str
+    logs: List[str]
+    energy_used: float = 0.0
+    tasks: List[TaskSchema] = []  # Use TaskSchema here
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class MissionSchema(BaseModel):
     id: str
     instruction: str
@@ -27,3 +41,7 @@ class MissionSchema(BaseModel):
     tasks: List[TaskSchema] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PlanSchema(BaseModel):  # Moved from graph.py
+    tasks: List[TaskSchema]
