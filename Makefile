@@ -27,7 +27,7 @@ web-logs:
 	docker-compose logs -f web
 
 # --- Testing ---
-test:
+test: up
 	@echo "\n=== 🧪 TESTING API (Backend) ==="
 	$(MAKE) test-api
 	@echo "\n=== 🧪 TESTING WEB (Frontend) ==="

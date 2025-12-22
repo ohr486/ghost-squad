@@ -37,10 +37,11 @@ async def run_agent_for_mission(db: AsyncSession, mission_id: str):
     try:
         # --- エージェント実行 ---
         inputs = {
+            "mission_id": str(mission.id),
             "task_input": mission.instruction,
-            "messages": [("user", mission.instruction)],
-            "logs": [],
-            "tasks": [],
+            "current_plan": [],
+            "logs": mission.logs or [],
+            "status": mission.status,
             "energy_used": 0.0,
         }
         config = {"configurable": {"thread_id": str(mission.id)}}

@@ -1,6 +1,7 @@
 import os
 import random
 import time
+import uuid # Add this import
 
 from dotenv import load_dotenv
 from langchain_core.output_parsers import PydanticOutputParser
@@ -73,21 +74,21 @@ def node_planner(state: AgentState):
         log_msg = "!!! 通信障害発生 (API Error) !!! バックアッププランを実行します。"
         generated_tasks = [
             {
-                "id": "t-err-1",
+                "id": str(uuid.uuid4()), # Generate unique ID
                 "title": "APIクレジット残高の確認",
                 "status": "planning",
                 "assignee": "commander",
                 "energy": 0.0,
             },
             {
-                "id": "t-err-2",
+                "id": str(uuid.uuid4()), # Generate unique ID
                 "title": "【Simulation】DBスキーマ設計",
                 "status": "working",
                 "assignee": "tachikoma-01",
                 "energy": 0.01,
             },
             {
-                "id": "t-err-3",
+                "id": str(uuid.uuid4()), # Generate unique ID
                 "title": "【Simulation】API実装",
                 "status": "planning",
                 "assignee": "backend-ghost",
