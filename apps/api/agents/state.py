@@ -1,4 +1,4 @@
-from typing import List, TypedDict
+from typing import List, TypedDict, Dict, Any
 
 
 class AgentState(TypedDict):
@@ -9,7 +9,7 @@ class AgentState(TypedDict):
 
     mission_id: str
     task_input: str  # ユーザーからの曖昧な指示
-    current_plan: List[str]  # AIが立てた作戦（WBS）
+    current_plan: List[Dict[str, Any]]  # AIが立てた作戦（WBS）
 
     # 思考ログ（UIのチャット欄に表示される内容）
     logs: List[str]

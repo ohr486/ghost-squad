@@ -129,6 +129,8 @@ function DroppableColumn({ col, tasks }: { col: { id: string; title: string }; t
   );
 }
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 // --- Main Component ---
 export function LivingKanban({ initialTasks }: Props) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -155,7 +157,7 @@ export function LivingKanban({ initialTasks }: Props) {
         })
       );
       try {
-        await fetch(`http://localhost:8000/mission/tasks/${active.id}`, {
+        await fetch(`${apiUrl}/mission/tasks/${active.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: newStatus }),

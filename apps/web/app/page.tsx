@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { LivingKanban } from "../components/LivingKanban";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 const INITIAL_LOGS = [
   "SYSTEM BOOT SEQUENCE INITIATED...",
   "CONNECTING TO GHOST-CORE...",
@@ -24,7 +26,7 @@ export default function Home() {
   useEffect(() => {
     const syncMissions = async () => {
       try {
-        const res = await fetch("http://localhost:8000/missions");
+        const res = await fetch(`${apiUrl}/missions`);
         if (res.ok) {
           const historyData = await res.json();
           setHistory(historyData);
@@ -81,7 +83,7 @@ export default function Home() {
     });
 
     try {
-      const res = await fetch("http://localhost:8000/mission/start", {
+      const res = await fetch(`${apiUrl}/mission/start`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ instruction }),
@@ -109,7 +111,7 @@ export default function Home() {
     }
 
     try {
-      const res = await fetch(`http://localhost:8000/mission/${idToDelete}`, {
+      const res = await fetch(`${apiUrl}/mission/${idToDelete}`, {
         method: "DELETE",
       });
 

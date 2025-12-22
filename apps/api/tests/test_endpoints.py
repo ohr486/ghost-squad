@@ -2,9 +2,11 @@ import pytest
 import pytest_asyncio
 from fastapi import BackgroundTasks
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, selectinload
 
+import services
 from database import Base, get_db
 from main import app
 from models import MissionModel, TaskModel
@@ -52,7 +54,7 @@ def test_client(db_session: AsyncSession):
 # --- API Endpoint Tests ---
 
 # Mark all tests in this module as asyncio
-pytestmark = [pytest.mark.asyncio, pytest.mark.skip(reason="Debugging purposes")]
+pytestmark = pytest.mark.asyncio
 
 
 async def test_get_missions_history_empty(test_client: TestClient):
@@ -150,3 +152,33 @@ async def test_update_task_status(test_client: TestClient, db_session: AsyncSess
         "/mission/tasks/non-existent-task", json={"status": "done"}
     )
     assert response.status_code == 404
+
+
+async def test_agent_creates_tasks_in_db(test_client: TestClient, db_session: AsyncSession, mocker):
+    """
+    Test that the agent background task correctly creates tasks in the database.
+    This is an integration test for the agent's logic.
+    """
+    # Mock BackgroundTasks to prevent the endpoint from running the agent automatically
+    mocker.patch.object(BackgroundTasks, "add_task")
+
+    # 1. Create a mission
+    payload = {"instruction": "Test instruction for agent"}
+    response = test_client.post("/mission/start", json=payload)
+    assert response.status_code == 200
+    mission_id = response.json()["mission_id"]
+
+    # 2. Run the agent task directly (simulating background execution)
+    await services.run_agent_for_mission(db_session, mission_id)
+
+    # 3. Verify that tasks were created in the DB for the mission
+    # Use selectinload to eagerly load the 'tasks' relationship
+    stmt = select(MissionModel).options(selectinload(MissionModel.tasks)).where(MissionModel.id == mission_id)
+    result = await db_session.execute(stmt)
+    mission_with_tasks = result.scalar_one()
+
+    # 4. Assert that tasks have been added
+    assert len(mission_with_tasks.tasks) > 0
+    assert mission_with_tasks.status == "done"  # Agent run should set status to done
+    # Check if a task has a title (basic sanity check)
+    assert mission_with_tasks.tasks[0].title is not None
