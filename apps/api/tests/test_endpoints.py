@@ -4,7 +4,7 @@ from fastapi import BackgroundTasks
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, selectinload
+from sqlalchemy.orm import selectinload, sessionmaker
 
 import services
 from database import Base, get_db
@@ -32,9 +32,19 @@ async def db_session():
 
     async with AsyncTestingSessionLocal() as session:
         yield session
+        await session.close()
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
+
+@pytest_asyncio.fixture(scope="module", autouse=True)
+async def cleanup_engine():
+    """
+    Cleanup fixture to dispose of the engine after all tests in this module complete.
+    """
+    yield
+    await engine.dispose()
 
 
 @pytest.fixture(scope="function")
@@ -47,7 +57,8 @@ def test_client(db_session: AsyncSession):
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-    yield TestClient(app)
+    client = TestClient(app)
+    yield client
     del app.dependency_overrides[get_db]
 
 
@@ -154,7 +165,9 @@ async def test_update_task_status(test_client: TestClient, db_session: AsyncSess
     assert response.status_code == 404
 
 
-async def test_agent_creates_tasks_in_db(test_client: TestClient, db_session: AsyncSession, mocker):
+async def test_agent_creates_tasks_in_db(
+    test_client: TestClient, db_session: AsyncSession, mocker
+):
     """
     Test that the agent background task correctly creates tasks in the database.
     This is an integration test for the agent's logic.
@@ -173,7 +186,11 @@ async def test_agent_creates_tasks_in_db(test_client: TestClient, db_session: As
 
     # 3. Verify that tasks were created in the DB for the mission
     # Use selectinload to eagerly load the 'tasks' relationship
-    stmt = select(MissionModel).options(selectinload(MissionModel.tasks)).where(MissionModel.id == mission_id)
+    stmt = (
+        select(MissionModel)
+        .options(selectinload(MissionModel.tasks))
+        .where(MissionModel.id == mission_id)
+    )
     result = await db_session.execute(stmt)
     mission_with_tasks = result.scalar_one()
 
