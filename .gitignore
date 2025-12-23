@@ -11,3 +11,9 @@ apps/cli/gs
 
 # secret
 .env
+
+# IDE
+.idea
+.vscode
+
+
