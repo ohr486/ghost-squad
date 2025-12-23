@@ -1,54 +1,73 @@
-# Project Overview
+# プロジェクト概要
 
-This project implements a "Spec-Driven Development" workflow. It provides a set of shell scripts to structure and streamline the process of creating new features. The core idea is to define a feature's specification in detail before starting the implementation.
+このプロジェクトは「スペック駆動開発」ワークフローを実装しています。新しい機能を作成するプロセスを構造化し、合理化するための一連のシェルスクリプトを提供します。中核となる考え方は、実装を開始する前に機能の仕様を詳細に定義することです。
 
-The workflow is managed through a series of commands, likely aliased as `/speckit.*`, which automate the creation of feature branches, specification files, and other related artifacts.
+ワークフローは、おそらく `/speckit.*` のようにエイリアス化された一連のコマンドを介して管理され、機能ブランチ、仕様ファイル、およびその他の関連成果物の作成を自動化します。
 
-## Key Directories
+このプロジェクトでは、以下のルールに従って開発を進めます。
+1. spec駆動開発で定義するspecは、gemini を使って更新・管理する。
+2. 実際の開発やコーディングはgemini以外の別のエージェントで行う。
 
-*   `.specify/`: This directory contains the core of the workflow, including:
-    *   `scripts/bash/`: The shell scripts that automate the development process.
-    *   `templates/`: Templates for the various specification files.
-    *   `memory/`: Likely used for storing context or state for the AI agent.
-*   `specs/`: This directory contains the specifications for each feature. Each feature has its own subdirectory, named after the feature branch (e.g., `001-new-feature`), which contains files like:
-    *   `spec.md`: The detailed specification of the feature.
-    *   `plan.md`: The implementation plan.
-    *   `tasks.md`: A checklist of tasks for the implementation.
-    *   `research.md`: Research notes.
-    *   `data-model.md`: Data model definitions.
-    *   `quickstart.md`: A quickstart guide for the feature.
-    *   `contracts/`: API contracts or other formal agreements.
-*   `.claude/` & `.gemini/`: These directories contain configurations for the Claude and Gemini AI assistants, respectively. They likely define custom commands and settings for interacting with the project.
+## 主要ディレクトリ
 
-## Building and Running
+*   `.specify/`: このディレクトリには、ワークフローのコアが含まれています。
+    *   `scripts/bash/`: 開発プロセスを自動化するシェルスクリプト。
+    *   `templates/`: 様々な仕様ファイルのテンプレート。
+    *   `memory/`: AIエージェントのコンテキストや状態を保存するために使用されている可能性があります。
+*   `specs/`: このディレクトリには、各機能の仕様が含まれています。各機能には、機能ブランチ名（例: `001-new-feature`）にちなんで名付けられた独自のサブディレクトリがあり、次のようなファイルが含まれています。
+    *   `spec.md`: 機能の詳細な仕様。
+    *   `plan.md`: 実装計画。
+    *   `tasks.md`: 実装タスクのチェックリスト。
+    *   `research.md`: 調査メモ。
+    *   `data-model.md`: データモデルの定義。
+    *   `quickstart.md`: 機能のクイックスタートガイド。
+    *   `contracts/`: API契約またはその他の正式な合意。
+*   `.claude/` & `.gemini/`: これらのディレクトリには、それぞれ Claude および Gemini AI アSシスタントの設定が含まれています。これらは、プロジェクトと対話するためのカスタムコマンドと設定を定義している可能性があります。
 
-This project is a collection of shell scripts, so there is no formal build process. The primary way to interact with the aproject is by using the provided scripts.
+## ソースコード管理
 
-### Creating a New Feature
+### ディレクトリ構造
 
-To start a new feature, use the `create-new-feature.sh` script:
+*   アプリケーションの主要なソースコードを格納します。
+    *   言語やフレームワークに応じて、サブディレクトリを適切に構成してください。 (例: `main/kotlin`, `lib`, `app`)
+*   `tests/` または `test/`: テストコードを格納します。
+
+### コーディングスタイル
+
+*   プロジェクト全体で一貫したコーディングスタイルを維持してください。
+*   スタイルガイドやリンターの設定については、プロジェクトの進行に合わせて決定し、ここに記載します。
+
+## ビルドと実行
+
+現在、このプロジェクトは主にワークフロー管理スクリプトで構成されています。ソースコードが追加されるにつれて、ビルドと実行に関する具体的な手順（コンパイル、テストの実行、アプリケーションの起動方法など）がここに記載されます。
+
+### 新しい機能の作成
+
+新しい機能を開始するには、`create-new-feature.sh` スクリプトを使用します。
 
 ```bash
-.specify/scripts/bash/create-new-feature.sh "Description of the new feature"
+.specify/scripts/bash/create-new-feature.sh "新しい機能の説明"
 ```
 
-This will:
+これにより、次の処理が行われます。
 
-1.  Create a new git branch with a name like `###-feature-name`.
-2.  Create a corresponding directory in `specs/`.
-3.  Create a `spec.md` file in the new feature directory, based on the template in `.specify/templates/spec-template.md`.
+1.  `###-feature-name` のような名前の新しい git ブランチが作成されます。
+2.  `specs/` に対応するディレクトリが作成されます。
+3.  新しい機能ディレクトリに、`.specify/templates/spec-template.md` のテンプレートに基づいて `spec.md` ファイルが作成されます。
 
-### Feature Development Workflow
+### 機能開発ワークフロー
 
-After creating a new feature, the intended workflow is to use a series of commands to generate the necessary specification files. These commands are likely intended to be run in an environment where they are aliased to shorter names (e.g., `/speckit.specify`).
+新しい機能を作成した後、意図されたワークフローは、一連のコマンドを使用して必要な仕様ファイルを生成することです。これらのコマンドは、より短い名前（例: `/speckit.specify`）にエイリアス化された環境で実行されることを意図している可能性があります。
 
-1.  `/speckit.specify`: Flesh out the `spec.md` file with the detailed specification of the feature.
-2.  `/speckit.plan`: Create a `plan.md` file that outlines the implementation plan.
-3.  `/speckit.tasks`: Generate a `tasks.md` file with a checklist of implementation tasks.
-4.  Implement the feature, following the plan and tasks.
+1.  `/speckit.specify`: `spec.md` ファイルに機能の詳細な仕様を記述します。
+2.  `/speckit.plan`: 実装計画の概要を記した `plan.md` ファイルを作成します。
+3.  `/speckit.tasks`: 実装タスクのチェックリストを含む `tasks.md` ファイルを生成します。
+4.  計画とタスクに従って機能を実装します。
 
-## Development Conventions
+## 開発規約
 
-*   **Branching:** All new features should be developed in a feature branch with the naming convention `###-feature-name`, where `###` is a three-digit number.
-*   **Specification First:** Before writing any code, a detailed specification for the feature should be created.
-*   **Use the Scripts:** The provided scripts should be used to manage the feature development lifecycle.
+*   **ブランチング:** すべての新しい機能は、`###-feature-name`（`###` は3桁の数字）という命名規則の機能ブランチで開発する必要があります。
+*   **仕様優先:** コードを記述する前に、機能の詳細な仕様を作成する必要があります。
+*   **スクリプトの使用:** 提供されているスクリプトは、機能開発ライフサイクルを管理するために使用する必要があります。
+*   **Git 操作:** AIは `git commit` 操作を実行しません。これらの操作はユーザーが手動で行う必要があります。
+*   **Gemini とのコミュニケーション:** Gemini とのやりとりは日本語で行ってください。
