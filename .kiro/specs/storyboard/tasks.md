@@ -77,7 +77,7 @@ Ghost Squadのストーリーボード機能をPython（FastAPIバックエン�
     - README.md（開発環境セットアップ手順）
     - _要件: 全般_
 
-- [ ] 3. WebUI用最小APIとデータモデルの実装
+- [x] 3. WebUI用最小APIとデータモデルの実装
   - [x] 3.1 WebUI用SQLAlchemyモデルの実装
     - InquiryModel、StoryModelクラス
     - InquiryStatus、StoryStatus、Priority、StoryCategoryエnum

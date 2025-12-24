@@ -19,6 +19,21 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 - 開発チームリード（技術要件の構造化）
 - スクラムマスター（バックログ管理・スプリント計画）
 
+## 現在の実装状況
+
+### ✅ 実装済み機能
+- **問い合わせ管理**: 日本語での問い合わせ入力・保存・履歴管理
+- **REST API**: 問い合わせCRUD操作の完全実装
+- **データ永続化**: PostgreSQL + SQLAlchemy + Alembic
+- **開発環境**: Docker Compose + Makefile統合
+- **テスト**: 46テスト、98%カバレッジ
+
+### 🚧 開発中機能
+- **AI統合**: OpenAI APIによるストーリー生成
+- **React WebUI**: TypeScriptフロントエンド
+- **ストーリー管理**: レビュー・承認ワークフロー
+- **外部統合**: Trello、Jira、GitHub Projects連携
+
 ## ドメインモデル
 
 **主要エンティティ**
@@ -43,23 +58,28 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 - テンプレートは組織内で共有可能
 - 問い合わせ履歴は監査ログとして保持
 
-## API設計原則
+**API設計原則**
 
-**RESTful設計**
+**現在実装済みのRESTful設計**
 ```
-GET    /api/inquiries          # 問い合わせ一覧
+# 実装済み
+GET    /api/inquiries          # 問い合わせ一覧（ページネーション対応）
 POST   /api/inquiries          # 新規問い合わせ作成
 GET    /api/inquiries/{id}     # 問い合わせ詳細
-PUT    /api/inquiries/{id}     # 問い合わせ更新
+GET    /api/info               # API情報
+GET    /api/db-test            # データベーステスト
+GET    /health                 # ヘルスチェック
 
+# 開発中
+PUT    /api/inquiries/{id}     # 問い合わせ更新
 GET    /api/stories            # ストーリー一覧
 POST   /api/stories/generate   # AI生成エンドポイント
 PUT    /api/stories/{id}       # ストーリー編集
 POST   /api/stories/batch      # 一括操作
 
+# 将来実装
 GET    /api/templates          # テンプレート一覧
 POST   /api/templates          # カスタムテンプレート作成
-
 POST   /api/export/trello      # Trelloエクスポート
 POST   /api/export/jira        # Jiraエクスポート
 POST   /api/export/github      # GitHub Projectsエクスポート
@@ -86,53 +106,70 @@ POST   /api/export/github      # GitHub Projectsエクスポート
 - エラーコード体系（GS-001形式）
 - 詳細なエラー情報（開発環境のみ）
 
-## データモデル設計
+**データモデル設計**
 
-**ステータス管理**
+**実装済みステータス管理**
 ```python
-# 問い合わせステータス
+# 問い合わせステータス（実装済み）
 class InquiryStatus(Enum):
-    PENDING = "pending"        # 受付中
-    PROCESSING = "processing"  # AI処理中
-    COMPLETED = "completed"    # 完了
-    FAILED = "failed"         # 失敗
+    RECEIVED = "received"                    # 受付済み
+    PROCESSING = "processing"                # AI処理中
+    NEEDS_CLARIFICATION = "needs_clarification"  # 明確化要求
+    TASK_WORKING = "task_working"           # タスク作業中
+    COMPLETED = "completed"                  # 完了
+    FAILED = "failed"                       # 失敗
 
-# ストーリーステータス
+# ストーリーステータス（実装済み）
 class StoryStatus(Enum):
-    DRAFT = "draft"           # 下書き
-    REVIEW = "review"         # レビュー中
-    APPROVED = "approved"     # 承認済み
-    EXPORTED = "exported"     # エクスポート済み
-    ARCHIVED = "archived"     # アーカイブ
+    PENDING_REVIEW = "pending_review"        # レビュー待ち
+    APPROVED = "approved"                    # 承認済み
+    EXPORTED = "exported"                    # エクスポート済み
+    REJECTED = "rejected"                    # 拒否
 
-# 優先度
+# 優先度（実装済み）
 class Priority(Enum):
-    LOW = "low"              # 低
-    MEDIUM = "medium"        # 中
-    HIGH = "high"           # 高
-    CRITICAL = "critical"    # 緊急
+    LOW = "low"                             # 低
+    MEDIUM = "medium"                       # 中
+    HIGH = "high"                          # 高
+    URGENT = "urgent"                      # 緊急
+
+# ストーリーカテゴリ（実装済み）
+class StoryCategory(Enum):
+    DEVELOPMENT = "development"              # 開発
+    TESTING = "testing"                     # テスト
+    DOCUMENTATION = "documentation"          # ドキュメント
+    RESEARCH = "research"                   # 調査
+    MAINTENANCE = "maintenance"             # メンテナンス
+    CUSTOM = "custom"                      # カスタム
 ```
 
-**必須フィールド設計**
+**実装済みフィールド設計**
 ```python
-# 全エンティティ共通
-id: UUID                    # 一意識別子
-created_at: datetime       # 作成日時
-updated_at: datetime       # 更新日時
-created_by: UUID          # 作成者ID（将来のユーザー管理用）
+# 全エンティティ共通（BigInteger ID使用）
+id: int                        # 一意識別子（BigInteger、自動インクリメント）
+created_at: datetime          # 作成日時（UTC）
+updated_at: datetime          # 更新日時（UTC）
 
-# ストーリー固有
-title: str                 # タイトル（必須、最大200文字）
-description: str           # 説明（必須、最大2000文字）
-acceptance_criteria: List[str]  # 受け入れ基準（必須、最低1つ）
-story_points: Optional[int]     # ストーリーポイント
-category: str              # カテゴリ
-priority: Priority         # 優先度
+# 問い合わせ固有（実装済み）
+user_id: str                  # ユーザーID
+content: str                  # 問い合わせ内容（必須）
+language: str = "ja"          # 言語（デフォルト日本語）
+timestamp: datetime           # タイムスタンプ
+status: InquiryStatus         # ステータス
+inquiry_metadata: dict        # メタデータ（JSON）
 
-# 問い合わせ固有
-content: str              # 問い合わせ内容（必須）
-language: str = "ja"      # 言語（デフォルト日本語）
-attachments: List[str]    # 添付ファイルURL
+# ストーリー固有（実装済み）
+inquiry_id: int               # 問い合わせID（外部キー）
+title: str                    # タイトル（必須、最大500文字）
+description: str              # 説明（必須）
+category: StoryCategory       # カテゴリ
+priority: Priority            # 優先度
+estimated_effort: float       # 推定工数
+deadline: datetime           # 期限（オプション）
+assignee: str                # 担当者（オプション）
+tags: List[str]              # タグ（JSON配列）
+dependencies: List[int]       # 依存関係（JSON配列）
+story_metadata: dict         # メタデータ（JSON）
 ```
 
 ## AI統合ガイドライン
