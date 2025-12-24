@@ -47,7 +47,7 @@ services:
       dockerfile: Dockerfile
     container_name: gs-frontend
     environment:
-      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_API_URL=http://localhost:8000/api
       - REACT_APP_ENVIRONMENT=development
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
