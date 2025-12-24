@@ -5,7 +5,7 @@
 export PIP_ROOT_USER_ACTION=ignore
 PIP_ENV_VARS = -e PIP_ROOT_USER_ACTION=ignore
 
-.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset clean logs logs-backend logs-frontend logs-db status
+.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset clean logs logs-backend logs-frontend logs-db status disk-usage docker-cleanup volume-list volume-cleanup
 
 # Default target
 help:
@@ -45,6 +45,10 @@ help:
 	@echo ""
 	@echo "Monitoring:"
 	@echo "  make status         - 開発環境状態確認 (Check development environment status)"
+	@echo "  make disk-usage     - ディスク容量とDocker使用量確認 (Check disk and Docker usage)"
+	@echo "  make docker-cleanup - Docker不要データ削除 (Clean up Docker unused data)"
+	@echo "  make volume-list    - Dockerボリューム一覧表示 (List Docker volumes)"
+	@echo "  make volume-cleanup - 未使用ボリューム削除 (Remove unused volumes)"
 	@echo "  make logs           - 全サービスログ表示 (Show logs for all services)"
 	@echo "  make logs-backend   - バックエンドログ表示 (Show backend logs)"
 	@echo "  make logs-frontend  - フロントエンドログ表示 (Show frontend logs)"
@@ -77,7 +81,6 @@ dev:
 	@echo "📊 Backend API will be available at: http://localhost:8000"
 	@echo "🌐 Frontend will be available at: http://localhost:3000"
 	@echo "🗄️  Database will be available at: localhost:5432"
-	@echo "🔴 Redis will be available at: localhost:6379"
 	@echo ""
 	docker-compose up -d
 	@echo "✅ All services started in background"
@@ -180,7 +183,7 @@ db-migrate:
 		echo "📋 Initializing Alembic for the first time..."; \
 		docker-compose run --rm backend alembic init alembic; \
 		echo "⚙️  Configuring Alembic database URL..."; \
-		docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://ghost_squad_user:ghost_squad_password@db:5432/ghost_squad|g' alembic.ini; \
+		docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini; \
 		echo "ℹ️  Alembic initialized. You may need to create your first migration with:"; \
 		echo "    docker-compose run --rm backend alembic revision --autogenerate -m 'Initial migration'"; \
 	else \
@@ -247,7 +250,7 @@ db-init:
 	@echo "📋 Initializing fresh Alembic setup..."
 	docker-compose run --rm backend alembic init alembic
 	@echo "⚙️  Configuring Alembic database URL..."
-	docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://ghost_squad_user:ghost_squad_password@db:5432/ghost_squad|g' alembic.ini
+	docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini
 	@echo "✅ Alembic initialization completed"
 	@echo "ℹ️  Next step: Create your first migration with 'make db-revision'"
 
@@ -287,7 +290,7 @@ db-status:
 	fi
 	@echo ""
 	@echo "🗄️  Database Status:"
-	@if docker-compose exec -T db pg_isready -U ghost_squad_user >/dev/null 2>&1; then \
+	@if docker-compose exec -T db pg_isready -U gs_user >/dev/null 2>&1; then \
 		echo "  ✅ Database is ready"; \
 	else \
 		echo "  ❌ Database not ready"; \
@@ -353,9 +356,190 @@ status:
 	@echo -n "Frontend: "
 	@curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null && echo " ✅ Responding" || echo " ❌ Not responding"
 	@echo -n "Database: "
-	@docker-compose exec -T db pg_isready -U ghost_squad_user 2>/dev/null && echo "✅ Ready" || echo "❌ Not ready"
-	@echo -n "Redis: "
-	@docker-compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG && echo "✅ Ready" || echo "❌ Not ready"
+	@docker-compose exec -T db pg_isready -U gs_user 2>/dev/null && echo "✅ Ready" || echo "❌ Not ready"
+
+# ディスク容量とDocker使用量確認 (Check disk and Docker usage)
+disk-usage:
+	@echo "💾 Disk and Docker usage report:"
+	@echo ""
+	@echo "🖥️  System disk usage:"
+	@df -h | head -1
+	@df -h | grep -E "(/$|/System/Volumes/Data)" | head -2
+	@echo ""
+	@echo "🐳 Docker system usage:"
+	@docker system df
+	@echo ""
+	@echo "📊 Docker detailed breakdown:"
+	@echo "Images:"
+	@docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}\t{{.CreatedAt}}" | head -10
+	@echo ""
+	@echo "Containers:"
+	@docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.Size}}" | head -10
+	@echo ""
+	@echo "Volumes:"
+	@docker volume ls --format "table {{.Driver}}\t{{.Name}}" | head -10
+	@echo ""
+	@echo "💡 Tips:"
+	@echo "  - Run 'make docker-cleanup' to free up space"
+	@echo "  - Consider removing unused images: docker image prune -a"
+	@echo "  - Check large volumes: docker system df -v"
+
+# Docker不要データ削除 (Clean up Docker unused data)
+docker-cleanup:
+	@echo "🧹 Docker cleanup utility:"
+	@echo ""
+	@echo "📊 Current Docker usage:"
+	@docker system df
+	@echo ""
+	@echo "📋 Available cleanup options:"
+	@echo "  1. Basic cleanup (safe)"
+	@echo "     - Stopped containers"
+	@echo "     - Unused networks"
+	@echo "     - Dangling images"
+	@echo "     - Build cache"
+	@echo ""
+	@echo "  2. Aggressive cleanup (removes unused images)"
+	@echo "     - All of the above"
+	@echo "     - ALL unused images (not just dangling)"
+	@echo ""
+	@echo "  3. Volume cleanup (⚠️  DESTRUCTIVE)"
+	@echo "     - All of the above"
+	@echo "     - ALL unused volumes (including named volumes)"
+	@echo "     - ⚠️  This will delete database data if containers are stopped!"
+	@echo ""
+	@echo "  4. Nuclear cleanup (☢️  VERY DESTRUCTIVE)"
+	@echo "     - Everything above"
+	@echo "     - Stops all containers first"
+	@echo "     - Removes ALL volumes (including active ones)"
+	@echo ""
+	@read -p "Select cleanup level (1-4) or 'q' to quit: " level; \
+	case "$$level" in \
+		1) \
+			echo "🧹 Starting basic cleanup..."; \
+			docker system prune -f; \
+			echo "✅ Basic cleanup completed"; \
+			;; \
+		2) \
+			echo "🧹 Starting aggressive cleanup..."; \
+			docker system prune -a -f; \
+			echo "✅ Aggressive cleanup completed"; \
+			;; \
+		3) \
+			echo "⚠️  Volume cleanup will remove ALL unused volumes!"; \
+			echo "This includes database data if containers are stopped."; \
+			read -p "Are you absolutely sure? Type 'DELETE' to confirm: " confirm; \
+			if [ "$$confirm" = "DELETE" ]; then \
+				echo "🧹 Starting volume cleanup..."; \
+				docker system prune -a -f; \
+				docker volume prune -f; \
+				echo "✅ Volume cleanup completed"; \
+			else \
+				echo "❌ Volume cleanup cancelled"; \
+			fi; \
+			;; \
+		4) \
+			echo "☢️  NUCLEAR CLEANUP WARNING!"; \
+			echo "This will:"; \
+			echo "  - Stop ALL containers"; \
+			echo "  - Remove ALL containers"; \
+			echo "  - Remove ALL images"; \
+			echo "  - Remove ALL volumes (including database data)"; \
+			echo "  - Remove ALL networks"; \
+			echo "  - Remove ALL build cache"; \
+			echo ""; \
+			read -p "Type 'NUCLEAR' to confirm this destructive action: " confirm; \
+			if [ "$$confirm" = "NUCLEAR" ]; then \
+				echo "☢️  Starting nuclear cleanup..."; \
+				docker stop $$(docker ps -aq) 2>/dev/null || true; \
+				docker system prune -a -f --volumes; \
+				echo "✅ Nuclear cleanup completed"; \
+			else \
+				echo "❌ Nuclear cleanup cancelled"; \
+			fi; \
+			;; \
+		q|Q) \
+			echo "❌ Cleanup cancelled"; \
+			;; \
+		*) \
+			echo "❌ Invalid option. Cleanup cancelled"; \
+			;; \
+	esac; \
+	echo ""; \
+	echo "📊 Final Docker usage:"; \
+	docker system df
+
+# Dockerボリューム一覧表示 (List Docker volumes)
+volume-list:
+	@echo "📦 Docker volumes report:"
+	@echo ""
+	@echo "📊 Volume summary:"
+	@docker system df | grep -E "(TYPE|Local Volumes)"
+	@echo ""
+	@echo "📋 All volumes:"
+	@docker volume ls --format "table {{.Driver}}\t{{.Name}}\t{{.Scope}}"
+	@echo ""
+	@echo "🔍 Volume details with sizes:"
+	@echo "Name\t\t\t\t\t\tMountpoint\t\t\t\tSize"
+	@echo "----\t\t\t\t\t\t----------\t\t\t\t----"
+	@for vol in $$(docker volume ls -q); do \
+		mountpoint=$$(docker volume inspect $$vol --format '{{.Mountpoint}}' 2>/dev/null || echo "N/A"); \
+		if [ "$$mountpoint" != "N/A" ] && [ -d "$$mountpoint" ]; then \
+			size=$$(du -sh "$$mountpoint" 2>/dev/null | cut -f1 || echo "N/A"); \
+		else \
+			size="N/A"; \
+		fi; \
+		printf "%-40s\t%-30s\t%s\n" "$$vol" "$$mountpoint" "$$size"; \
+	done
+	@echo ""
+	@echo "🔍 Volumes in use by containers:"
+	@docker ps -a --format "table {{.Names}}\t{{.Mounts}}" | grep -v "MOUNTS" | while read line; do \
+		if echo "$$line" | grep -q "/"; then \
+			echo "$$line"; \
+		fi; \
+	done || echo "No volumes currently mounted"
+	@echo ""
+	@echo "💡 Tips:"
+	@echo "  - Run 'make volume-cleanup' to remove unused volumes"
+	@echo "  - Use 'docker volume inspect <name>' for detailed volume info"
+	@echo "  - Volumes with 'gs_' prefix are likely project-related"
+
+# 未使用ボリューム削除 (Remove unused volumes)
+volume-cleanup:
+	@echo "🗑️  Volume cleanup utility:"
+	@echo ""
+	@echo "📊 Current volume usage:"
+	@docker system df | grep -E "(TYPE|Local Volumes)"
+	@echo ""
+	@echo "📋 Unused volumes that will be removed:"
+	@unused_volumes=$$(docker volume ls -q --filter dangling=true); \
+	if [ -n "$$unused_volumes" ]; then \
+		echo "$$unused_volumes" | while read vol; do \
+			mountpoint=$$(docker volume inspect $$vol --format '{{.Mountpoint}}' 2>/dev/null || echo "N/A"); \
+			if [ "$$mountpoint" != "N/A" ] && [ -d "$$mountpoint" ]; then \
+				size=$$(du -sh "$$mountpoint" 2>/dev/null | cut -f1 || echo "N/A"); \
+			else \
+				size="N/A"; \
+			fi; \
+			printf "  - %-40s (Size: %s)\n" "$$vol" "$$size"; \
+		done; \
+	else \
+		echo "  No unused volumes found"; \
+	fi
+	@echo ""
+	@echo "⚠️  WARNING: This will permanently delete unused volumes!"
+	@echo "⚠️  Make sure no important data is stored in these volumes."
+	@echo ""
+	@read -p "Continue with volume cleanup? (y/N): " confirm; \
+	if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
+		echo "🗑️  Removing unused volumes..."; \
+		docker volume prune -f; \
+		echo "✅ Volume cleanup completed"; \
+		echo ""; \
+		echo "📊 Updated volume usage:"; \
+		docker system df | grep -E "(TYPE|Local Volumes)"; \
+	else \
+		echo "❌ Volume cleanup cancelled"; \
+	fi
 
 # Install pre-commit hooks
 install-hooks:

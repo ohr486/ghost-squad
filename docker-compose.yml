@@ -4,11 +4,11 @@ services:
   # PostgreSQL Database Container
   db:
     image: postgres:15-alpine
-    container_name: ghost-squad-db
+    container_name: gs-db
     environment:
-      POSTGRES_DB: ghost_squad
-      POSTGRES_USER: ghost_squad_user
-      POSTGRES_PASSWORD: ghost_squad_password
+      POSTGRES_DB: gs_db
+      POSTGRES_USER: gs_user
+      POSTGRES_PASSWORD: gs_password
       POSTGRES_HOST_AUTH_METHOD: trust
       TZ: Asia/Tokyo
     ports:
@@ -17,29 +17,16 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/sql/init:/docker-entrypoint-initdb.d
     networks:
-      - ghost-squad-network
-
-  # Redis Cache Container
-  redis:
-    image: redis:7-alpine
-    container_name: ghost-squad-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - ghost-squad-network
-    command: redis-server --appendonly yes
+      - gs-network
 
   # Backend API Container
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: ghost-squad-backend
+    container_name: gs-backend
     environment:
-      - DATABASE_URL=postgresql://ghost_squad_user:ghost_squad_password@db:5432/ghost_squad
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://gs_user:gs_password@db:5432/gs_db
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - DEBUG=true
@@ -49,17 +36,16 @@ services:
     volumes:
       - ./backend:/app
     networks:
-      - ghost-squad-network
+      - gs-network
     depends_on:
       - db
-      - redis
 
   # Frontend Container
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: ghost-squad-frontend
+    container_name: gs-frontend
     environment:
       - REACT_APP_API_URL=http://localhost:8000
       - REACT_APP_ENVIRONMENT=development
@@ -71,7 +57,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     networks:
-      - ghost-squad-network
+      - gs-network
     depends_on:
       - backend
     stdin_open: true
@@ -80,9 +66,7 @@ services:
 volumes:
   postgres_data:
     driver: local
-  redis_data:
-    driver: local
 
 networks:
-  ghost-squad-network:
+  gs-network:
     driver: bridge
