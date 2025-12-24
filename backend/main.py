@@ -64,6 +64,18 @@ async def api_info():
     }
 
 
+# ヘルスチェックエンドポイント（API用）
+@api_router.get("/health", tags=["system"])
+async def api_health_check():
+    """API用ヘルスチェックエンドポイント"""
+    db_status = check_database_connection()
+    return {
+        "status": "healthy" if db_status else "unhealthy",
+        "service": "ghost-squad-backend",
+        "database": "connected" if db_status else "disconnected",
+    }
+
+
 # データベーステストエンドポイント
 @api_router.get("/db-test", tags=["system"])
 async def db_test(db: Session = Depends(get_db)):

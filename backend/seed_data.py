@@ -10,13 +10,8 @@ from database import SessionLocal
 from models.database.inquiry import InquiryModel
 from models.database.story import StoryModel
 from models.database.story_template import StoryTemplateModel
-from models.enums import (
-    InquiryStatus,
-    StoryStatus,
-    Priority,
-    StoryCategory,
-    StoryPattern
-)
+from models.enums import (InquiryStatus, Priority, StoryCategory, StoryPattern,
+                          StoryStatus)
 
 
 def create_sample_inquiries() -> List[InquiryModel]:
@@ -30,30 +25,27 @@ def create_sample_inquiries() -> List[InquiryModel]:
             inquiry_metadata={
                 "source": "web_form",
                 "processing_time": 45.2,
-                "ai_model": "gpt-4"
-            }
+                "ai_model": "gpt-4",
+            },
         ),
         InquiryModel(
-            user_id="dev_user_2", 
+            user_id="dev_user_2",
             content="バグ報告：ログイン画面でパスワードを忘れた場合のリンクが動作しません。緊急で修正が必要です。",
             language="ja",
             status=InquiryStatus.TASK_WORKING.value,
             inquiry_metadata={
                 "source": "support_ticket",
                 "processing_time": 23.1,
-                "ai_model": "gpt-4"
-            }
+                "ai_model": "gpt-4",
+            },
         ),
         InquiryModel(
             user_id="dev_user_1",
             content="データベースのパフォーマンス調査をお願いします。最近レスポンスが遅くなっています。",
-            language="ja", 
+            language="ja",
             status=InquiryStatus.PROCESSING.value,
-            inquiry_metadata={
-                "source": "web_form",
-                "ai_model": "gpt-4"
-            }
-        )
+            inquiry_metadata={"source": "web_form", "ai_model": "gpt-4"},
+        ),
     ]
     return inquiries
 
@@ -62,16 +54,18 @@ def create_sample_stories(inquiries: List[InquiryModel]) -> List[StoryModel]:
     """Create sample stories linked to inquiries"""
     if not inquiries:
         return []
-    
+
     stories = []
-    
+
     # Create stories based on available inquiries
     if len(inquiries) >= 1:
         # Stories for first inquiry (user registration)
         story1 = StoryModel(
             inquiry_id=inquiries[0].id,
             title="ユーザー登録APIエンドポイントの実装",
-            description="メールアドレスとパスワードを受け取るユーザー登録APIを実装する。バリデーション、重複チェック、パスワードハッシュ化を含む。",
+            description=(
+                "メールアドレスとパスワードを受け取るユーザー登録APIを実装する。" "バリデーション、重複チェック、パスワードハッシュ化を含む。"
+            ),
             category=StoryCategory.DEVELOPMENT.value,
             priority=Priority.HIGH.value,
             estimated_effort=8.0,
@@ -83,14 +77,14 @@ def create_sample_stories(inquiries: List[InquiryModel]) -> List[StoryModel]:
                 "generation_log": [
                     "Analyzed inquiry for user registration requirements",
                     "Identified need for API endpoint",
-                    "Applied development template"
+                    "Applied development template",
                 ],
                 "applied_template": "api_development",
-                "confidence": 0.95
-            }
+                "confidence": 0.95,
+            },
         )
         stories.append(story1)
-        
+
         story2 = StoryModel(
             inquiry_id=inquiries[0].id,
             title="ユーザー登録フォームのUI実装",
@@ -107,16 +101,16 @@ def create_sample_stories(inquiries: List[InquiryModel]) -> List[StoryModel]:
                 "generation_log": [
                     "Analyzed inquiry for UI requirements",
                     "Identified dependency on API endpoint",
-                    "Applied frontend template"
+                    "Applied frontend template",
                 ],
                 "applied_template": "frontend_form",
-                "confidence": 0.88
-            }
+                "confidence": 0.88,
+            },
         )
         stories.append(story2)
-        
+
         # Set dependency for second story on first story (will be set after flush)
-    
+
     if len(inquiries) >= 2:
         # Story for second inquiry (bug fix)
         story3 = StoryModel(
@@ -134,14 +128,14 @@ def create_sample_stories(inquiries: List[InquiryModel]) -> List[StoryModel]:
                 "generation_log": [
                     "Detected urgent keywords",
                     "Classified as bug fix",
-                    "Applied maintenance template"
+                    "Applied maintenance template",
                 ],
                 "applied_template": "bug_fix",
-                "confidence": 0.92
-            }
+                "confidence": 0.92,
+            },
         )
         stories.append(story3)
-    
+
     if len(inquiries) >= 3:
         # Story for third inquiry (performance investigation)
         story4 = StoryModel(
@@ -159,14 +153,14 @@ def create_sample_stories(inquiries: List[InquiryModel]) -> List[StoryModel]:
                 "generation_log": [
                     "Detected performance keywords",
                     "Classified as investigation task",
-                    "Applied investigation template"
+                    "Applied investigation template",
                 ],
                 "applied_template": "investigation",
-                "confidence": 0.89
-            }
+                "confidence": 0.89,
+            },
         )
         stories.append(story4)
-    
+
     return stories
 
 
@@ -181,22 +175,22 @@ def create_sample_templates() -> List[StoryTemplateModel]:
                     "name": "endpoint_path",
                     "type": "text",
                     "required": True,
-                    "defaultValue": "/api/"
+                    "defaultValue": "/api/",
                 },
                 {
                     "name": "http_method",
                     "type": "select",
                     "required": True,
                     "options": ["GET", "POST", "PUT", "DELETE"],
-                    "defaultValue": "POST"
+                    "defaultValue": "POST",
                 },
                 {
                     "name": "authentication_required",
                     "type": "select",
                     "required": True,
                     "options": ["Yes", "No"],
-                    "defaultValue": "Yes"
-                }
+                    "defaultValue": "Yes",
+                },
             ],
             checklist=[
                 "APIエンドポイントの実装",
@@ -204,10 +198,10 @@ def create_sample_templates() -> List[StoryTemplateModel]:
                 "バリデーションの実装",
                 "エラーハンドリングの実装",
                 "ユニットテストの作成",
-                "API仕様書の更新"
+                "API仕様書の更新",
             ],
             default_estimate=6.0,
-            is_custom=False
+            is_custom=False,
         ),
         StoryTemplateModel(
             name="バグ修正テンプレート",
@@ -218,18 +212,10 @@ def create_sample_templates() -> List[StoryTemplateModel]:
                     "type": "select",
                     "required": True,
                     "options": ["Critical", "High", "Medium", "Low"],
-                    "defaultValue": "Medium"
+                    "defaultValue": "Medium",
                 },
-                {
-                    "name": "affected_component",
-                    "type": "text",
-                    "required": True
-                },
-                {
-                    "name": "reproduction_steps",
-                    "type": "text",
-                    "required": False
-                }
+                {"name": "affected_component", "type": "text", "required": True},
+                {"name": "reproduction_steps", "type": "text", "required": False},
             ],
             checklist=[
                 "バグの再現確認",
@@ -237,30 +223,18 @@ def create_sample_templates() -> List[StoryTemplateModel]:
                 "修正の実装",
                 "テストケースの追加",
                 "回帰テストの実行",
-                "修正内容の文書化"
+                "修正内容の文書化",
             ],
             default_estimate=3.0,
-            is_custom=False
+            is_custom=False,
         ),
         StoryTemplateModel(
             name="調査タスクテンプレート",
             pattern=StoryPattern.INVESTIGATION.value,
             fields=[
-                {
-                    "name": "investigation_scope",
-                    "type": "text",
-                    "required": True
-                },
-                {
-                    "name": "expected_outcome",
-                    "type": "text",
-                    "required": True
-                },
-                {
-                    "name": "deadline",
-                    "type": "date",
-                    "required": False
-                }
+                {"name": "investigation_scope", "type": "text", "required": True},
+                {"name": "expected_outcome", "type": "text", "required": True},
+                {"name": "deadline", "type": "date", "required": False},
             ],
             checklist=[
                 "調査計画の作成",
@@ -268,11 +242,11 @@ def create_sample_templates() -> List[StoryTemplateModel]:
                 "分析の実行",
                 "結果の文書化",
                 "推奨事項の提示",
-                "ステークホルダーへの報告"
+                "ステークホルダーへの報告",
             ],
             default_estimate=4.0,
-            is_custom=False
-        )
+            is_custom=False,
+        ),
     ]
     return templates
 
@@ -282,43 +256,46 @@ def seed_data():
     Seed the database with sample data for development
     """
     db: Session = SessionLocal()
-    
+
     try:
         print("🌱 Starting database seeding...")
-        
+
         # Check if data already exists
         existing_inquiries = db.query(InquiryModel).count()
         if existing_inquiries > 0:
-            print(f"ℹ️  Database already contains {existing_inquiries} inquiries. Skipping seeding.")
+            print(
+                f"ℹ️  Database already contains {existing_inquiries} "
+                "inquiries. Skipping seeding."
+            )
             return
-        
+
         # Create sample data
         print("📝 Creating sample inquiries...")
         inquiries = create_sample_inquiries()
         db.add_all(inquiries)
         db.flush()  # Flush to get IDs
-        
+
         print("📋 Creating sample stories...")
         stories = create_sample_stories(inquiries)
         db.add_all(stories)
         db.flush()  # Flush to get story IDs
-        
+
         # Set dependencies after stories have IDs
         if len(stories) >= 2:
             stories[1].dependencies = [stories[0].id]  # Second story depends on first
-        
+
         print("📄 Creating sample templates...")
         templates = create_sample_templates()
         db.add_all(templates)
-        
+
         # Commit all changes
         db.commit()
-        
-        print(f"✅ Seeding completed successfully!")
+
+        print("✅ Seeding completed successfully!")
         print(f"   - Created {len(inquiries)} inquiries")
         print(f"   - Created {len(stories)} stories")
         print(f"   - Created {len(templates)} templates")
-        
+
     except Exception as e:
         print(f"❌ Error during seeding: {e}")
         db.rollback()
@@ -332,18 +309,18 @@ def clear_data():
     Clear all data from the database (for testing)
     """
     db: Session = SessionLocal()
-    
+
     try:
         print("🗑️  Clearing database data...")
-        
+
         # Delete in reverse order of dependencies
         db.query(StoryModel).delete()
         db.query(InquiryModel).delete()
         db.query(StoryTemplateModel).delete()
-        
+
         db.commit()
         print("✅ Database cleared successfully!")
-        
+
     except Exception as e:
         print(f"❌ Error during clearing: {e}")
         db.rollback()
