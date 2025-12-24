@@ -74,7 +74,7 @@ def clean_database(test_session):
         # If direct SQL fails, use ORM approach
         from models.database.inquiry import InquiryModel
         from models.database.story import StoryModel
-        from models.database.template import StoryTemplateModel
+        from models.database.story_template import StoryTemplateModel
 
         test_session.query(StoryModel).delete()
         test_session.query(InquiryModel).delete()

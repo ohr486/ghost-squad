@@ -28,10 +28,12 @@ class StoryModel(Base):
         String(50), nullable=False, default=StoryStatus.PENDING_REVIEW.value
     )
     assignee = Column(String(255), nullable=True)
-    tags = Column(JSON, nullable=True, default=list)  # List[str]
-    dependencies = Column(JSON, nullable=True, default=list)  # List[str] - 他のストーリーID
+    tags = Column(JSON, nullable=True, default=list, server_default="[]")  # List[str]
+    dependencies = Column(
+        JSON, nullable=True, default=list, server_default="[]"
+    )  # List[str] - 他のストーリーID
     story_metadata = Column(
-        JSON, nullable=False, default=dict
+        JSON, nullable=False, default=dict, server_default="{}"
     )  # Renamed to avoid SQLAlchemy conflict
     created_at = Column(
         DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)

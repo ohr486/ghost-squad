@@ -90,14 +90,14 @@ Ghost Squadのストーリーボード機能をPython（FastAPIバックエン�
     - 初期データシード機能
     - _要件: 9.1, 9.3_
 
-  - [ ] 3.3 データベーススキーマ整合性の修正
+  - [x] 3.3 データベーススキーマ整合性の修正
     - story_metadataカラムにserver_default='{}'を追加するマイグレーション作成
     - SQLAlchemyモデルにPythonレベルのdefault=dictを追加
     - story_templates.fieldsとchecklistカラムの設定確認と修正
     - マイグレーション安全性テスト（既存データ保持確認）
     - _要件: 11.1, 11.2, 11.3, 11.4_
 
-  - [ ] 3.4 FastAPIアプリケーション初期設定
+  - [x] 3.4 FastAPIアプリケーション初期設定
     - FastAPIアプリケーションインスタンス作成
     - CORSMiddleware設定（フロントエンド連携用）
     - APIRouter設定（/api プレフィックス）

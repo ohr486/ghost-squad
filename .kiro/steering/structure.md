@@ -25,7 +25,7 @@ ghost-squad/
 - `requirements.txt` - Python依存関係
 
 **モデル組織化** (`models/`)
-- `database/` - SQLAlchemy ORMモデル（base.py、inquiry.py、story.py、template.py）
+- `database/` - SQLAlchemy ORMモデル（base.py、inquiry.py、story.py、story_template.py）
 - `schemas/` - APIシリアライゼーション用Pydanticモデル
 - `enums/` - 列挙型（status、priority、category、pattern）
 - `api/` - APIエンドポイント用リクエスト・レスポンスモデル
