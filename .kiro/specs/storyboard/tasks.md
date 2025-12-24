@@ -78,12 +78,12 @@
     - _要件: 全般_
 
 - [ ] 3. WebUI用最小APIとデータモデルの実装
-  - [ ] 3.1 WebUI用SQLAlchemyモデルの実装
+  - [x] 3.1 WebUI用SQLAlchemyモデルの実装
     - InquiryModel、StoryModelクラス
     - InquiryStatus、StoryStatus、Priority、StoryCategoryエnum
     - _要件: 6.1, 9.1_
 
-  - [ ] 3.2 データベース接続とマイグレーション
+  - [x] 3.2 データベース接続とマイグレーション
     - Alembicによるマイグレーション設定
     - データベース接続管理
     - Makefileとの統合（make db-migrate, make db-reset）

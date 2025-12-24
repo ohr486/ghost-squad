@@ -39,6 +39,9 @@ class StoryModel(Base):
 
     # Relationships
     inquiry = relationship("InquiryModel", back_populates="stories")
+    
+    # Test field for migration
+    # comments = Column(Text, nullable=True)  # Uncomment to test migrations
 
     def __repr__(self):
         return f"<Story(id={self.id}, title={self.title}, status={self.status})>"

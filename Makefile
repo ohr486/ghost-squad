@@ -5,7 +5,7 @@
 export PIP_ROOT_USER_ACTION=ignore
 PIP_ENV_VARS = -e PIP_ROOT_USER_ACTION=ignore
 
-.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset clean logs logs-backend logs-frontend logs-db status disk-usage docker-cleanup volume-list volume-cleanup volume-cleanup-force
+.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset db-connect db-tables db-data clean logs logs-backend logs-frontend logs-db status disk-usage docker-cleanup volume-list volume-cleanup volume-cleanup-force
 
 # Default target
 help:
@@ -42,6 +42,9 @@ help:
 	@echo "  make db-status      - データベース状態確認 (Check database status)"
 	@echo "  make db-seed        - テストデータ投入 (Seed test data)"
 	@echo "  make db-reset       - データベースリセット (Reset database)"
+	@echo "  make db-connect     - データベースに直接接続 (Connect to database directly)"
+	@echo "  make db-tables      - データベース内のテーブル一覧表示 (List database tables)"
+	@echo "  make db-data        - データベース内のデータ表示 (Show database data)"
 	@echo ""
 	@echo "Monitoring:"
 	@echo "  make status         - 開発環境状態確認 (Check development environment status)"
@@ -178,15 +181,15 @@ db-migrate:
 	@echo "🚀 Starting database container..."
 	docker-compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
-	@sleep 5
+	docker-compose run --rm backend python manage_db.py check
 	@echo "🔍 Checking if Alembic is initialized..."
 	@if [ ! -f backend/alembic.ini ] || [ ! -d backend/alembic ]; then \
 		echo "📋 Initializing Alembic for the first time..."; \
 		docker-compose run --rm backend alembic init alembic; \
 		echo "⚙️  Configuring Alembic database URL..."; \
 		docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini; \
-		echo "ℹ️  Alembic initialized. You may need to create your first migration with:"; \
-		echo "    docker-compose run --rm backend alembic revision --autogenerate -m 'Initial migration'"; \
+		echo "ℹ️  Alembic initialized. Creating initial migration..."; \
+		docker-compose run --rm backend alembic revision --autogenerate -m "Initial migration"; \
 	else \
 		echo "✅ Alembic already initialized"; \
 	fi
@@ -194,9 +197,9 @@ db-migrate:
 	@if docker-compose run --rm backend alembic current >/dev/null 2>&1; then \
 		docker-compose run --rm backend alembic upgrade head; \
 	else \
-		echo "ℹ️  No migrations found. Database schema may be empty or migrations need to be created."; \
-		echo "    To create your first migration, run:"; \
-		echo "    docker-compose run --rm backend alembic revision --autogenerate -m 'Initial migration'"; \
+		echo "ℹ️  No migrations found. Creating initial migration..."; \
+		docker-compose run --rm backend alembic revision --autogenerate -m "Initial migration"; \
+		docker-compose run --rm backend alembic upgrade head; \
 	fi
 	@echo "✅ Database migrations completed"
 
@@ -206,14 +209,9 @@ db-seed:
 	@echo "🚀 Starting database container..."
 	docker-compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
-	@sleep 5
+	docker-compose run --rm backend python manage_db.py check
 	@echo "📊 Running seed script..."
-	@if docker-compose run --rm backend python -c "import app.db.seed" >/dev/null 2>&1; then \
-		docker-compose run --rm backend python -c "from app.db.seed import seed_data; seed_data()"; \
-	else \
-		echo "ℹ️  Seed script not found. Skipping data seeding."; \
-		echo "    Create app/db/seed.py with seed_data() function to enable seeding."; \
-	fi
+	docker-compose run --rm backend python manage_db.py seed
 	@echo "✅ Test data seeding completed"
 
 # データベースリセット (Reset database)
@@ -228,7 +226,7 @@ db-reset:
 	@echo "🚀 Starting fresh database..."
 	docker-compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
-	@sleep 10
+	docker-compose run --rm backend python manage_db.py check
 	@echo "📊 Running migrations on fresh database..."
 	$(MAKE) db-migrate
 	@echo "🌱 Seeding fresh data..."
@@ -276,7 +274,7 @@ db-status:
 	@echo "🚀 Starting database container..."
 	docker-compose up -d db >/dev/null 2>&1
 	@echo "⏳ Waiting for database to be ready..."
-	@sleep 3
+	docker-compose run --rm backend python manage_db.py check
 	@echo ""
 	@echo "📋 Alembic Configuration:"
 	@if [ -f backend/alembic.ini ]; then \
@@ -290,16 +288,12 @@ db-status:
 		echo "  ❌ alembic directory missing"; \
 	fi
 	@echo ""
-	@echo "🗄️  Database Status:"
-	@if docker-compose exec -T db pg_isready -U gs_user >/dev/null 2>&1; then \
-		echo "  ✅ Database is ready"; \
-	else \
-		echo "  ❌ Database not ready"; \
-	fi
-	@echo ""
 	@echo "📊 Migration Status:"
 	@if [ -f backend/alembic.ini ] && [ -d backend/alembic ]; then \
 		docker-compose run --rm backend alembic current 2>/dev/null || echo "  ℹ️  No migrations applied yet"; \
+		echo ""; \
+		echo "📋 Available migrations:"; \
+		docker-compose run --rm backend alembic history 2>/dev/null || echo "  ℹ️  No migrations created yet"; \
 	else \
 		echo "  ❌ Alembic not initialized"; \
 	fi
@@ -566,3 +560,50 @@ install-hooks:
 pre-commit:
 	@echo "🪝 Running pre-commit on all files..."
 	docker-compose run --rm backend pre-commit run --all-files
+
+# データベース直接接続 (Connect to database directly)
+db-connect:
+	@echo "🔗 Connecting to database..."
+	@echo "🚀 Starting database container..."
+	docker-compose up -d db >/dev/null 2>&1
+	@echo "⏳ Waiting for database to be ready..."
+	docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1
+	@echo "📊 Connecting to PostgreSQL database..."
+	@echo "ℹ️  Use \\q to quit, \\dt to list tables, \\d <table> to describe table"
+	docker-compose exec db psql -U gs_user -d gs_db
+
+# データベーステーブル一覧表示 (List database tables)
+db-tables:
+	@echo "📋 Listing database tables..."
+	@echo "🚀 Starting database container..."
+	docker-compose up -d db >/dev/null 2>&1
+	@echo "⏳ Waiting for database to be ready..."
+	docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1
+	@echo "📊 Database tables:"
+	docker-compose exec -T db psql -U gs_user -d gs_db -c "\dt"
+	@echo ""
+	@echo "📋 Table details:"
+	@for table in inquiries stories story_templates; do \
+		echo ""; \
+		echo "🔍 Table: $$table"; \
+		docker-compose exec -T db psql -U gs_user -d gs_db -c "\d $$table" 2>/dev/null || echo "  Table $$table not found"; \
+	done
+
+# データベースデータ表示 (Show database data)
+db-data:
+	@echo "📊 Showing database data..."
+	@echo "🚀 Starting database container..."
+	docker-compose up -d db >/dev/null 2>&1
+	@echo "⏳ Waiting for database to be ready..."
+	docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1
+	@echo ""
+	@echo "📋 Inquiries (問い合わせ):"
+	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, user_id, LEFT(content, 50) || '...' as content_preview, language, status, timestamp FROM inquiries ORDER BY timestamp DESC;" 2>/dev/null || echo "  No inquiries table found"
+	@echo ""
+	@echo "📋 Stories (ストーリー):"
+	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, LEFT(title, 40) || '...' as title_preview, category, priority, status, estimated_effort, created_at FROM stories ORDER BY created_at DESC;" 2>/dev/null || echo "  No stories table found"
+	@echo ""
+	@echo "📋 Story Templates (ストーリーテンプレート):"
+	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, name, pattern, is_custom, default_estimate, created_at FROM story_templates ORDER BY created_at DESC;" 2>/dev/null || echo "  No story_templates table found"
+	@echo ""
+	@echo "💡 Use 'make db-connect' for interactive database access"
