@@ -39,7 +39,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",  # React開発サーバー
         "http://127.0.0.1:3000",  # 代替ローカルホスト
-        "http://frontend:3000",   # Docker内部通信
+        "http://frontend:3000",  # Docker内部通信
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
