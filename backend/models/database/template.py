@@ -5,18 +5,18 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Boolean, Column, DateTime, Float, String
-from sqlalchemy.dialects.postgresql import UUID
 
 from .base import Base
+from .types import UUID
 
 
 class StoryTemplateModel(Base):
     __tablename__ = "story_templates"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
     pattern = Column(String(50), nullable=False)
-    fields = Column(JSON, nullable=False)  # List[TemplateField]
+    fields = Column(JSON, nullable=False, default=list)  # List[TemplateField]
     checklist = Column(JSON, nullable=False, default=list)  # List[str]
     default_estimate = Column(Float, nullable=False)
     is_custom = Column(Boolean, nullable=False, default=False)

@@ -3,7 +3,7 @@ Pytest configuration and fixtures for database seeding tests
 """
 import pytest
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -12,8 +12,8 @@ from models.database.base import Base
 
 @pytest.fixture(scope="session")
 def test_engine():
-    """Create a test database engine using SQLite with UUID support"""
-    # Use SQLite in-memory database for testing with UUID extension
+    """Create a test database engine using SQLite"""
+    # Use SQLite in-memory database for testing
     engine = create_engine(
         "sqlite:///:memory:",
         poolclass=StaticPool,
@@ -21,13 +21,12 @@ def test_engine():
         echo=False
     )
     
-    # Enable UUID extension for SQLite (if available)
-    with engine.connect() as conn:
-        try:
-            # Try to enable UUID functions (may not be available in all SQLite versions)
-            conn.execute(text("SELECT hex(randomblob(16))"))
-        except Exception:
-            pass  # UUID functions not available, tests will use string IDs
+    # Enable foreign key constraints for SQLite
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
     
     # Create all tables
     Base.metadata.create_all(engine)

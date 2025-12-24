@@ -44,7 +44,7 @@ class TestSeedDataIntegration:
         # First create and save inquiries
         inquiries = create_sample_inquiries()
         session.add_all(inquiries)
-        session.flush()  # Get IDs without committing
+        session.commit()  # Commit to get proper IDs
         
         # Create stories
         stories = create_sample_stories(inquiries)
@@ -127,13 +127,15 @@ class TestSeedDataIntegration:
         """Test the clear_data function with real database"""
         session = clean_database
         
-        # First add some data
+        # First add inquiries and commit them to get proper IDs
         inquiries = create_sample_inquiries()
+        session.add_all(inquiries)
+        session.commit()
+        
+        # Now create stories with the committed inquiries
         stories = create_sample_stories(inquiries)
         templates = create_sample_templates()
         
-        session.add_all(inquiries)
-        session.flush()
         session.add_all(stories)
         session.add_all(templates)
         session.commit()
@@ -224,7 +226,7 @@ class TestDataValidation:
         
         inquiries = create_sample_inquiries()
         session.add_all(inquiries)
-        session.flush()
+        session.commit()  # Commit to get proper IDs
         
         stories = create_sample_stories(inquiries)
         session.add_all(stories)
