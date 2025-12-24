@@ -3,9 +3,10 @@ Story Pydantic schemas (renamed from Task to avoid confusion with Kanban tasks)
 """
 from datetime import datetime
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
-from ..enums import StoryCategory, Priority, StoryStatus
+from ..enums import Priority, StoryCategory, StoryStatus
 
 
 class StoryMetadata(BaseModel):

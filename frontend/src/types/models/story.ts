@@ -1,7 +1,7 @@
 /**
  * Story model types (renamed from Task to avoid confusion with Kanban tasks)
  */
-import { StoryStatus, StoryCategory, Priority } from '../enums';
+import { StoryStatus, StoryCategory, Priority } from "../enums";
 
 export interface StoryMetadata {
   originalInquiry: string;

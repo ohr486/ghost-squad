@@ -1,14 +1,14 @@
 /**
  * API response types
  */
-import { InquiryStatus, StoryStatus, StoryCategory, Priority } from '../enums';
-import { StoryMetadata } from '../models';
+import { InquiryStatus, StoryStatus, StoryCategory, Priority } from "../enums";
+import { StoryMetadata } from "../models";
 
 export interface InquiryResponse {
   id: string;
   userId: string;
   content: string;
-  language: 'ja' | 'en';
+  language: "ja" | "en";
   timestamp: string; // ISO string format for API
   status: InquiryStatus;
   metadata: {
@@ -39,13 +39,13 @@ export interface StoryResponse {
 export interface StoryGenerationResponse {
   inquiryId: string;
   stories: StoryResponse[];
-  status: 'success' | 'partial' | 'failed';
+  status: "success" | "partial" | "failed";
   message?: string;
 }
 
 export interface GenerationStatusResponse {
   inquiryId: string;
-  status: 'processing' | 'completed' | 'failed';
+  status: "processing" | "completed" | "failed";
   progress: number; // 0-100
   message?: string;
 }

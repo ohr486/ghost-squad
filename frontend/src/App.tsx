@@ -1,21 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import './App.css';
+import React, { useEffect, useState } from "react";
+import "./App.css";
 
 function App() {
-  const [message, setMessage] = useState<string>('');
+  const [message, setMessage] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     // バックエンドAPIからメッセージを取得
-    fetch('http://localhost:8000/')
-      .then(response => response.json())
-      .then(data => {
+    fetch("http://localhost:8000/")
+      .then((response) => response.json())
+      .then((data) => {
         setMessage(data.message);
         setLoading(false);
       })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-        setMessage('バックエンドに接続できませんでした');
+      .catch((error) => {
+        console.error("Error fetching data:", error);
+        setMessage("バックエンドに接続できませんでした");
         setLoading(false);
       });
   }, []);

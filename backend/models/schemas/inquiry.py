@@ -2,10 +2,14 @@
 Inquiry Pydantic schemas
 """
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 from ..enums import InquiryStatus
+
+if TYPE_CHECKING:
+    from .story import Story
 
 
 class Inquiry(BaseModel):
@@ -20,11 +24,8 @@ class Inquiry(BaseModel):
 
 class InquiryResult(BaseModel):
     inquiry_id: str
-    status: str = Field(..., pattern="^(processing|needs_clarification|task_working|completed)$")
-    generated_stories: Optional[List["Story"]] = None  # Forward reference
+    status: str = Field(
+        ..., pattern="^(processing|needs_clarification|task_working|completed)$"
+    )
+    generated_stories: Optional[List["Story"]] = None
     clarification_questions: Optional[List[str]] = None
-
-
-# Import Story here to resolve forward reference
-from .story import Story
-InquiryResult.model_rebuild()

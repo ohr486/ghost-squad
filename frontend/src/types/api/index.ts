@@ -4,12 +4,12 @@
 export type {
   InquiryCreateRequest,
   StoryUpdateRequest,
-  RejectRequest
-} from './requests';
+  RejectRequest,
+} from "./requests";
 
 export type {
   InquiryResponse,
   StoryResponse,
   StoryGenerationResponse,
-  GenerationStatusResponse
-} from './responses';
+  GenerationStatusResponse,
+} from "./responses";

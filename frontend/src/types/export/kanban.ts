@@ -3,7 +3,7 @@
  */
 
 export interface AuthConfig {
-  type: 'api_key' | 'oauth' | 'basic';
+  type: "api_key" | "oauth" | "basic";
   credentials: Record<string, string>;
 }
 
@@ -33,7 +33,7 @@ export interface ExportResult {
 export interface SyncStatus {
   storyId: string;
   externalTaskId?: string; // Kanban task ID
-  status: 'pending' | 'synced' | 'failed';
+  status: "pending" | "synced" | "failed";
   lastSyncAt?: Date;
   error?: string;
 }

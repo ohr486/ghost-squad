@@ -103,12 +103,16 @@ test: test-backend test-frontend
 # バックエンドテスト (Run backend tests)
 test-backend:
 	@echo "🧪 Running backend tests..."
-	docker-compose run --rm backend python -m pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=html
+	@if [ -d "backend/tests" ]; then \
+		docker-compose run --rm backend python -m pytest tests/ -v --cov=models --cov-report=term-missing --cov-report=html; \
+	else \
+		echo "ℹ️  No tests directory found. Create backend/tests/ directory and add test files."; \
+	fi
 
 # フロントエンドテスト (Run frontend tests)
 test-frontend:
 	@echo "🧪 Running frontend tests..."
-	docker-compose run --rm frontend npm test -- --run --coverage --watchAll=false
+	docker-compose run --rm frontend npm test -- --coverage --watchAll=false --passWithNoTests
 
 # コード品質チェック (Run all linting)
 lint: lint-backend lint-frontend
@@ -118,11 +122,15 @@ lint: lint-backend lint-frontend
 lint-backend:
 	@echo "🔍 Running backend linting..."
 	@echo "📝 Running flake8..."
-	docker-compose run --rm backend flake8 app/ tests/
+	@if [ -d "backend/tests" ]; then \
+		docker-compose run --rm backend flake8 models/ main.py tests/; \
+	else \
+		docker-compose run --rm backend flake8 models/ main.py; \
+	fi
 	@echo "🔍 Running mypy type checking..."
-	docker-compose run --rm backend mypy app/
+	docker-compose run --rm backend mypy models/ main.py
 	@echo "🛡️  Running bandit security check..."
-	docker-compose run --rm backend bandit -r app/ -f json
+	docker-compose run --rm backend bandit -r models/ -f json
 
 # フロントエンドコード品質チェック (Run frontend linting)
 lint-frontend:
@@ -140,9 +148,17 @@ format: format-backend format-frontend
 format-backend:
 	@echo "🎨 Formatting backend code..."
 	@echo "📝 Running black formatter..."
-	docker-compose run --rm backend black app/ tests/
+	@if [ -d "backend/tests" ]; then \
+		docker-compose run --rm backend black models/ main.py tests/; \
+	else \
+		docker-compose run --rm backend black models/ main.py; \
+	fi
 	@echo "📦 Running isort import sorter..."
-	docker-compose run --rm backend isort app/ tests/
+	@if [ -d "backend/tests" ]; then \
+		docker-compose run --rm backend isort models/ main.py tests/; \
+	else \
+		docker-compose run --rm backend isort models/ main.py; \
+	fi
 
 # フロントエンドコードフォーマット (Format frontend code)
 format-frontend:

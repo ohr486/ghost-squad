@@ -1,5 +1,7 @@
 """
-Story category enumeration (renamed from TaskCategory to avoid confusion with Kanban tasks)
+Story category enumeration.
+
+Renamed from TaskCategory to avoid confusion with Kanban tasks.
 """
 from enum import Enum
 

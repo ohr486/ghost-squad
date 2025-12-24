@@ -1,11 +1,11 @@
 /**
  * API request types
  */
-import { StoryCategory, Priority } from '../enums';
+import { StoryCategory, Priority } from "../enums";
 
 export interface InquiryCreateRequest {
   content: string;
-  language?: 'ja' | 'en';
+  language?: "ja" | "en";
   userId: string;
 }
 
