@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from models.database.base import Base
 from models.database.inquiry import InquiryModel
 from models.database.story import StoryModel
-from models.database.template import StoryTemplateModel
+from models.database.story_template import StoryTemplateModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

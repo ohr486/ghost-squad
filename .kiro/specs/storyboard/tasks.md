@@ -90,7 +90,7 @@ Ghost Squadのストーリーボード機能をPython（FastAPIバックエン�
     - 初期データシード機能
     - _要件: 9.1, 9.3_
 
-  - [ ] 3.3 データベーススキーマ整合性の修正
+  - [x] 3.3 データベーススキーマ整合性の修正
     - story_metadataカラムにserver_default='{}'を追加するマイグレーション作成
     - SQLAlchemyモデルにPythonレベルのdefault=dictを追加
     - story_templates.fieldsとchecklistカラムの設定確認と修正

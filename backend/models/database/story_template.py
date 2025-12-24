@@ -15,8 +15,12 @@ class StoryTemplateModel(Base):
     id = Column(BigIntegerID(), primary_key=True, autoincrement=True)  # type: ignore
     name = Column(String(255), nullable=False)
     pattern = Column(String(50), nullable=False)
-    fields = Column(JSON, nullable=False, default=list)  # List[TemplateField]
-    checklist = Column(JSON, nullable=False, default=list)  # List[str]
+    fields = Column(
+        JSON, nullable=False, default=list, server_default="[]"
+    )  # List[TemplateField]
+    checklist = Column(
+        JSON, nullable=False, default=list, server_default="[]"
+    )  # List[str]
     default_estimate = Column(Float, nullable=False)
     is_custom = Column(Boolean, nullable=False, default=False)
     user_id = Column(String(255), nullable=True)  # カスタムテンプレートの場合

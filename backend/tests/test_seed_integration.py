@@ -5,7 +5,7 @@ import pytest
 
 from models.database.inquiry import InquiryModel
 from models.database.story import StoryModel
-from models.database.template import StoryTemplateModel
+from models.database.story_template import StoryTemplateModel
 from models.enums import (InquiryStatus, Priority, StoryCategory, StoryPattern,
                           StoryStatus)
 from seed_data import (create_sample_inquiries, create_sample_stories,
