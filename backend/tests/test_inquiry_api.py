@@ -206,3 +206,31 @@ class TestInquiryAPI:
         response = client.get("/api/inquiries/invalid_id")
 
         assert response.status_code == 422  # Validation error for invalid integer
+
+    def test_get_inquiries_pagination_validation(self, client, clean_database):
+        """Test pagination parameter validation"""
+
+        # Test negative limit
+        response = client.get("/api/inquiries/?limit=-1")
+        assert response.status_code == 422
+        data = response.json()
+        assert "greater than or equal to 1" in str(data["detail"])
+
+        # Test limit too large
+        response = client.get("/api/inquiries/?limit=2000")
+        assert response.status_code == 422
+        data = response.json()
+        assert "less than or equal to 1000" in str(data["detail"])
+
+        # Test negative offset
+        response = client.get("/api/inquiries/?offset=-5")
+        assert response.status_code == 422
+        data = response.json()
+        assert "greater than or equal to 0" in str(data["detail"])
+
+        # Test valid boundary values
+        response = client.get("/api/inquiries/?limit=1&offset=0")
+        assert response.status_code == 200
+
+        response = client.get("/api/inquiries/?limit=1000&offset=0")
+        assert response.status_code == 200

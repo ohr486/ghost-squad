@@ -19,7 +19,9 @@ class InquiryResponse(BaseModel):
     language: str
     timestamp: datetime
     status: InquiryStatus
-    metadata: Dict[str, Any]
+    metadata: Dict[str, Any] = Field(
+        alias="inquiry_metadata", serialization_alias="metadata"
+    )
 
 
 class StoryResponse(BaseModel):
