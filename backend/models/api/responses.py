@@ -11,7 +11,7 @@ from ..schemas import StoryMetadata
 
 
 class InquiryResponse(BaseModel):
-    id: str
+    id: int
     user_id: str
     content: str
     language: str
@@ -21,8 +21,8 @@ class InquiryResponse(BaseModel):
 
 
 class StoryResponse(BaseModel):
-    id: str
-    inquiry_id: str
+    id: int
+    inquiry_id: int
     title: str
     description: str
     category: StoryCategory
@@ -32,21 +32,21 @@ class StoryResponse(BaseModel):
     status: StoryStatus
     assignee: Optional[str] = None
     tags: List[str]
-    dependencies: List[str]
+    dependencies: List[int]
     metadata: StoryMetadata
     created_at: datetime
     updated_at: datetime
 
 
 class StoryGenerationResponse(BaseModel):
-    inquiry_id: str
+    inquiry_id: int
     stories: List[StoryResponse]
     status: str = Field(..., pattern="^(success|partial|failed)$")
     message: Optional[str] = None
 
 
 class GenerationStatusResponse(BaseModel):
-    inquiry_id: str
+    inquiry_id: int
     status: str = Field(..., pattern="^(processing|completed|failed)$")
     progress: int = Field(..., ge=0, le=100)
     message: Optional[str] = None

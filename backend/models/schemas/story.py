@@ -18,8 +18,8 @@ class StoryMetadata(BaseModel):
 
 
 class Story(BaseModel):
-    id: str
-    inquiry_id: str
+    id: int
+    inquiry_id: int
     title: str
     description: str
     category: StoryCategory
@@ -29,7 +29,7 @@ class Story(BaseModel):
     status: StoryStatus
     assignee: Optional[str] = None
     tags: List[str] = Field(default_factory=list)
-    dependencies: List[str] = Field(default_factory=list)  # 他のストーリーID
+    dependencies: List[int] = Field(default_factory=list)  # 他のストーリーID
     metadata: StoryMetadata
     created_at: datetime
     updated_at: datetime

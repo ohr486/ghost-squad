@@ -99,6 +99,26 @@ def check_db():
     """Check database connection and status"""
     print("🔍 Checking database status...")
     
+    # Show database connection info
+    try:
+        from database import get_database_info
+        db_info = get_database_info()
+        
+        print("📊 Database connection info:")
+        if "error" in db_info:
+            print(f"   ❌ Error parsing connection: {db_info['error']}")
+        else:
+            print(f"   - Host: {db_info.get('host', 'N/A')}")
+            print(f"   - Port: {db_info.get('port', 'N/A')}")
+            print(f"   - Database: {db_info.get('database', 'N/A')}")
+            print(f"   - Username: {db_info.get('username', 'N/A')}")
+            print(f"   - Password: {'Set' if db_info.get('password_set') else 'Not set'}")
+            print(f"   - Source: {db_info.get('url_source', 'N/A')}")
+        print()
+    except Exception as e:
+        print(f"⚠️ Could not get database info: {e}")
+        print()
+    
     # Check connection
     if check_database_connection():
         print("✅ Database connection: OK")
@@ -119,7 +139,7 @@ def check_db():
             for table in sorted(tables):
                 print(f"   - {table}")
         else:
-            print("ℹ️  No tables found in database")
+            print("ℹ️ No tables found in database")
             
     except Exception as e:
         print(f"❌ Error checking tables: {e}")

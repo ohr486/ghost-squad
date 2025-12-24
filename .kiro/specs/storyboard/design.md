@@ -63,13 +63,13 @@ graph TB
 interface InquiryService {
   submitInquiry(inquiry: string, userId: string): Promise<InquiryResult>
   getInquiryHistory(userId: string): Promise<Inquiry[]>
-  requestClarification(inquiryId: string, questions: string[]): Promise<void>
-  updateInquiryStatus(inquiryId: string): Promise<void>
-  checkTaskCompletion(inquiryId: string): Promise<boolean>
+  requestClarification(inquiryId: number, questions: string[]): Promise<void>
+  updateInquiryStatus(inquiryId: number): Promise<void>
+  checkTaskCompletion(inquiryId: number): Promise<boolean>
 }
 
 interface InquiryResult {
-  inquiryId: string
+  inquiryId: number
   status: 'processing' | 'needs_clarification' | 'story_working' | 'completed'
   generatedStories?: Story[]
   clarificationQuestions?: string[]
@@ -89,7 +89,7 @@ interface StoryConverter {
 }
 
 interface Story {
-  id: string
+  id: number
   title: string
   description: string
   category: StoryCategory
@@ -128,11 +128,11 @@ enum StoryPattern {
 ```typescript
 interface StoryService {
   getPendingStories(userId: string): Promise<Story[]>
-  updateStory(storyId: string, updates: Partial<Story>): Promise<Story>
-  approveStory(storyId: string): Promise<void>
-  rejectStory(storyId: string, reason?: string): Promise<void>
-  batchApprove(storyIds: string[]): Promise<void>
-  getStoryHistory(storyId: string): Promise<StoryVersion[]>
+  updateStory(storyId: number, updates: Partial<Story>): Promise<Story>
+  approveStory(storyId: number): Promise<void>
+  rejectStory(storyId: number, reason?: string): Promise<void>
+  batchApprove(storyIds: number[]): Promise<void>
+  getStoryHistory(storyId: number): Promise<StoryVersion[]>
 }
 ```
 
@@ -144,7 +144,7 @@ interface StoryService {
 interface ExportService {
   exportToKanban(stories: Story[], targetSystem: KanbanSystem): Promise<ExportResult>
   getSupportedSystems(): KanbanSystem[]
-  trackSyncStatus(storyId: string): Promise<SyncStatus>
+  trackSyncStatus(storyId: number): Promise<SyncStatus>
 }
 
 interface KanbanSystem {
@@ -170,11 +170,25 @@ interface NotificationService {
 
 ## データモデル
 
+### ID型について
+
+**重要な設計決定**: システムのすべてのエンティティ（Inquiry、Story、StoryTemplate）のIDフィールドは、パフォーマンスと統合性を考慮してBigInteger（64ビット整数）を使用します。
+
+- **利点**:
+  - データベースインデックスの効率性向上
+  - 結合処理の高速化
+  - ストレージ効率の改善（16バイト → 8バイト）
+  - 順序性の保証（作成順序の把握が容易）
+  - 外部システムとの統合の簡素化
+
+- **自動インクリメント**: すべてのIDは自動的に生成され、1から開始
+- **範囲**: 1から9,223,372,036,854,775,807まで（実用上無制限）
+
 ### 問い合わせモデル
 
 ```typescript
 interface Inquiry {
-  id: string
+  id: number
   userId: string
   content: string
   language: 'ja' | 'en'
@@ -201,8 +215,8 @@ enum InquiryStatus {
 
 ```typescript
 interface Story {
-  id: string
-  inquiryId: string
+  id: number
+  inquiryId: number
   title: string
   description: string
   category: StoryCategory
@@ -212,7 +226,7 @@ interface Story {
   status: StoryStatus
   assignee?: string
   tags: string[]
-  dependencies: string[] // 他のストーリーID
+  dependencies: number[] // 他のストーリーID
   metadata: StoryMetadata
   createdAt: Date
   updatedAt: Date
@@ -254,7 +268,7 @@ interface StoryMetadata {
 
 ```typescript
 interface StoryTemplate {
-  id: string
+  id: number
   name: string
   pattern: StoryPattern
   fields: TemplateField[]

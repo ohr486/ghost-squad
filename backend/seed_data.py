@@ -1,7 +1,6 @@
 """
 Database seed data for development and testing
 """
-import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List
 
@@ -116,8 +115,7 @@ def create_sample_stories(inquiries: List[InquiryModel]) -> List[StoryModel]:
         )
         stories.append(story2)
         
-        # Set dependency for second story on first story
-        story2.dependencies = [str(story1.id)]
+        # Set dependency for second story on first story (will be set after flush)
     
     if len(inquiries) >= 2:
         # Story for second inquiry (bug fix)
@@ -303,6 +301,11 @@ def seed_data():
         print("📋 Creating sample stories...")
         stories = create_sample_stories(inquiries)
         db.add_all(stories)
+        db.flush()  # Flush to get story IDs
+        
+        # Set dependencies after stories have IDs
+        if len(stories) >= 2:
+            stories[1].dependencies = [stories[0].id]  # Second story depends on first
         
         print("📄 Creating sample templates...")
         templates = create_sample_templates()

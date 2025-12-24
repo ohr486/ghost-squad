@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class Inquiry(BaseModel):
-    id: str
+    id: int
     user_id: str
     content: str
     language: str = Field(default="ja", pattern="^(ja|en)$")
@@ -23,7 +23,7 @@ class Inquiry(BaseModel):
 
 
 class InquiryResult(BaseModel):
-    inquiry_id: str
+    inquiry_id: int
     status: str = Field(
         ..., pattern="^(processing|needs_clarification|task_working|completed)$"
     )

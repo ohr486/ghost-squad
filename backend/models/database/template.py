@@ -1,19 +1,18 @@
 """
 Story template database model (renamed from TaskTemplateModel)
 """
-import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Boolean, Column, DateTime, Float, String
 
 from .base import Base
-from .types import UUID
+from .types import BigIntegerID
 
 
 class StoryTemplateModel(Base):
     __tablename__ = "story_templates"
 
-    id = Column(UUID(), primary_key=True, default=uuid.uuid4)  # type: ignore
+    id = Column(BigIntegerID(), primary_key=True, autoincrement=True)  # type: ignore
     name = Column(String(255), nullable=False)
     pattern = Column(String(50), nullable=False)
     fields = Column(JSON, nullable=False, default=list)  # List[TemplateField]

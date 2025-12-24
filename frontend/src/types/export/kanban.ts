@@ -25,13 +25,13 @@ export interface KanbanSystem {
 
 export interface ExportResult {
   success: boolean;
-  exportedStories: string[]; // Story IDs
+  exportedStories: number[]; // Story IDs
   errors?: string[];
-  externalIds?: Record<string, string>; // storyId -> externalTaskId mapping
+  externalIds?: Record<number, string>; // storyId -> externalTaskId mapping
 }
 
 export interface SyncStatus {
-  storyId: string;
+  storyId: number;
   externalTaskId?: string; // Kanban task ID
   status: "pending" | "synced" | "failed";
   lastSyncAt?: Date;

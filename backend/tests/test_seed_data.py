@@ -186,7 +186,8 @@ class TestSeedData:
 
         # Verify session operations
         mock_session.add_all.assert_called()
-        mock_session.flush.assert_called_once()
+        # flush() is called twice: once after inquiries, once after stories
+        assert mock_session.flush.call_count == 2
         mock_session.commit.assert_called_once()
         mock_session.close.assert_called_once()
 

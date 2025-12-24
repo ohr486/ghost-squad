@@ -60,6 +60,15 @@ def clean_database(test_session):
         test_session.execute(text("DELETE FROM stories"))
         test_session.execute(text("DELETE FROM inquiries"))
         test_session.execute(text("DELETE FROM story_templates"))
+
+        # Reset SQLite autoincrement sequences
+        test_session.execute(
+            text(
+                "DELETE FROM sqlite_sequence WHERE name IN "
+                "('stories', 'inquiries', 'story_templates')"
+            )
+        )
+
         test_session.commit()
     except Exception:
         # If direct SQL fails, use ORM approach

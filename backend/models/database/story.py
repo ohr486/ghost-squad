@@ -1,7 +1,6 @@
 """
 Story database model (renamed from TaskModel to avoid confusion with Kanban tasks)
 """
-import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, String, Text
@@ -9,15 +8,15 @@ from sqlalchemy.orm import relationship
 
 from ..enums import StoryStatus
 from .base import Base
-from .types import UUID
+from .types import BigIntegerID
 
 
 class StoryModel(Base):
     __tablename__ = "stories"
 
-    id = Column(UUID(), primary_key=True, default=uuid.uuid4)  # type: ignore
+    id = Column(BigIntegerID(), primary_key=True, autoincrement=True)  # type: ignore
     inquiry_id = Column(
-        UUID(), ForeignKey("inquiries.id"), nullable=False
+        BigIntegerID(), ForeignKey("inquiries.id"), nullable=False
     )  # type: ignore
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=False)

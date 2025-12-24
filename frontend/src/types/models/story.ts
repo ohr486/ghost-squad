@@ -12,8 +12,8 @@ export interface StoryMetadata {
 }
 
 export interface Story {
-  id: string;
-  inquiryId: string;
+  id: number;
+  inquiryId: number;
   title: string;
   description: string;
   category: StoryCategory;
@@ -23,7 +23,7 @@ export interface Story {
   status: StoryStatus;
   assignee?: string;
   tags: string[];
-  dependencies: string[]; // 他のストーリーID
+  dependencies: number[]; // 他のストーリーID
   metadata: StoryMetadata;
   createdAt: Date;
   updatedAt: Date;

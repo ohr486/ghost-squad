@@ -5,7 +5,7 @@
 export PIP_ROOT_USER_ACTION=ignore
 PIP_ENV_VARS = -e PIP_ROOT_USER_ACTION=ignore
 
-.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset db-connect db-tables db-data clean logs logs-backend logs-frontend logs-db status disk-usage docker-cleanup volume-list volume-cleanup volume-cleanup-force
+.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset db-reset-migrations db-connect db-tables db-data clean logs logs-backend logs-frontend logs-db status disk-usage docker-cleanup volume-list volume-cleanup volume-cleanup-force
 
 # Default target
 help:
@@ -42,6 +42,7 @@ help:
 	@echo "  make db-status      - データベース状態確認 (Check database status)"
 	@echo "  make db-seed        - テストデータ投入 (Seed test data)"
 	@echo "  make db-reset       - データベースリセット (Reset database)"
+	@echo "  make db-reset-migrations - マイグレーション履歴リセット (Reset migration history)"
 	@echo "  make db-connect     - データベースに直接接続 (Connect to database directly)"
 	@echo "  make db-tables      - データベース内のテーブル一覧表示 (List database tables)"
 	@echo "  make db-data        - データベース内のデータ表示 (Show database data)"
@@ -66,14 +67,14 @@ setup:
 	@command -v docker-compose >/dev/null 2>&1 || { echo "❌ Docker Compose is required but not installed. Please install Docker Compose first."; exit 1; }
 	@echo "✅ Prerequisites check passed"
 	@echo "📁 Creating .env file from template..."
-	@if [ ! -f .env ]; then cp .env.example .env && echo "✅ .env file created from template"; else echo "ℹ️  .env file already exists"; fi
+	@if [ ! -f .env ]; then cp .env.example .env && echo "✅ .env file created from template"; else echo "ℹ️ .env file already exists"; fi
 	@echo "🐳 Building Docker containers..."
 	docker-compose build
 	@echo "📦 Installing backend dependencies..."
 	docker-compose run --rm $(PIP_ENV_VARS) backend pip install -r requirements.txt
 	@echo "📦 Installing frontend dependencies..."
 	docker-compose run --rm frontend npm install
-	@echo "🗄️  Setting up database..."
+	@echo "🗄️ Setting up database..."
 	$(MAKE) db-migrate
 	@echo "🌱 Seeding initial data..."
 	$(MAKE) db-seed
@@ -84,7 +85,7 @@ dev:
 	@echo "🚀 Starting development servers in background..."
 	@echo "📊 Backend API will be available at: http://localhost:8000"
 	@echo "🌐 Frontend will be available at: http://localhost:3000"
-	@echo "🗄️  Database will be available at: localhost:5432"
+	@echo "🗄️ Database will be available at: localhost:5432"
 	@echo ""
 	docker-compose up -d
 	@echo "✅ All services started in background"
@@ -113,7 +114,7 @@ test-backend:
 	@if [ -d "backend/tests" ]; then \
 		docker-compose run --rm backend python -m pytest tests/ -v --cov=models --cov-report=term-missing --cov-report=html; \
 	else \
-		echo "ℹ️  No tests directory found. Create backend/tests/ directory and add test files."; \
+		echo "ℹ️ No tests directory found. Create backend/tests/ directory and add test files."; \
 	fi
 
 # フロントエンドテスト (Run frontend tests)
@@ -136,7 +137,7 @@ lint-backend:
 	fi
 	@echo "🔍 Running mypy type checking..."
 	docker-compose run --rm backend mypy models/ main.py
-	@echo "🛡️  Running bandit security check..."
+	@echo "🛡️ Running bandit security check..."
 	docker-compose run --rm backend bandit -r models/ -f json
 
 # フロントエンドコード品質チェック (Run frontend linting)
@@ -177,7 +178,7 @@ format-frontend:
 
 # データベースマイグレーション (Run database migrations)
 db-migrate:
-	@echo "🗄️  Running database migrations..."
+	@echo "🗄️ Running database migrations..."
 	@echo "🚀 Starting database container..."
 	docker-compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
@@ -204,7 +205,7 @@ db-migrate:
 		docker-compose run --rm backend alembic init alembic; \
 		echo "⚙️  Configuring Alembic database URL..."; \
 		docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini; \
-		echo "ℹ️  Alembic initialized. Creating initial migration..."; \
+		echo "ℹ️ Alembic initialized. Creating initial migration..."; \
 		docker-compose run --rm backend alembic revision --autogenerate -m "Initial migration"; \
 	else \
 		echo "✅ Alembic already initialized"; \
@@ -213,7 +214,7 @@ db-migrate:
 	@if docker-compose run --rm backend alembic current >/dev/null 2>&1; then \
 		docker-compose run --rm backend alembic upgrade head; \
 	else \
-		echo "ℹ️  No migrations found. Creating initial migration..."; \
+		echo "ℹ️ No migrations found. Creating initial migration..."; \
 		docker-compose run --rm backend alembic revision --autogenerate -m "Initial migration"; \
 		docker-compose run --rm backend alembic upgrade head; \
 	fi
@@ -249,11 +250,11 @@ db-seed:
 # データベースリセット (Reset database)
 db-reset:
 	@echo "🔄 Resetting database..."
-	@echo "⚠️  This will delete all data. Press Ctrl+C to cancel, or wait 5 seconds to continue..."
+	@echo "⚠️ This will delete all data. Press Ctrl+C to cancel, or wait 5 seconds to continue..."
 	@sleep 5
 	@echo "🛑 Stopping database container..."
 	docker-compose stop db
-	@echo "🗑️  Removing database volume..."
+	@echo "🗑️ Removing database volume..."
 	docker-compose down -v
 	@echo "🚀 Starting fresh database..."
 	docker-compose up -d db
@@ -281,6 +282,34 @@ db-reset:
 	$(MAKE) db-seed
 	@echo "✅ Database reset completed"
 
+# マイグレーション履歴リセット (Reset migration history)
+db-reset-migrations:
+	@echo "🔄 Resetting migration history to use unified schema..."
+	@echo "🚀 Starting database container..."
+	docker-compose up -d db
+	@echo "⏳ Waiting for database to be ready..."
+	@sleep 3
+	@max_attempts=10; \
+	attempt=1; \
+	while [ $attempt -le $max_attempts ]; do \
+		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+			echo "✅ Database is ready!"; \
+			break; \
+		fi; \
+		echo "   Attempt $attempt/$max_attempts - Database not ready, waiting 2s..."; \
+		sleep 2; \
+		attempt=$((attempt + 1)); \
+	done; \
+	if [ $attempt -gt $max_attempts ]; then \
+		echo "❌ Database connection timeout after $max_attempts attempts!"; \
+		exit 1; \
+	fi
+	@echo "🗑️ Dropping existing tables..."
+	docker-compose run --rm backend python -c "from database import engine; from models.database.base import Base; Base.metadata.drop_all(engine); print('Tables dropped')"
+	@echo "📊 Running unified migration..."
+	docker-compose run --rm backend alembic upgrade head
+	@echo "✅ Migration history reset completed"
+
 # Alembic初期化 (Initialize Alembic)
 db-init:
 	@echo "🔧 Initializing Alembic configuration..."
@@ -290,7 +319,7 @@ db-init:
 	@sleep 5
 	@echo "🔍 Checking existing Alembic setup..."
 	@if [ -f backend/alembic.ini ] || [ -d backend/alembic ]; then \
-		echo "⚠️  Alembic already exists. Cleaning up first..."; \
+		echo "⚠️ Alembic already exists. Cleaning up first..."; \
 		rm -rf backend/alembic backend/alembic.ini; \
 		echo "🧹 Cleaned up existing Alembic files"; \
 	fi
@@ -299,7 +328,7 @@ db-init:
 	@echo "⚙️  Configuring Alembic database URL..."
 	docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini
 	@echo "✅ Alembic initialization completed"
-	@echo "ℹ️  Next step: Create your first migration with 'make db-revision'"
+	@echo "ℹ️ Next step: Create your first migration with 'make db-revision'"
 
 # 新しいマイグレーション作成 (Create new migration)
 db-revision:
@@ -354,10 +383,10 @@ db-status:
 	@echo ""
 	@echo "📊 Migration Status:"
 	@if [ -f backend/alembic.ini ] && [ -d backend/alembic ]; then \
-		docker-compose run --rm backend alembic current 2>/dev/null || echo "  ℹ️  No migrations applied yet"; \
+		docker-compose run --rm backend alembic current 2>/dev/null || echo "  ℹ️ No migrations applied yet"; \
 		echo ""; \
 		echo "📋 Available migrations:"; \
-		docker-compose run --rm backend alembic history 2>/dev/null || echo "  ℹ️  No migrations created yet"; \
+		docker-compose run --rm backend alembic history 2>/dev/null || echo "  ℹ️ No migrations created yet"; \
 	else \
 		echo "  ❌ Alembic not initialized"; \
 	fi
@@ -367,7 +396,7 @@ clean:
 	@echo "🧹 Cleaning up development environment..."
 	@echo "🛑 Stopping all containers..."
 	docker-compose down
-	@echo "🗑️  Removing containers and networks..."
+	@echo "🗑️ Removing containers and networks..."
 	docker-compose down --remove-orphans
 	@echo "🧹 Removing unused Docker images..."
 	docker image prune -f
@@ -464,7 +493,7 @@ docker-cleanup:
 	@echo "  3. Volume cleanup (⚠️  DESTRUCTIVE)"
 	@echo "     - All of the above"
 	@echo "     - ALL unused volumes (including named volumes)"
-	@echo "     - ⚠️  This will delete database data if containers are stopped!"
+	@echo "     - ⚠️ This will delete database data if containers are stopped!"
 	@echo ""
 	@echo "  4. Nuclear cleanup (☢️  VERY DESTRUCTIVE)"
 	@echo "     - Everything above"

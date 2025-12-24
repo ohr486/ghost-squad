@@ -24,7 +24,7 @@ class StoryUpdateRequest(BaseModel):
     deadline: Optional[datetime] = None
     assignee: Optional[str] = None
     tags: Optional[List[str]] = None
-    dependencies: Optional[List[str]] = None
+    dependencies: Optional[List[int]] = None
 
 
 class RejectRequest(BaseModel):

@@ -12,18 +12,31 @@
 
 1. **InquiryModel** (`inquiries` テーブル)
    - ユーザーからの問い合わせ・リクエストを保存
-   - フィールド: id, user_id, content, language, timestamp, status, metadata
+   - フィールド: id (BigInteger), user_id, content, language, timestamp, status, metadata
    - タイムスタンプ: UTC timezone-aware datetime使用
 
 2. **StoryModel** (`stories` テーブル)
    - 問い合わせから生成されたストーリーを保存
-   - フィールド: id, inquiry_id, title, description, category, priority, estimated_effort, deadline, status, assignee, tags, dependencies, metadata, timestamps
+   - フィールド: id (BigInteger), inquiry_id (BigInteger), title, description, category, priority, estimated_effort, deadline, status, assignee, tags, dependencies, metadata, timestamps
    - タイムスタンプ: UTC timezone-aware datetime使用
 
 3. **StoryTemplateModel** (`story_templates` テーブル)
    - パターン認識用のストーリーテンプレートを保存
-   - フィールド: id, name, pattern, fields, checklist, default_estimate, is_custom, user_id, timestamps
+   - フィールド: id (BigInteger), name, pattern, fields, checklist, default_estimate, is_custom, user_id, timestamps
    - タイムスタンプ: UTC timezone-aware datetime使用
+
+### ID型について
+
+**重要な変更**: バージョン2.0以降、すべてのモデルのIDフィールドはUUIDからBigInteger（64ビット整数）に変更されました。
+
+- **利点**:
+  - パフォーマンスの向上（インデックス効率、結合処理の高速化）
+  - ストレージ効率の改善（16バイト → 8バイト）
+  - 順序性の保証（作成順序の把握が容易）
+  - 外部システムとの統合の簡素化
+
+- **自動インクリメント**: すべてのIDフィールドは自動インクリメントされます
+- **範囲**: 1から9,223,372,036,854,775,807まで（64ビット符号付き整数）
 
 ### タイムゾーン対応
 
@@ -37,11 +50,40 @@
 
 データベース接続は `backend/database.py` で管理されます：
 
-- **接続文字列**: 環境変数から構築（`DATABASE_URL` または個別の `DATABASE_*` 変数）
+- **接続文字列の優先順位**:
+  1. `DATABASE_URL` 環境変数（完全な接続文字列）
+  2. 個別の `DATABASE_*` 環境変数から構築
+  3. 開発用デフォルト値
 - **セッション管理**: 依存性注入によるSQLAlchemy SessionLocal
 - **ヘルスチェック**: 組み込み接続確認機能
+- **デバッグ情報**: 接続情報の表示機能（パスワードは除く）
 
-接続文字列の形式: `postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}`
+### 接続文字列の構築
+
+システムは以下の優先順位で接続文字列を決定します：
+
+1. **完全な接続文字列** (最優先):
+   ```bash
+   DATABASE_URL=postgresql://username:password@host:port/database
+   ```
+
+2. **個別環境変数から構築**:
+   ```bash
+   DATABASE_HOST=db                        # データベースホスト
+   DATABASE_PORT=5432                      # データベースポート  
+   DATABASE_NAME=your_database_name        # データベース名
+   DATABASE_USER=your_username             # データベースユーザー
+   DATABASE_PASSWORD=your_password         # データベースパスワード
+   ```
+   
+   これらの変数から自動的に接続文字列を構築: `postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}`
+
+3. **開発用デフォルト値**:
+   - ホスト: `db`
+   - ポート: `5432`
+   - データベース名: `gs_db`
+   - ユーザー名: `gs_user`
+   - パスワード: `gs_password`
 
 ## マイグレーション管理
 
@@ -52,6 +94,17 @@ Alembicはモデルと連携するよう設定されています：
 - **設定ファイル**: `backend/alembic.ini`
 - **環境設定**: `backend/alembic/env.py` (全モデルをインポート)
 - **マイグレーション**: `backend/alembic/versions/`
+
+### 統合マイグレーション
+
+開発段階では、複数のマイグレーションファイルを一つの統合ファイルにまとめています：
+
+- **統合マイグレーション**: `001_initial_schema_with_bigint_ids.py`
+- **含まれる変更**:
+  - BigInteger IDを使用した初期スキーマ作成
+  - 適切なserver_defaultの設定
+  - 外部キー制約の設定
+  - JSON列のデフォルト値設定
 
 ### 利用可能なコマンド
 
@@ -72,6 +125,9 @@ make db-seed
 
 # データベースリセット（破壊的操作）
 make db-reset
+
+# マイグレーション履歴リセット（開発用）
+make db-reset-migrations
 
 # Alembic初期化（必要に応じて）
 make db-init
@@ -175,18 +231,31 @@ python manage_db.py reset    # データベースのリセット
 
 ## 環境変数
 
-主要なデータベース環境変数（`.env`ファイルで設定）：
+データベース接続用の環境変数（`.env`ファイルで設定）：
+
+### 方法1: 完全な接続文字列（推奨）
 
 ```bash
-# 完全な接続文字列（優先）
+# 完全な接続文字列（最優先）
 DATABASE_URL=postgresql://username:password@host:port/database
+```
 
-# または個別設定
+### 方法2: 個別設定
+
+```bash
+# 個別環境変数（DATABASE_URLが未設定の場合に使用）
 DATABASE_HOST=db                        # データベースホスト
 DATABASE_PORT=5432                      # データベースポート
 DATABASE_NAME=your_database_name        # データベース名
 DATABASE_USER=your_username             # データベースユーザー
 DATABASE_PASSWORD=your_password         # データベースパスワード
+```
+
+### その他のオプション
+
+```bash
+# SQLクエリのログ出力（開発用）
+DATABASE_ECHO=false                     # true にするとSQLクエリをログ出力
 ```
 
 **セキュリティ注意事項**:
@@ -303,4 +372,73 @@ make db-status
 
 # 設定ファイルの確認
 cat .env.example  # テンプレート
+```
+
+## ID型変更に関する重要な注意事項
+
+### 統合マイグレーション
+
+開発段階では、複数のマイグレーションファイルを一つの統合ファイル（`001_initial_schema_with_bigint_ids.py`）にまとめています。これにより：
+
+- **シンプルな管理**: 単一ファイルでスキーマ全体を管理
+- **一貫性の保証**: BigInteger IDと適切なデフォルト値を最初から設定
+- **開発効率**: 複雑なマイグレーション履歴を避けて開発に集中
+
+### マイグレーション実行前の準備
+
+新しい統合マイグレーションを使用する場合：
+
+1. **既存データベースのリセット**:
+   ```bash
+   # 完全リセット（データ削除）
+   make db-reset
+   
+   # または、マイグレーション履歴のみリセット
+   make db-reset-migrations
+   ```
+
+2. **開発環境での確認**:
+   ```bash
+   # 統合マイグレーションの適用
+   make db-migrate
+   
+   # 新しいID型でサンプルデータを投入
+   make db-seed
+   ```
+
+### 本番環境への移行
+
+本番環境では、既存のUUIDデータがある場合：
+
+1. **データバックアップ**: 必ず事前にバックアップを取得
+2. **段階的移行**: データエクスポート → スキーマ変更 → データインポート
+3. **ダウンタイム計画**: ID型変更は破壊的変更のため、メンテナンス時間が必要
+
+### データ移行について
+
+既存のUUIDデータがある場合、以下の方法でデータを移行できます：
+
+1. **データエクスポート**: 既存データをJSON形式でエクスポート
+2. **マイグレーション実行**: ID型をBigIntegerに変更
+3. **データインポート**: 新しいID型でデータを再インポート
+
+### 外部システムとの統合
+
+外部システム（Kanbanツールなど）との統合がある場合：
+
+- 外部IDマッピングテーブルの更新が必要
+- APIクライアントでのID型変更対応
+- フロントエンドでの型定義更新（string → number）
+
+### ロールバック手順
+
+問題が発生した場合のロールバック：
+
+```bash
+# マイグレーションのロールバック
+cd backend
+python -m alembic downgrade -1
+
+# または特定のリビジョンまでロールバック
+python -m alembic downgrade 88d971444af5
 ```
