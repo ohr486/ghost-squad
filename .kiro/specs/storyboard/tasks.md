@@ -29,18 +29,45 @@
     - 開発用ボリュームマウント設定
     - _要件: 9.1, 9.3_
 
-  - [ ] 2.2 Makefileによる開発ツール統合
-    - `make setup`: 初期環境構築
-    - `make dev`: 開発サーバー起動
-    - `make test`: 全テスト実行
-    - `make test-backend`: バックエンドテスト
-    - `make test-frontend`: フロントエンドテスト
-    - `make lint`: コード品質チェック
-    - `make format`: コードフォーマット
-    - `make db-migrate`: データベースマイグレーション
-    - `make db-seed`: テストデータ投入
-    - `make db-reset`: データベースリセット
-    - `make clean`: 環境クリーンアップ
+  - [x] 2.2 Makefileによる開発ツール統合
+    - **基本コマンド:**
+      - `make setup`: 初期環境構築
+      - `make clean`: 環境クリーンアップ
+    - **開発サーバー管理:**
+      - `make dev`: 開発サーバー起動（バックグラウンド）
+      - `make stop`: 開発サーバー停止
+      - `make restart`: 開発サーバー再起動
+    - **テスト実行:**
+      - `make test`: 全テスト実行
+      - `make test-backend`: バックエンドテスト
+      - `make test-frontend`: フロントエンドテスト
+    - **コード品質チェック:**
+      - `make lint`: コード品質チェック
+      - `make lint-backend`: バックエンドコード品質チェック
+      - `make lint-frontend`: フロントエンドコード品質チェック
+    - **コードフォーマット:**
+      - `make format`: コードフォーマット
+      - `make format-backend`: バックエンドコードフォーマット
+      - `make format-frontend`: フロントエンドコードフォーマット
+    - **データベース管理:**
+      - `make db-migrate`: データベースマイグレーション
+      - `make db-init`: Alembic初期化
+      - `make db-revision`: 新しいマイグレーション作成
+      - `make db-status`: データベース状態確認
+      - `make db-seed`: テストデータ投入
+      - `make db-reset`: データベースリセット
+    - **モニタリング:**
+      - `make status`: 開発環境状態確認
+      - `make logs`: 全サービスログ表示
+      - `make logs-backend`: バックエンドログ表示
+      - `make logs-frontend`: フロントエンドログ表示
+      - `make logs-db`: データベースログ表示
+    - **実装済み機能:**
+      - pip警告抑制（PIP_ROOT_USER_ACTION=ignore）
+      - Alembic自動初期化
+      - バックグラウンドサーバー起動
+      - 包括的なヘルプシステム
+      - 日本語コマンド説明
     - _要件: 全般_
 
   - [ ] 2.3 開発環境設定ファイル
