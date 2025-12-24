@@ -29,14 +29,18 @@
     - 開発用ボリュームマウント設定
     - _要件: 9.1, 9.3_
 
-  - [ ] 2.2 Makefileによる開発ツール統合
+  - [x] 2.2 Makefileによる開発ツール統合
     - `make setup`: 初期環境構築
     - `make dev`: 開発サーバー起動
     - `make test`: 全テスト実行
     - `make test-backend`: バックエンドテスト
     - `make test-frontend`: フロントエンドテスト
     - `make lint`: コード品質チェック
+    - `make lint-backend`: バックエンドコード品質チェック
+    - `make lint-frontend`: フロントエンドコード品質チェック
     - `make format`: コードフォーマット
+    - `make format-backend`: バックエンドコードフォーマット
+    - `make format-frontend`: フロントエンドコードフォーマット
     - `make db-migrate`: データベースマイグレーション
     - `make db-seed`: テストデータ投入
     - `make db-reset`: データベースリセット
