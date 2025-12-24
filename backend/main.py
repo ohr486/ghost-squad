@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
@@ -28,50 +28,40 @@ async def lifespan(app: FastAPI):
 # FastAPIアプリケーションの作成
 app = FastAPI(
     title="Ghost Squad API",
-    description="GhostSquadのバックエンドAPI",
+    description="GhostSquadのバックエンドAPI - ストーリーボード機能",
     version="0.0.1",
     lifespan=lifespan,
 )
 
-# CORS設定（フロントエンドからのアクセスを許可）
+# CORS設定（フロントエンド連携用）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # フロントエンドのURL
+    allow_origins=[
+        "http://localhost:3000",  # React開発サーバー
+        "http://127.0.0.1:3000",  # 代替ローカルホスト
+        "http://frontend:3000",   # Docker内部通信
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
-
-# ルートエンドポイント
-@app.get("/")
-async def root():
-    return {"message": "Hello, GhostSquad"}
-
-
-# ヘルスチェックエンドポイント
-@app.get("/health")
-async def health_check():
-    db_status = check_database_connection()
-    return {
-        "status": "healthy" if db_status else "unhealthy",
-        "service": "ghost-squad-backend",
-        "database": "connected" if db_status else "disconnected",
-    }
+# APIルーター設定（/api プレフィックス）
+api_router = APIRouter(prefix="/api", tags=["api"])
 
 
 # APIの基本情報エンドポイント
-@app.get("/api/info")
+@api_router.get("/info")
 async def api_info():
     return {
         "name": "Ghost Squad API",
         "version": "0.0.1",
-        "description": "GhostSquadのバックエンドAPI",
+        "description": "GhostSquadのストーリーボード機能API",
     }
 
 
 # データベーステストエンドポイント
-@app.get("/api/db-test")
+@api_router.get("/db-test")
 async def db_test(db: Session = Depends(get_db)):
     """データベース接続とデータ確認用のテストエンドポイント"""
     from models.database.inquiry import InquiryModel
@@ -89,3 +79,24 @@ async def db_test(db: Session = Depends(get_db)):
             "error": str(e),
             "message": "Database connection failed",
         }
+
+
+# APIルーターをアプリケーションに追加
+app.include_router(api_router)
+
+
+# ルートエンドポイント
+@app.get("/")
+async def root():
+    return {"message": "Hello, GhostSquad"}
+
+
+# ヘルスチェックエンドポイント
+@app.get("/health")
+async def health_check():
+    db_status = check_database_connection()
+    return {
+        "status": "healthy" if db_status else "unhealthy",
+        "service": "ghost-squad-backend",
+        "database": "connected" if db_status else "disconnected",
+    }
