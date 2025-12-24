@@ -4,20 +4,24 @@ API response models
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from ..enums import InquiryStatus, Priority, StoryCategory, StoryStatus
 from ..schemas import StoryMetadata
 
 
 class InquiryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: str
     content: str
     language: str
     timestamp: datetime
     status: InquiryStatus
-    metadata: Dict[str, Any]
+    metadata: Dict[str, Any] = Field(
+        alias="inquiry_metadata", serialization_alias="metadata"
+    )
 
 
 class StoryResponse(BaseModel):

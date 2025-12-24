@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
+from api.inquiries import router as inquiry_router
 from database import check_database_connection, get_db
 
 
@@ -47,11 +48,14 @@ app.add_middleware(
 )
 
 # APIルーター設定（/api プレフィックス）
-api_router = APIRouter(prefix="/api", tags=["api"])
+api_router = APIRouter(prefix="/api")
+
+# Include inquiry router
+api_router.include_router(inquiry_router)
 
 
 # APIの基本情報エンドポイント
-@api_router.get("/info")
+@api_router.get("/info", tags=["system"])
 async def api_info():
     return {
         "name": "Ghost Squad API",
@@ -61,7 +65,7 @@ async def api_info():
 
 
 # データベーステストエンドポイント
-@api_router.get("/db-test")
+@api_router.get("/db-test", tags=["system"])
 async def db_test(db: Session = Depends(get_db)):
     """データベース接続とデータ確認用のテストエンドポイント"""
     from models.database.inquiry import InquiryModel

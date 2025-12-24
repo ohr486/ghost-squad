@@ -1,33 +1,35 @@
 # データベースセットアップと管理
 
-このドキュメントは、ストーリーボードシステムのデータベースセットアップと管理について説明します。
+このドキュメントは、Ghost Squadのストーリーボードシステムのデータベースセットアップと管理について説明します。
 
 ## 概要
 
-システムはPostgreSQLを主要データベースとして使用し、SQLAlchemy ORMとAlembicによるマイグレーション管理を行います。
+システムはPostgreSQLを主要データベースとして使用し、SQLAlchemy ORMとAlembicによるマイグレーション管理を行います。現在、問い合わせ管理機能が実装済みで、ストーリー管理機能は開発中です。
 
 ## データベースモデル
 
-### コアモデル
+### 実装済みコアモデル
 
-1. **InquiryModel** (`inquiries` テーブル)
+1. **InquiryModel** (`inquiries` テーブル) - **実装済み**
    - ユーザーからの問い合わせ・リクエストを保存
-   - フィールド: id (BigInteger), user_id, content, language, timestamp, status, metadata
+   - フィールド: id (BigInteger), user_id, content, language, timestamp, status, inquiry_metadata
    - タイムスタンプ: UTC timezone-aware datetime使用
+   - API統合: 完全実装済み（作成・取得・一覧）
 
-2. **StoryModel** (`stories` テーブル)
+2. **StoryModel** (`stories` テーブル) - **実装済み（API開発中）**
    - 問い合わせから生成されたストーリーを保存
-   - フィールド: id (BigInteger), inquiry_id (BigInteger), title, description, category, priority, estimated_effort, deadline, status, assignee, tags, dependencies, metadata, timestamps
+   - フィールド: id (BigInteger), inquiry_id (BigInteger), title, description, category, priority, estimated_effort, deadline, status, assignee, tags, dependencies, story_metadata, timestamps
    - タイムスタンプ: UTC timezone-aware datetime使用
+   - 関係: InquiryModelとの外部キー関係
 
-3. **StoryTemplateModel** (`story_templates` テーブル)
+3. **StoryTemplateModel** (`story_templates` テーブル) - **実装済み（機能開発中）**
    - パターン認識用のストーリーテンプレートを保存
    - フィールド: id (BigInteger), name, pattern, fields, checklist, default_estimate, is_custom, user_id, timestamps
    - タイムスタンプ: UTC timezone-aware datetime使用
 
 ### ID型について
 
-**重要な変更**: バージョン2.0以降、すべてのモデルのIDフィールドはUUIDからBigInteger（64ビット整数）に変更されました。
+**重要な設計決定**: Ghost Squad 2.0以降、すべてのモデルのIDフィールドはBigInteger（64ビット整数）を使用します。
 
 - **利点**:
   - パフォーマンスの向上（インデックス効率、結合処理の高速化）
@@ -37,6 +39,7 @@
 
 - **自動インクリメント**: すべてのIDフィールドは自動インクリメントされます
 - **範囲**: 1から9,223,372,036,854,775,807まで（64ビット符号付き整数）
+- **実装状況**: 統合マイグレーション（`initial_schema_for_storyboard.py`）で実装済み
 
 ### タイムゾーン対応
 
@@ -162,20 +165,33 @@ make db-init
 
 ### サンプルデータの内容
 
-1. **問い合わせ**:
-   - ユーザー登録機能のリクエスト
-   - バグ報告（緊急）
-   - パフォーマンス調査リクエスト
+現在のシステムには以下のサンプルデータが含まれています：
 
-2. **ストーリー**:
+1. **問い合わせ（4件）**:
+   - ユーザー登録機能のリクエスト（完了済み）
+   - バグ報告（緊急・処理中）
+   - パフォーマンス調査リクエスト（処理中）
+   - 認証機能追加リクエスト（受付済み）
+
+2. **ストーリー（3件）**:
    - APIエンドポイント実装
    - UIフォーム実装
    - バグ修正タスク
 
-3. **テンプレート**:
+3. **テンプレート（3件）**:
    - API開発テンプレート
    - バグ修正テンプレート
    - 調査テンプレート
+
+**データ確認方法**:
+```bash
+# 現在のデータを確認
+make db-data
+
+# 特定のテーブルを確認
+make db-connect
+# 接続後: SELECT * FROM inquiries;
+```
 
 ## データベース管理スクリプト
 
@@ -204,6 +220,10 @@ python manage_db.py reset    # データベースのリセット
 - **ヘルスチェック**: `GET /health` - データベース状態を含む
 - **テストエンドポイント**: `GET /api/db-test` - データアクセスの確認
 - **依存性注入**: ルート用の `get_db()` 関数
+- **実装済みAPI**:
+  - `POST /api/inquiries` - 問い合わせ作成
+  - `GET /api/inquiries` - 問い合わせ一覧（ページネーション対応）
+  - `GET /api/inquiries/{id}` - 特定問い合わせ取得
 
 ## 開発ワークフロー
 
