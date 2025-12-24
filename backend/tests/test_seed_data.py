@@ -224,11 +224,7 @@ class TestSeedData:
     @patch("seed_data.create_sample_stories")
     @patch("seed_data.create_sample_templates")
     def test_seed_data_calls_creation_functions(
-        self,
-        mock_templates,
-        mock_stories,
-        mock_inquiries,
-        mock_session_local
+        self, mock_templates, mock_stories, mock_inquiries, mock_session_local
     ):
         """Test that seed_data calls all creation functions"""
         mock_session = MagicMock(spec=Session)

@@ -8,8 +8,8 @@ from models.database.story import StoryModel
 from models.database.template import StoryTemplateModel
 from models.enums import (InquiryStatus, Priority, StoryCategory, StoryPattern,
                           StoryStatus)
-from seed_data import (create_sample_inquiries,
-                       create_sample_stories, create_sample_templates)
+from seed_data import (create_sample_inquiries, create_sample_stories,
+                       create_sample_templates)
 
 
 class TestSeedDataIntegration:
