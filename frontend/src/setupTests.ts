@@ -7,32 +7,46 @@ import "@testing-library/jest-dom";
 // Configure React Testing Library
 import { configure } from "@testing-library/react";
 
-// Suppress all React testing warnings for cleaner test output
+/**
+ * Suppress specific console warnings that are known to be safe to ignore during testing.
+ *
+ * IMPORTANT: This configuration only suppresses specific, well-known warnings that are:
+ * 1. Related to testing environment differences (ReactDOMTestUtils deprecation)
+ * 2. React Router future flags that don't affect current functionality
+ * 3. React act() warnings that are handled by Testing Library
+ *
+ * Any other warnings will still be displayed to help catch real issues.
+ */
 const originalError = console.error;
 const originalWarn = console.warn;
 
 beforeAll(() => {
   console.error = (...args: any[]) => {
-    if (
-      typeof args[0] === "string" &&
-      (args[0].includes("ReactDOMTestUtils.act is deprecated") ||
-        args[0].includes("An update to") ||
-        args[0].includes("Warning: ") ||
-        args[0].includes("act(...)"))
-    ) {
-      return;
+    if (typeof args[0] === "string") {
+      // Suppress specific React testing warnings
+      if (
+        args[0].includes("`ReactDOMTestUtils.act` is deprecated") ||
+        args[0].includes("Warning: An update to") ||
+        args[0].startsWith(
+          "Warning: You called act(async () => ...) without await",
+        )
+      ) {
+        return;
+      }
     }
     originalError.call(console, ...args);
   };
 
   console.warn = (...args: any[]) => {
-    if (
-      typeof args[0] === "string" &&
-      (args[0].includes("React Router Future Flag Warning") ||
+    if (typeof args[0] === "string") {
+      // Suppress specific React Router future flag warnings
+      if (
+        args[0].includes("React Router Future Flag Warning") ||
         args[0].includes("v7_startTransition") ||
-        args[0].includes("v7_relativeSplatPath"))
-    ) {
-      return;
+        args[0].includes("v7_relativeSplatPath")
+      ) {
+        return;
+      }
     }
     originalWarn.call(console, ...args);
   };

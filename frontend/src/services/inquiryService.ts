@@ -9,10 +9,7 @@ export class InquiryService {
   static async createInquiry(
     data: InquiryCreateRequest,
   ): Promise<InquiryResponse> {
-    const response = await apiClient.post<InquiryResponse>(
-      "/api/inquiries",
-      data,
-    );
+    const response = await apiClient.post<InquiryResponse>("/inquiries", data);
     return response.data;
   }
 
@@ -39,7 +36,7 @@ export class InquiryService {
         total: number;
         has_next: boolean;
       };
-    }>("/api/inquiries", {
+    }>("/inquiries", {
       params: { page, limit },
     });
     return response.data;
@@ -49,21 +46,27 @@ export class InquiryService {
    * Get a specific inquiry by ID
    */
   static async getInquiry(id: number): Promise<InquiryResponse> {
-    const response = await apiClient.get<InquiryResponse>(
-      `/api/inquiries/${id}`,
-    );
+    const response = await apiClient.get<InquiryResponse>(`/inquiries/${id}`);
     return response.data;
   }
 
   /**
-   * Update an inquiry (future implementation)
+   * Update an inquiry
+   *
+   * @param id - The inquiry ID to update
+   * @param data - Partial inquiry data to update
+   * @returns Promise<InquiryResponse> - The updated inquiry
+   *
+   * @note This method is fully implemented on the frontend but requires
+   *       the backend PUT /inquiries/{id} endpoint to be implemented.
+   *       Currently returns a network error as the endpoint does not exist.
    */
   static async updateInquiry(
     id: number,
     data: Partial<Inquiry>,
   ): Promise<InquiryResponse> {
     const response = await apiClient.put<InquiryResponse>(
-      `/api/inquiries/${id}`,
+      `/inquiries/${id}`,
       data,
     );
     return response.data;

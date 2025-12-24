@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { MessageSquare, CheckSquare, Zap, ArrowRight } from "lucide-react";
-import apiClient from "../services/apiClient";
 
 const HomePage: React.FC = () => {
   const [apiStatus, setApiStatus] = useState<"loading" | "connected" | "error">(
@@ -13,9 +12,14 @@ const HomePage: React.FC = () => {
     // Check API connection
     const checkApiConnection = async () => {
       try {
-        await apiClient.get("/health");
-        setApiStatus("connected");
-        setApiMessage("バックエンドAPIに正常に接続されています");
+        // システムAPIはルートレベルで直接呼び出し（fetch APIを使用）
+        const response = await fetch("http://localhost:8000/health");
+        if (response.ok) {
+          setApiStatus("connected");
+          setApiMessage("バックエンドAPIに正常に接続されています");
+        } else {
+          throw new Error("API response not ok");
+        }
       } catch (error) {
         setApiStatus("error");
         setApiMessage("バックエンドAPIに接続できませんでした");

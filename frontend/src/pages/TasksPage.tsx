@@ -15,7 +15,10 @@ const TasksPage: React.FC = () => {
             生成されたストーリーをレビューし、タスクとして管理します
           </p>
         </div>
-        <button className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200">
+        <button
+          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+          aria-label="フィルター設定を開く"
+        >
           <Filter className="w-4 h-4 mr-2" />
           フィルター
         </button>

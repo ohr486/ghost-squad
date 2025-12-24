@@ -109,6 +109,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <button
                 onClick={toggleDarkMode}
                 className="flex items-center w-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors duration-200"
+                aria-label={
+                  isDarkMode
+                    ? "ライトモードに切り替え（モバイル）"
+                    : "ダークモードに切り替え（モバイル）"
+                }
               >
                 {isDarkMode ? (
                   <>

@@ -4,16 +4,8 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import HomePage from "./HomePage";
 
-// Import the mocked module
-import apiClient from "../services/apiClient";
-
-// Mock axios completely
-jest.mock("../services/apiClient", () => ({
-  __esModule: true,
-  default: {
-    get: jest.fn(() => Promise.resolve({ data: { status: "ok" } })),
-  },
-}));
+// Mock fetch API
+global.fetch = jest.fn();
 
 // Mock react-hot-toast
 jest.mock("react-hot-toast", () => ({
@@ -23,7 +15,6 @@ jest.mock("react-hot-toast", () => ({
     success: jest.fn(),
   },
 }));
-const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 const renderWithProviders = (ui: React.ReactElement) => {
   const queryClient = new QueryClient({
@@ -79,7 +70,10 @@ describe("HomePage", () => {
   });
 
   it("shows connected status when API call succeeds", async () => {
-    mockApiClient.get.mockResolvedValueOnce({ data: { status: "ok" } });
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ status: "healthy" }),
+    });
 
     renderWithProviders(<HomePage />);
 
@@ -91,7 +85,9 @@ describe("HomePage", () => {
   });
 
   it("shows error status when API call fails", async () => {
-    mockApiClient.get.mockRejectedValueOnce(new Error("Network error"));
+    (global.fetch as jest.Mock).mockRejectedValueOnce(
+      new Error("Network error"),
+    );
 
     renderWithProviders(<HomePage />);
 
