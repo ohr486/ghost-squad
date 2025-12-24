@@ -77,7 +77,6 @@ dev:
 	@echo "📊 Backend API will be available at: http://localhost:8000"
 	@echo "🌐 Frontend will be available at: http://localhost:3000"
 	@echo "🗄️  Database will be available at: localhost:5432"
-	@echo "🔴 Redis will be available at: localhost:6379"
 	@echo ""
 	docker-compose up -d
 	@echo "✅ All services started in background"
@@ -180,7 +179,7 @@ db-migrate:
 		echo "📋 Initializing Alembic for the first time..."; \
 		docker-compose run --rm backend alembic init alembic; \
 		echo "⚙️  Configuring Alembic database URL..."; \
-		docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://ghost_squad_user:ghost_squad_password@db:5432/ghost_squad|g' alembic.ini; \
+		docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini; \
 		echo "ℹ️  Alembic initialized. You may need to create your first migration with:"; \
 		echo "    docker-compose run --rm backend alembic revision --autogenerate -m 'Initial migration'"; \
 	else \
@@ -247,7 +246,7 @@ db-init:
 	@echo "📋 Initializing fresh Alembic setup..."
 	docker-compose run --rm backend alembic init alembic
 	@echo "⚙️  Configuring Alembic database URL..."
-	docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://ghost_squad_user:ghost_squad_password@db:5432/ghost_squad|g' alembic.ini
+	docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini
 	@echo "✅ Alembic initialization completed"
 	@echo "ℹ️  Next step: Create your first migration with 'make db-revision'"
 
@@ -287,7 +286,7 @@ db-status:
 	fi
 	@echo ""
 	@echo "🗄️  Database Status:"
-	@if docker-compose exec -T db pg_isready -U ghost_squad_user >/dev/null 2>&1; then \
+	@if docker-compose exec -T db pg_isready -U gs_user >/dev/null 2>&1; then \
 		echo "  ✅ Database is ready"; \
 	else \
 		echo "  ❌ Database not ready"; \
@@ -353,9 +352,7 @@ status:
 	@echo -n "Frontend: "
 	@curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null && echo " ✅ Responding" || echo " ❌ Not responding"
 	@echo -n "Database: "
-	@docker-compose exec -T db pg_isready -U ghost_squad_user 2>/dev/null && echo "✅ Ready" || echo "❌ Not ready"
-	@echo -n "Redis: "
-	@docker-compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG && echo "✅ Ready" || echo "❌ Not ready"
+	@docker-compose exec -T db pg_isready -U gs_user 2>/dev/null && echo "✅ Ready" || echo "❌ Not ready"
 
 # Install pre-commit hooks
 install-hooks:
