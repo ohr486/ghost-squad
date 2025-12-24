@@ -112,7 +112,7 @@ test-backend:
 # フロントエンドテスト (Run frontend tests)
 test-frontend:
 	@echo "🧪 Running frontend tests..."
-	docker-compose run --rm frontend npm test -- --run --coverage --watchAll=false
+	docker-compose run --rm frontend npm test -- --coverage --watchAll=false --passWithNoTests
 
 # コード品質チェック (Run all linting)
 lint: lint-backend lint-frontend

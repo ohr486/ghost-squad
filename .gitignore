@@ -16,4 +16,12 @@ apps/cli/gs
 .idea
 .vscode
 
+# Coverage reports
+htmlcov/
+.coverage
+coverage/
+*.cover
+.nyc_output
+.lcov
+
 
