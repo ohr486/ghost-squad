@@ -2,7 +2,7 @@
 Story database model (renamed from TaskModel to avoid confusion with Kanban tasks)
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -32,9 +32,9 @@ class StoryModel(Base):
     story_metadata = Column(
         JSON, nullable=False
     )  # Renamed to avoid SQLAlchemy conflict
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
-        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
     )
 
     # Relationships

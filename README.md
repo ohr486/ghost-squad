@@ -173,6 +173,15 @@ make db-seed
 
 # データベースリセット（注意：全データ削除）
 make db-reset
+
+# データベースに直接接続
+make db-connect
+
+# データベーステーブル一覧表示
+make db-tables
+
+# データベース内のデータ表示
+make db-data
 ```
 
 ### ログ確認
@@ -193,7 +202,13 @@ make logs-db
 ghost-squad/
 ├── backend/                 # Python FastAPIバックエンド
 │   ├── main.py             # FastAPIアプリケーション
+│   ├── database.py         # データベース接続管理
+│   ├── manage_db.py        # データベース管理スクリプト
+│   ├── seed_data.py        # テストデータシーディング
 │   ├── models/             # データモデル
+│   │   ├── database/       # SQLAlchemyモデル
+│   │   ├── enums/          # 列挙型定義
+│   │   └── schemas/        # Pydanticスキーマ
 │   ├── alembic/            # データベースマイグレーション
 │   ├── tests/              # バックエンドテスト
 │   └── requirements.txt    # Python依存関係
@@ -202,11 +217,59 @@ ghost-squad/
 │   ├── public/             # 静的ファイル
 │   ├── package.json        # Node.js依存関係
 │   └── tsconfig.json       # TypeScript設定
+├── docs/                   # プロジェクトドキュメント
+│   └── DATABASE.md         # データベース管理ガイド
+├── .kiro/                  # Kiro仕様ファイル
+│   └── specs/              # 機能仕様
+│       └── storyboard/     # ストーリーボード機能仕様
 ├── docker-compose.yml      # Docker Compose設定
 ├── Makefile               # 開発タスク自動化
 ├── .env.example           # 環境変数テンプレート
 └── README.md              # このファイル
 ```
+
+## データベース管理
+
+Ghost Squadは PostgreSQL データベースを使用し、SQLAlchemy ORM と Alembic によるマイグレーション管理を行います。
+
+### データベースの初期化
+
+```bash
+# 初回セットアップ時（make setupに含まれます）
+make db-migrate
+make db-seed
+```
+
+### 日常的なデータベース操作
+
+```bash
+# データベースの状態確認
+make db-status
+
+# データの確認
+make db-data
+
+# テーブル構造の確認
+make db-tables
+
+# インタラクティブなデータベース接続
+make db-connect
+```
+
+### 開発時のデータベース操作
+
+```bash
+# モデル変更後の新しいマイグレーション作成
+make db-revision
+
+# マイグレーションの適用
+make db-migrate
+
+# 開発用データの再投入
+make db-seed
+```
+
+詳細なデータベース管理については、[データベース管理ガイド](docs/DATABASE.md) を参照してください。
 
 ## API仕様
 
@@ -279,6 +342,9 @@ make dev
 
 **問題**: マイグレーションエラー
 ```bash
+# データベース状態確認
+make db-status
+
 # データベースリセット（注意：データが削除されます）
 make db-reset
 make db-migrate
@@ -289,6 +355,21 @@ make db-migrate
 # データベースコンテナの状態確認
 make status
 make logs-db
+
+# データベース接続テスト
+make db-connect
+```
+
+**問題**: データが表示されない
+```bash
+# データベース内のデータ確認
+make db-data
+
+# テーブル構造確認
+make db-tables
+
+# テストデータの再投入
+make db-seed
 ```
 
 #### 3. API関連
@@ -346,8 +427,15 @@ make dev
 Ghost Squadに関する問題や質問がある場合は、以下の方法でサポートを受けられます：
 
 - GitHub Issues: [リンク]
-- ドキュメント: [リンク]
-- ストーリーボード機能の開発者ガイド: `.kiro/specs/storyboard/`
+- ドキュメント: 
+  - [データベース管理ガイド](docs/DATABASE.md)
+  - ストーリーボード機能の開発者ガイド: `.kiro/specs/storyboard/`
+
+### 開発者向けリソース
+
+- **データベース管理**: `docs/DATABASE.md` - データベースのセットアップ、マイグレーション、トラブルシューティング
+- **機能仕様**: `.kiro/specs/storyboard/` - ストーリーボード機能の要件、設計、実装計画
+- **API仕様**: http://localhost:8000/docs - 開発サーバー起動時に利用可能
 
 ---
 

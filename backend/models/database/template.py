@@ -2,7 +2,7 @@
 Story template database model (renamed from TaskTemplateModel)
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Boolean, Column, DateTime, Float, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -21,9 +21,9 @@ class StoryTemplateModel(Base):
     default_estimate = Column(Float, nullable=False)
     is_custom = Column(Boolean, nullable=False, default=False)
     user_id = Column(String(255), nullable=True)  # カスタムテンプレートの場合
-    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(
-        DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
     )
 
     def __repr__(self):

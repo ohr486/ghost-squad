@@ -90,16 +90,25 @@
     - 初期データシード機能
     - _要件: 9.1, 9.3_
 
+  - [ ] 3.2.1 データベーススキーマ整合性の修正
+    - story_metadataカラムにserver_default='{}'を追加するマイグレーション作成
+    - SQLAlchemyモデルにPythonレベルのdefault=dictを追加
+    - story_templates.fieldsとchecklistカラムの設定確認と修正
+    - マイグレーション安全性テスト（既存データ保持確認）
+    - _要件: 11.1, 11.2, 11.3, 11.4_
+
   - [ ] 3.3 FastAPIアプリケーション初期設定
     - FastAPIアプリケーションインスタンス作成
     - CORSMiddleware設定（フロントエンド連携用）
     - APIRouter設定（/api プレフィックス）
+    - lifespan context manager実装（モダンなFastAPI 0.104.0+対応）
     - _要件: 8.1, 8.2_
 
   - [ ] 3.4 問い合わせAPIエンドポイント実装
     - POST /api/inquiries（InquiryCreateRequest → InquiryResponse）
     - GET /api/inquiries（→ List[InquiryResponse]）
     - GET /api/inquiries/{id}（→ InquiryResponse）
+    - FastAPI依存性注入によるデータベースセッション管理（get_db）
     - _要件: 1.1, 6.3_
 
 - [ ] 4. React + TypeScriptフロントエンドの実装
@@ -193,7 +202,8 @@
   - [ ] 9.3 データモデルプロパティテスト実装
     - **プロパティ1: 問い合わせ受付と保存**
     - **プロパティ9: ストーリー初期状態**
-    - **検証: 要件 1.1, 6.1, 9.1, 3.1**
+    - **プロパティ31: データベーススキーマの整合性**
+    - **検証: 要件 1.1, 6.1, 9.1, 3.1, 11.1, 11.2, 11.3, 11.4**
 
   - [ ] 9.4 InquiryServiceクラス実装
     - submit_inquiry()、get_inquiry_history()、update_inquiry_status()メソッド

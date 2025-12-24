@@ -181,7 +181,23 @@ db-migrate:
 	@echo "🚀 Starting database container..."
 	docker-compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
-	docker-compose run --rm backend python manage_db.py check
+	@sleep 3
+	@max_attempts=10; \
+	attempt=1; \
+	while [ $$attempt -le $$max_attempts ]; do \
+		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+			echo "✅ Database is ready!"; \
+			break; \
+		fi; \
+		echo "   Attempt $$attempt/$$max_attempts - Database not ready, waiting 2s..."; \
+		sleep 2; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	if [ $$attempt -gt $$max_attempts ]; then \
+		echo "❌ Database connection timeout after $$max_attempts attempts!"; \
+		echo "💡 Try running 'make logs-db' to check database logs"; \
+		exit 1; \
+	fi
 	@echo "🔍 Checking if Alembic is initialized..."
 	@if [ ! -f backend/alembic.ini ] || [ ! -d backend/alembic ]; then \
 		echo "📋 Initializing Alembic for the first time..."; \
@@ -209,7 +225,23 @@ db-seed:
 	@echo "🚀 Starting database container..."
 	docker-compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
-	docker-compose run --rm backend python manage_db.py check
+	@sleep 3
+	@max_attempts=10; \
+	attempt=1; \
+	while [ $$attempt -le $$max_attempts ]; do \
+		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+			echo "✅ Database is ready!"; \
+			break; \
+		fi; \
+		echo "   Attempt $$attempt/$$max_attempts - Database not ready, waiting 2s..."; \
+		sleep 2; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	if [ $$attempt -gt $$max_attempts ]; then \
+		echo "❌ Database connection timeout after $$max_attempts attempts!"; \
+		echo "💡 Try running 'make logs-db' to check database logs"; \
+		exit 1; \
+	fi
 	@echo "📊 Running seed script..."
 	docker-compose run --rm backend python manage_db.py seed
 	@echo "✅ Test data seeding completed"
@@ -226,7 +258,23 @@ db-reset:
 	@echo "🚀 Starting fresh database..."
 	docker-compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
-	docker-compose run --rm backend python manage_db.py check
+	@sleep 3
+	@max_attempts=15; \
+	attempt=1; \
+	while [ $$attempt -le $$max_attempts ]; do \
+		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+			echo "✅ Database is ready!"; \
+			break; \
+		fi; \
+		echo "   Attempt $$attempt/$$max_attempts - Database not ready, waiting 2s..."; \
+		sleep 2; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	if [ $$attempt -gt $$max_attempts ]; then \
+		echo "❌ Database connection timeout after $$max_attempts attempts!"; \
+		echo "💡 Try running 'make logs-db' to check database logs"; \
+		exit 1; \
+	fi
 	@echo "📊 Running migrations on fresh database..."
 	$(MAKE) db-migrate
 	@echo "🌱 Seeding fresh data..."
@@ -274,7 +322,23 @@ db-status:
 	@echo "🚀 Starting database container..."
 	docker-compose up -d db >/dev/null 2>&1
 	@echo "⏳ Waiting for database to be ready..."
-	docker-compose run --rm backend python manage_db.py check
+	@sleep 3
+	@max_attempts=10; \
+	attempt=1; \
+	while [ $$attempt -le $$max_attempts ]; do \
+		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+			echo "✅ Database is ready!"; \
+			break; \
+		fi; \
+		echo "   Attempt $$attempt/$$max_attempts - Database not ready, waiting 2s..."; \
+		sleep 2; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	if [ $$attempt -gt $$max_attempts ]; then \
+		echo "❌ Database connection timeout after $$max_attempts attempts!"; \
+		echo "💡 Try running 'make logs-db' to check database logs"; \
+		exit 1; \
+	fi
 	@echo ""
 	@echo "📋 Alembic Configuration:"
 	@if [ -f backend/alembic.ini ]; then \
@@ -567,7 +631,23 @@ db-connect:
 	@echo "🚀 Starting database container..."
 	docker-compose up -d db >/dev/null 2>&1
 	@echo "⏳ Waiting for database to be ready..."
-	docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1
+	@sleep 3
+	@max_attempts=10; \
+	attempt=1; \
+	while [ $$attempt -le $$max_attempts ]; do \
+		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+			echo "✅ Database is ready!"; \
+			break; \
+		fi; \
+		echo "   Attempt $$attempt/$$max_attempts - Database not ready, waiting 2s..."; \
+		sleep 2; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	if [ $$attempt -gt $$max_attempts ]; then \
+		echo "❌ Database connection timeout after $$max_attempts attempts!"; \
+		echo "💡 Try running 'make logs-db' to check database logs"; \
+		exit 1; \
+	fi
 	@echo "📊 Connecting to PostgreSQL database..."
 	@echo "ℹ️  Use \\q to quit, \\dt to list tables, \\d <table> to describe table"
 	docker-compose exec db psql -U gs_user -d gs_db
@@ -578,7 +658,23 @@ db-tables:
 	@echo "🚀 Starting database container..."
 	docker-compose up -d db >/dev/null 2>&1
 	@echo "⏳ Waiting for database to be ready..."
-	docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1
+	@sleep 3
+	@max_attempts=10; \
+	attempt=1; \
+	while [ $$attempt -le $$max_attempts ]; do \
+		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+			echo "✅ Database is ready!"; \
+			break; \
+		fi; \
+		echo "   Attempt $$attempt/$$max_attempts - Database not ready, waiting 2s..."; \
+		sleep 2; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	if [ $$attempt -gt $$max_attempts ]; then \
+		echo "❌ Database connection timeout after $$max_attempts attempts!"; \
+		echo "💡 Try running 'make logs-db' to check database logs"; \
+		exit 1; \
+	fi
 	@echo "📊 Database tables:"
 	docker-compose exec -T db psql -U gs_user -d gs_db -c "\dt"
 	@echo ""
@@ -595,7 +691,23 @@ db-data:
 	@echo "🚀 Starting database container..."
 	docker-compose up -d db >/dev/null 2>&1
 	@echo "⏳ Waiting for database to be ready..."
-	docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1
+	@sleep 3
+	@max_attempts=10; \
+	attempt=1; \
+	while [ $$attempt -le $$max_attempts ]; do \
+		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+			echo "✅ Database is ready!"; \
+			break; \
+		fi; \
+		echo "   Attempt $$attempt/$$max_attempts - Database not ready, waiting 2s..."; \
+		sleep 2; \
+		attempt=$$((attempt + 1)); \
+	done; \
+	if [ $$attempt -gt $$max_attempts ]; then \
+		echo "❌ Database connection timeout after $$max_attempts attempts!"; \
+		echo "💡 Try running 'make logs-db' to check database logs"; \
+		exit 1; \
+	fi
 	@echo ""
 	@echo "📋 Inquiries (問い合わせ):"
 	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, user_id, LEFT(content, 50) || '...' as content_preview, language, status, timestamp FROM inquiries ORDER BY timestamp DESC;" 2>/dev/null || echo "  No inquiries table found"
@@ -603,7 +715,7 @@ db-data:
 	@echo "📋 Stories (ストーリー):"
 	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, LEFT(title, 40) || '...' as title_preview, category, priority, status, estimated_effort, created_at FROM stories ORDER BY created_at DESC;" 2>/dev/null || echo "  No stories table found"
 	@echo ""
-	@echo "📋 Story Templates (ストーリーテンプレート):"
+	@echo "�  Story Templates (ストーリーテンプレート):"
 	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, name, pattern, is_custom, default_estimate, created_at FROM story_templates ORDER BY created_at DESC;" 2>/dev/null || echo "  No story_templates table found"
 	@echo ""
 	@echo "💡 Use 'make db-connect' for interactive database access"

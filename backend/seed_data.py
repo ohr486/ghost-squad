@@ -2,7 +2,7 @@
 Database seed data for development and testing
 """
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 from sqlalchemy.orm import Session
@@ -61,16 +61,22 @@ def create_sample_inquiries() -> List[InquiryModel]:
 
 def create_sample_stories(inquiries: List[InquiryModel]) -> List[StoryModel]:
     """Create sample stories linked to inquiries"""
-    stories = [
+    if not inquiries:
+        return []
+    
+    stories = []
+    
+    # Create stories based on available inquiries
+    if len(inquiries) >= 1:
         # Stories for first inquiry (user registration)
-        StoryModel(
+        story1 = StoryModel(
             inquiry_id=inquiries[0].id,
             title="ユーザー登録APIエンドポイントの実装",
             description="メールアドレスとパスワードを受け取るユーザー登録APIを実装する。バリデーション、重複チェック、パスワードハッシュ化を含む。",
             category=StoryCategory.DEVELOPMENT.value,
             priority=Priority.HIGH.value,
             estimated_effort=8.0,
-            deadline=datetime.utcnow() + timedelta(days=7),
+            deadline=datetime.now(timezone.utc) + timedelta(days=7),
             status=StoryStatus.APPROVED.value,
             tags=["api", "authentication", "backend"],
             story_metadata={
@@ -83,15 +89,17 @@ def create_sample_stories(inquiries: List[InquiryModel]) -> List[StoryModel]:
                 "applied_template": "api_development",
                 "confidence": 0.95
             }
-        ),
-        StoryModel(
+        )
+        stories.append(story1)
+        
+        story2 = StoryModel(
             inquiry_id=inquiries[0].id,
             title="ユーザー登録フォームのUI実装",
             description="フロントエンドにユーザー登録フォームを実装する。入力バリデーション、エラーハンドリング、UXを考慮した設計。",
             category=StoryCategory.DEVELOPMENT.value,
             priority=Priority.MEDIUM.value,
             estimated_effort=6.0,
-            deadline=datetime.utcnow() + timedelta(days=10),
+            deadline=datetime.now(timezone.utc) + timedelta(days=10),
             status=StoryStatus.EXPORTED.value,
             tags=["frontend", "ui", "form"],
             dependencies=[],  # Will be set after first story is created
@@ -105,17 +113,22 @@ def create_sample_stories(inquiries: List[InquiryModel]) -> List[StoryModel]:
                 "applied_template": "frontend_form",
                 "confidence": 0.88
             }
-        ),
+        )
+        stories.append(story2)
         
+        # Set dependency for second story on first story
+        story2.dependencies = [str(story1.id)]
+    
+    if len(inquiries) >= 2:
         # Story for second inquiry (bug fix)
-        StoryModel(
+        story3 = StoryModel(
             inquiry_id=inquiries[1].id,
             title="パスワードリセットリンク修正",
             description="ログイン画面のパスワードリセットリンクが動作しない問題を調査し修正する。緊急対応が必要。",
             category=StoryCategory.MAINTENANCE.value,
             priority=Priority.URGENT.value,
             estimated_effort=2.0,
-            deadline=datetime.utcnow() + timedelta(days=1),
+            deadline=datetime.now(timezone.utc) + timedelta(days=1),
             status=StoryStatus.PENDING_REVIEW.value,
             tags=["bug", "urgent", "authentication"],
             story_metadata={
@@ -129,11 +142,32 @@ def create_sample_stories(inquiries: List[InquiryModel]) -> List[StoryModel]:
                 "confidence": 0.92
             }
         )
-    ]
+        stories.append(story3)
     
-    # Set dependency for second story on first story
-    if len(stories) >= 2:
-        stories[1].dependencies = [str(stories[0].id)]
+    if len(inquiries) >= 3:
+        # Story for third inquiry (performance investigation)
+        story4 = StoryModel(
+            inquiry_id=inquiries[2].id,
+            title="データベースパフォーマンス調査",
+            description="データベースのレスポンス遅延の原因を調査し、パフォーマンス改善案を提示する。",
+            category=StoryCategory.RESEARCH.value,
+            priority=Priority.HIGH.value,
+            estimated_effort=5.0,
+            deadline=datetime.now(timezone.utc) + timedelta(days=5),
+            status=StoryStatus.PENDING_REVIEW.value,
+            tags=["performance", "database", "investigation"],
+            story_metadata={
+                "original_inquiry": "データベースのパフォーマンス調査をお願いします。最近レスポンスが遅くなっています。",
+                "generation_log": [
+                    "Detected performance keywords",
+                    "Classified as investigation task",
+                    "Applied investigation template"
+                ],
+                "applied_template": "investigation",
+                "confidence": 0.89
+            }
+        )
+        stories.append(story4)
     
     return stories
 

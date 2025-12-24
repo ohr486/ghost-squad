@@ -2,7 +2,7 @@
 Inquiry database model
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Column, DateTime, String, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -19,7 +19,7 @@ class InquiryModel(Base):
     user_id = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
     language = Column(String(2), nullable=False, default="ja")
-    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
+    timestamp = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     status = Column(String(50), nullable=False, default=InquiryStatus.RECEIVED.value)
     inquiry_metadata = Column(
         JSON, nullable=True

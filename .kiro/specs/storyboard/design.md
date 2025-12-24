@@ -396,7 +396,55 @@ interface TemplateField {
 ### プロパティ30: 問い合わせステータス管理
 *任意の*問い合わせに対して、関連するすべてのストーリーが完了状態（exported）になった場合はステータスを「completed」に、未完了のストーリーがある場合は「story_working」に設定する
 **検証: 要件 1.1, 3.4**
-## エラーハンドリング
+
+### プロパティ31: データベーススキーマの整合性
+*任意の*JSONカラムに対して、nullable=Falseの場合は適切なデフォルト値が設定され、データ挿入時にエラーが発生しない
+**検証: 要件 11.1, 11.2, 11.3, 11.4**
+## データベーススキーマ整合性の設計
+
+### 問題の特定
+
+現在のデータベーススキーマには以下の問題があります：
+
+1. **story_metadata カラム**: `nullable=False` だが、サーバーレベルのデフォルト値が設定されていない
+2. **他のJSONカラムの潜在的問題**: `fields`、`checklist` カラム（story_templates テーブル）も同様の問題を抱える可能性
+
+### 解決方針
+
+#### 1. サーバーデフォルト値の追加
+- `story_metadata` カラムに `server_default='{}' ` を設定
+- 既存データに影響を与えない安全なマイグレーション
+
+#### 2. SQLAlchemyモデルの更新
+- Python レベルでのデフォルト値も設定（`default=dict`）
+- 二重の保護により確実なデータ整合性を確保
+
+#### 3. 他のJSONカラムの検証
+- `story_templates.fields` と `story_templates.checklist` の設定確認
+- 必要に応じて同様の修正を適用
+
+### マイグレーション戦略
+
+```python
+# 安全なマイグレーション手順
+def upgrade():
+    # 1. 既存のnullable=Falseカラムにserver_defaultを追加
+    op.alter_column('stories', 'story_metadata',
+                   server_default='{}')
+    
+    # 2. 他のJSONカラムも同様に処理（必要に応じて）
+    op.alter_column('story_templates', 'fields',
+                   server_default='[]')
+    op.alter_column('story_templates', 'checklist', 
+                   server_default='[]')
+```
+
+### 検証方法
+
+1. **マイグレーション前後のデータ整合性確認**
+2. **新規データ挿入テスト**（値なしでの挿入）
+3. **既存データの保持確認**
+4. **ロールバックテスト**
 
 ### エラー分類
 

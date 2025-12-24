@@ -1,11 +1,35 @@
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 
-from database import check_database_connection
+from database import check_database_connection, get_db
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """アプリケーションのライフサイクル管理"""
+    # Startup
+    print("🚀 Starting Ghost Squad API...")
+    
+    # データベース接続確認
+    if not check_database_connection():
+        print("⚠️  Warning: Database connection failed during startup")
+    else:
+        print("✅ Database connection established")
+    
+    yield
+    
+    # Shutdown
+    print("🛑 Shutting down Ghost Squad API...")
+
 
 # FastAPIアプリケーションの作成
 app = FastAPI(
-    title="Ghost Squad API", description="GhostSquadのバックエンドAPI", version="0.0.1"
+    title="Ghost Squad API",
+    description="GhostSquadのバックエンドAPI",
+    version="0.0.1",
+    lifespan=lifespan
 )
 
 # CORS設定（フロントエンドからのアクセスを許可）
@@ -16,16 +40,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup_event():
-    """アプリケーション起動時の処理"""
-    # データベース接続確認
-    if not check_database_connection():
-        print("⚠️  Warning: Database connection failed during startup")
-    else:
-        print("✅ Database connection established")
 
 
 # ルートエンドポイント
@@ -57,12 +71,10 @@ async def api_info():
 
 # データベーステストエンドポイント
 @app.get("/api/db-test")
-async def db_test():
+async def db_test(db: Session = Depends(get_db)):
     """データベース接続とデータ確認用のテストエンドポイント"""
-    from database import SessionLocal
     from models.database.inquiry import InquiryModel
     
-    db = SessionLocal()
     try:
         inquiry_count = db.query(InquiryModel).count()
         return {
@@ -76,5 +88,3 @@ async def db_test():
             "error": str(e),
             "message": "Database connection failed"
         }
-    finally:
-        db.close()
