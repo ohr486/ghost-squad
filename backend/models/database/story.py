@@ -15,8 +15,10 @@ from .types import UUID
 class StoryModel(Base):
     __tablename__ = "stories"
 
-    id = Column(UUID(), primary_key=True, default=uuid.uuid4)
-    inquiry_id = Column(UUID(), ForeignKey("inquiries.id"), nullable=False)
+    id = Column(UUID(), primary_key=True, default=uuid.uuid4)  # type: ignore
+    inquiry_id = Column(
+        UUID(), ForeignKey("inquiries.id"), nullable=False
+    )  # type: ignore
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=False)
     category = Column(String(50), nullable=False)
@@ -32,14 +34,19 @@ class StoryModel(Base):
     story_metadata = Column(
         JSON, nullable=False, default=dict
     )  # Renamed to avoid SQLAlchemy conflict
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
     updated_at = Column(
-        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     # Relationships
     inquiry = relationship("InquiryModel", back_populates="stories")
-    
+
     # Test field for migration
     # comments = Column(Text, nullable=True)  # Uncomment to test migrations
 

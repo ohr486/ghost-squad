@@ -13,7 +13,7 @@ from .types import UUID
 class StoryTemplateModel(Base):
     __tablename__ = "story_templates"
 
-    id = Column(UUID(), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(), primary_key=True, default=uuid.uuid4)  # type: ignore
     name = Column(String(255), nullable=False)
     pattern = Column(String(50), nullable=False)
     fields = Column(JSON, nullable=False, default=list)  # List[TemplateField]
@@ -21,9 +21,14 @@ class StoryTemplateModel(Base):
     default_estimate = Column(Float, nullable=False)
     is_custom = Column(Boolean, nullable=False, default=False)
     user_id = Column(String(255), nullable=True)  # カスタムテンプレートの場合
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
     updated_at = Column(
-        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
 
     def __repr__(self):

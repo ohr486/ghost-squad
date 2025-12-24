@@ -15,11 +15,13 @@ from .types import UUID
 class InquiryModel(Base):
     __tablename__ = "inquiries"
 
-    id = Column(UUID(), primary_key=True, default=uuid.uuid4)
+    id = Column(UUID(), primary_key=True, default=uuid.uuid4)  # type: ignore
     user_id = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
     language = Column(String(2), nullable=False, default="ja")
-    timestamp = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    timestamp = Column(
+        DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
     status = Column(String(50), nullable=False, default=InquiryStatus.RECEIVED.value)
     inquiry_metadata = Column(
         JSON, nullable=True
