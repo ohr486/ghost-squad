@@ -104,7 +104,7 @@ Ghost Squadのストーリーボード機能をPython（FastAPIバックエン�
     - lifespan context manager実装（モダンなFastAPI 0.104.0+対応）
     - _要件: 8.1, 8.2_
 
-  - [ ] 3.5 問い合わせAPIエンドポイント実装
+  - [x] 3.5 問い合わせAPIエンドポイント実装
     - POST /api/inquiries（InquiryCreateRequest → InquiryResponse）
     - GET /api/inquiries（→ List[InquiryResponse]）
     - GET /api/inquiries/{id}（→ InquiryResponse）
