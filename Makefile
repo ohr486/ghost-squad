@@ -5,7 +5,7 @@
 export PIP_ROOT_USER_ACTION=ignore
 PIP_ENV_VARS = -e PIP_ROOT_USER_ACTION=ignore
 
-.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset clean logs logs-backend logs-frontend logs-db status disk-usage docker-cleanup volume-list volume-cleanup
+.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset clean logs logs-backend logs-frontend logs-db status disk-usage docker-cleanup volume-list volume-cleanup volume-cleanup-force
 
 # Default target
 help:
@@ -49,6 +49,7 @@ help:
 	@echo "  make docker-cleanup - Docker不要データ削除 (Clean up Docker unused data)"
 	@echo "  make volume-list    - Dockerボリューム一覧表示 (List Docker volumes)"
 	@echo "  make volume-cleanup - 未使用ボリューム削除 (Remove unused volumes)"
+	@echo "  make volume-cleanup-force - 強制ボリューム削除 (Force remove volumes)"
 	@echo "  make logs           - 全サービスログ表示 (Show logs for all services)"
 	@echo "  make logs-backend   - バックエンドログ表示 (Show backend logs)"
 	@echo "  make logs-frontend  - フロントエンドログ表示 (Show frontend logs)"
@@ -540,6 +541,20 @@ volume-cleanup:
 	else \
 		echo "❌ Volume cleanup cancelled"; \
 	fi
+
+# 強制ボリューム削除 (Force volume cleanup)
+volume-cleanup-force:
+	@echo "🚀 Running force volume cleanup script..."
+	@if [ ! -f "./bin/volume-cleanup-force.sh" ]; then \
+		echo "❌ bin/volume-cleanup-force.sh not found"; \
+		echo "Please make sure the script exists in the bin directory"; \
+		exit 1; \
+	fi
+	@if [ ! -x "./bin/volume-cleanup-force.sh" ]; then \
+		echo "🔧 Making script executable..."; \
+		chmod +x ./bin/volume-cleanup-force.sh; \
+	fi
+	@./bin/volume-cleanup-force.sh
 
 # Install pre-commit hooks
 install-hooks:
