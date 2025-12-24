@@ -1,8 +1,8 @@
-# 実装計画: ストーリーボード
+# ストーリーボード機能 実装計画
 
 ## 概要
 
-ストーリーボードシステムをPython（バックエンド）とTypeScript（フロントエンド）で実装します。**WebUIを先行実装**してユーザー体験を早期に確認できるよう、最小限のAPIエンドポイントとフロントエンドを優先的に実装し、その後バックエンド機能を段階的に拡張します。バックエンドはFastAPIを使用したWebアプリケーション、フロントエンドはReact + TypeScriptのSPAとして構築し、SQLAlchemyによるデータベース管理、OpenAI APIを使用したストーリー変換、外部カンバンシステムとの統合を含みます。
+Ghost Squadのストーリーボード機能をPython（FastAPIバックエンド）とTypeScript（Reactフロントエンド）で実装します。**WebUIを先行実装**してユーザー体験を早期に確認できるよう、最小限のAPIエンドポイントとReact TypeScriptフロントエンドを優先的に実装し、その後バックエンド機能を段階的に拡張します。バックエンドはFastAPI + SQLAlchemy + PostgreSQL、フロントエンドはReact + TypeScript + Tailwind CSSで構築し、OpenAI APIを使用したストーリー変換、外部カンバンシステム（Trello、Jira、GitHub Projects）との統合を含みます。
 
 ## タスク
 

@@ -1,18 +1,18 @@
-# 設計ドキュメント
+# ストーリーボード機能 設計ドキュメント
 
 ## 概要
 
-ストーリーボードシステムは、自然言語の問い合わせを構造化されたストーリーに変換し、既存のカンバンシステムに統合するためのWebアプリケーションです。システムは問い合わせの受付、AI駆動のストーリー生成、ユーザーレビュー、外部システム統合の4つの主要フェーズで構成されます。
+Ghost Squadのストーリーボード機能は、日本語自然言語の問い合わせを構造化されたユーザーストーリーに変換し、既存のカンバンシステム（Trello、Jira、GitHub Projects）に統合するためのWebアプリケーション機能です。システムは問い合わせの受付、OpenAI API駆動のストーリー生成、ユーザーレビュー、外部システム統合の4つの主要フェーズで構成されます。
 
 ## アーキテクチャ
 
-システムは以下のレイヤーで構成されるクリーンアーキテクチャを採用します：
+Ghost Squadのストーリーボード機能は、以下のレイヤーで構成されるクリーンアーキテクチャを採用します：
 
 ```mermaid
 graph TB
     subgraph "プレゼンテーション層"
-        UI[Web UI]
-        API[REST API]
+        UI[React TypeScript WebUI]
+        API[FastAPI REST API]
     end
     
     subgraph "アプリケーション層"
@@ -30,8 +30,8 @@ graph TB
     end
     
     subgraph "インフラストラクチャ層"
-        DB[(データベース)]
-        AI[AI API]
+        DB[(PostgreSQL)]
+        AI[OpenAI API]
         EXT[外部カンバンAPI]
         NOTIF[通知プロバイダー]
     end
@@ -172,7 +172,7 @@ interface NotificationService {
 
 ### ID型について
 
-**重要な設計決定**: システムのすべてのエンティティ（Inquiry、Story、StoryTemplate）のIDフィールドは、パフォーマンスと統合性を考慮してBigInteger（64ビット整数）を使用します。
+**重要な設計決定**: Ghost Squadのすべてのエンティティ（Inquiry、Story、StoryTemplate）のIDフィールドは、パフォーマンスと外部システム統合を考慮してBigInteger（64ビット整数）を使用します。
 
 - **利点**:
   - データベースインデックスの効率性向上
