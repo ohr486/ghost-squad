@@ -1,6 +1,10 @@
 # Storyboard Development Makefile
 # This Makefile provides unified commands for development workflow
 
+# Environment variables for pip warnings
+export PIP_ROOT_USER_ACTION=ignore
+PIP_ENV_VARS = -e PIP_ROOT_USER_ACTION=ignore
+
 .PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset clean logs logs-backend logs-frontend logs-db status
 
 # Default target
@@ -58,7 +62,7 @@ setup:
 	@echo "🐳 Building Docker containers..."
 	docker-compose build
 	@echo "📦 Installing backend dependencies..."
-	docker-compose run --rm backend pip install -r requirements.txt
+	docker-compose run --rm $(PIP_ENV_VARS) backend pip install -r requirements.txt
 	@echo "📦 Installing frontend dependencies..."
 	docker-compose run --rm frontend npm install
 	@echo "🗄️  Setting up database..."
