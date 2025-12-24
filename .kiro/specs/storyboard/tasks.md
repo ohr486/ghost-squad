@@ -2,7 +2,7 @@
 
 ## 概要
 
-ストーリーボードシステムをPython（バックエンド）とTypeScript（フロントエンド）で実装します。**WebUIを先行実装**してユーザー体験を早期に確認できるよう、最小限のAPIエンドポイントとフロントエンドを優先的に実装し、その後バックエンド機能を段階的に拡張します。バックエンドはFastAPIを使用したWebアプリケーション、フロントエンドはReact + TypeScriptのSPAとして構築し、SQLAlchemyによるデータベース管理、OpenAI APIを使用したタスク変換、外部カンバンシステムとの統合を含みます。
+ストーリーボードシステムをPython（バックエンド）とTypeScript（フロントエンド）で実装します。**WebUIを先行実装**してユーザー体験を早期に確認できるよう、最小限のAPIエンドポイントとフロントエンドを優先的に実装し、その後バックエンド機能を段階的に拡張します。バックエンドはFastAPIを使用したWebアプリケーション、フロントエンドはReact + TypeScriptのSPAとして構築し、SQLAlchemyによるデータベース管理、OpenAI APIを使用したストーリー変換、外部カンバンシステムとの統合を含みます。
 
 ## タスク
 
@@ -16,9 +16,9 @@
     - フロントエンド依存関係の定義（package.json）
     - _要件: 全般_
   
-  - [ ] 1.3 WebUI用コア型定義
-    - TypeScript: Inquiry、Task、InquiryStatus、TaskStatus型
-    - Python: InquiryModel、TaskModel、InquiryStatus、TaskStatus型ヒント
+  - [x] 1.3 WebUI用コア型定義
+    - TypeScript: Inquiry、Story、InquiryStatus、StoryStatus型
+    - Python: InquiryModel、StoryModel、InquiryStatus、StoryStatus型ヒント
     - _要件: 全般_
 
 - [ ] 2. 開発環境とツールチェーンの設定
@@ -80,8 +80,8 @@
 
 - [ ] 3. WebUI用最小APIとデータモデルの実装
   - [ ] 3.1 WebUI用SQLAlchemyモデルの実装
-    - InquiryModel、TaskModelクラス
-    - InquiryStatus、TaskStatus、Priority、TaskCategoryエnum
+    - InquiryModel、StoryModelクラス
+    - InquiryStatus、StoryStatus、Priority、StoryCategoryエnum
     - _要件: 6.1, 9.1_
 
   - [ ] 3.2 データベース接続とマイグレーション
@@ -132,68 +132,68 @@
   - [ ] 5.1 WebUI基本機能テスト確認
     - 問い合わせ入力と履歴表示が動作することを確認し、質問があれば尋ねる
 
-- [ ] 6. タスク管理APIとUIコンポーネントの追加
-  - [ ] 6.1 タスク管理APIエンドポイント実装
-    - GET /api/tasks（→ List[TaskResponse]）
-    - GET /api/tasks/{id}（→ TaskResponse）
-    - PUT /api/tasks/{id}（TaskUpdateRequest → TaskResponse）
-    - POST /api/tasks/{id}/approve（→ TaskResponse）
-    - POST /api/tasks/{id}/reject（RejectRequest → TaskResponse）
+- [ ] 6. ストーリー管理APIとUIコンポーネントの追加
+  - [ ] 6.1 ストーリー管理APIエンドポイント実装
+    - GET /api/stories（→ List[StoryResponse]）
+    - GET /api/stories/{id}（→ StoryResponse）
+    - PUT /api/stories/{id}（StoryUpdateRequest → StoryResponse）
+    - POST /api/stories/{id}/approve（→ StoryResponse）
+    - POST /api/stories/{id}/reject（RejectRequest → StoryResponse）
     - _要件: 3.2, 3.4_
 
-  - [ ] 6.2 TaskReviewコンポーネント実装
-    - TaskListコンポーネント（タスク一覧表示）
-    - TaskDetailコンポーネント（詳細表示・編集）
-    - TaskActionButtonsコンポーネント（承認・拒否ボタン）
+  - [ ] 6.2 StoryReviewコンポーネント実装
+    - StoryListコンポーネント（ストーリー一覧表示）
+    - StoryDetailコンポーネント（詳細表示・編集）
+    - StoryActionButtonsコンポーネント（承認・拒否ボタン）
     - BatchOperationコンポーネント（一括操作）
     - _要件: 8.3, 3.2, 3.6_
 
-  - [ ] 6.3 タスク管理のプロパティテスト
+  - [ ] 6.3 ストーリー管理のプロパティテスト
     - **プロパティ12: 状態遷移の正確性**
     - **検証: 要件 3.4, 3.5**
 
-- [ ] 7. AI統合とタスク変換機能の実装
-  - [ ] 7.1 TaskConverterクラス実装
+- [ ] 7. AI統合とストーリー変換機能の実装
+  - [ ] 7.1 StoryConverterクラス実装
     - OpenAI APIクライアント設定
-    - convert_to_tasks()メソッド（Inquiry → List[Task]）
+    - convert_to_stories()メソッド（Inquiry → List[Story]）
     - extract_deadlines()メソッド（str → Optional[datetime]）
     - _要件: 1.2, 1.4_
 
-  - [ ] 7.2 タスク変換APIエンドポイント実装
-    - POST /api/inquiries/{id}/generate-tasks（→ TaskGenerationResponse）
+  - [ ] 7.2 ストーリー変換APIエンドポイント実装
+    - POST /api/inquiries/{id}/generate-stories（→ StoryGenerationResponse）
     - GET /api/inquiries/{id}/generation-status（→ GenerationStatusResponse）
     - _要件: 1.2, 1.4_
 
-  - [ ] 7.3 タスク変換プロパティテスト実装
-    - **プロパティ2: タスク変換の完全性**
-    - **プロパティ3: 複数タスク分離**
+  - [ ] 7.3 ストーリー変換プロパティテスト実装
+    - **プロパティ2: ストーリー変換の完全性**
+    - **プロパティ3: 複数ストーリー分離**
     - **検証: 要件 1.2, 1.4, 1.3**
 
-  - [ ] 7.4 TaskGenerationコンポーネント実装
-    - GenerateTasksButtonコンポーネント
-    - TaskGenerationProgressコンポーネント
-    - GeneratedTasksListコンポーネント
+  - [ ] 7.4 StoryGenerationコンポーネント実装
+    - GenerateStoriesButtonコンポーネント
+    - StoryGenerationProgressコンポーネント
+    - GeneratedStoriesListコンポーネント
     - _要件: 8.5_
 
 - [ ] 8. チェックポイント - 基本ワークフローの確認
   - [ ] 8.1 基本ワークフロー確認
-    - 問い合わせ→タスク生成→レビューの基本フローが動作することを確認し、質問があれば尋ねる
+    - 問い合わせ→ストーリー生成→レビューの基本フローが動作することを確認し、質問があれば尋ねる
 
 - [ ] 9. 完全なデータモデルとサービス層の実装
   - [ ] 9.1 拡張SQLAlchemyモデル実装
-    - TaskTemplateModel、UserModel、TaskMetadataModelクラス
-    - TaskVersionModel（変更履歴用）、CommentModelクラス
+    - StoryTemplateModel、UserModel、StoryMetadataModelクラス
+    - StoryVersionModel（変更履歴用）、CommentModelクラス
     - _要件: 6.1, 9.1_
 
   - [ ] 9.2 完全な型定義実装
-    - TypeScript: TaskTemplate、User、TaskMetadata、TaskVersion、Comment型
+    - TypeScript: StoryTemplate、User、StoryMetadata、StoryVersion、Comment型
     - Python: 全サービスクラスのインターフェース（Protocol）
     - Pydantic: 全Request/Responseモデル
     - _要件: 全般_
 
   - [ ] 9.3 データモデルプロパティテスト実装
     - **プロパティ1: 問い合わせ受付と保存**
-    - **プロパティ9: タスク初期状態**
+    - **プロパティ9: ストーリー初期状態**
     - **検証: 要件 1.1, 6.1, 9.1, 3.1**
 
   - [ ] 9.4 InquiryServiceクラス実装
@@ -206,18 +206,18 @@
     - **プロパティ30: 問い合わせステータス管理**
     - **検証: 要件 1.5, 1.1, 3.4**
 
-- [ ] 10. 高度なタスク管理機能の実装
-  - [ ] 10.1 TaskServiceクラスの実装
-    - タスクのCRUD操作
+- [ ] 10. 高度なストーリー管理機能の実装
+  - [ ] 10.1 StoryServiceクラスの実装
+    - ストーリーのCRUD操作
     - レビュー機能（承認・拒否）
     - _要件: 3.1, 3.4, 3.5_
 
-  - [ ] 10.2 タスクレビューのプロパティテスト
+  - [ ] 10.2 ストーリーレビューのプロパティテスト
     - **プロパティ13: 一括処理の原子性**
     - **検証: 要件 3.6**
 
   - [ ] 10.3 変更履歴とコメント機能
-    - タスクの変更履歴管理
+    - ストーリーの変更履歴管理
     - コメント・メモ機能
     - _要件: 3.3, 6.4, 6.5_
 
@@ -240,7 +240,7 @@
 
 - [ ] 12. パターン認識とテンプレート機能の実装
   - [ ] 12.1 PatternRecognizerクラスの実装
-    - タスクパターンの識別
+    - ストーリーパターンの識別
     - テンプレートの適用
     - _要件: 5.1, 5.2_
 
@@ -259,7 +259,7 @@
 
 - [ ] 13. 検索機能とリアルタイム更新
   - [ ] 13.1 バックエンド検索APIの実装
-    - 問い合わせとタスクの検索
+    - 問い合わせとストーリーの検索
     - フィルタリング機能
     - _要件: 8.4_
 
@@ -348,7 +348,7 @@
     - _要件: 1.4, 7.2_
 
   - [ ] 17.2 ログ記録システム
-    - タスク生成プロセスのログ
+    - ストーリー生成プロセスのログ
     - システム操作ログ
     - _要件: 6.2_
 
