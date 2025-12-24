@@ -21,7 +21,7 @@
     - Python: InquiryModel、StoryModel、InquiryStatus、StoryStatus型ヒント
     - _要件: 全般_
 
-- [ ] 2. 開発環境とツールチェーンの設定
+- [x] 2. 開発環境とツールチェーンの設定
   - [x] 2.1 Docker Compose設定
     - PostgreSQLデータベースコンテナ
     - バックエンドAPIコンテナ
