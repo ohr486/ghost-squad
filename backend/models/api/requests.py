@@ -3,9 +3,10 @@ API request models
 """
 from datetime import datetime
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
-from ..enums import StoryCategory, Priority
+from ..enums import Priority, StoryCategory
 
 
 class InquiryCreateRequest(BaseModel):

@@ -1,11 +1,11 @@
 /**
  * Template model types
  */
-import { StoryPattern } from '../enums';
+import { StoryPattern } from "../enums";
 
 export interface TemplateField {
   name: string;
-  type: 'text' | 'number' | 'date' | 'select';
+  type: "text" | "number" | "date" | "select";
   required: boolean;
   defaultValue?: any;
   options?: string[]; // select型の場合

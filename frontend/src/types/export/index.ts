@@ -7,5 +7,5 @@ export type {
   KanbanSystem,
   ExportResult,
   SyncStatus,
-  NotificationSettings
-} from './kanban';
+  NotificationSettings,
+} from "./kanban";

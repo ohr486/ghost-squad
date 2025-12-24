@@ -3,6 +3,7 @@ Export and Kanban integration models
 """
 from datetime import datetime
 from typing import Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -31,7 +32,9 @@ class ExportResult(BaseModel):
     success: bool
     exported_stories: List[str]  # Story IDs
     errors: Optional[List[str]] = None
-    external_task_ids: Optional[Dict[str, str]] = None  # storyId -> externalTaskId mapping
+    external_task_ids: Optional[
+        Dict[str, str]
+    ] = None  # storyId -> externalTaskId mapping
 
 
 class SyncStatus(BaseModel):

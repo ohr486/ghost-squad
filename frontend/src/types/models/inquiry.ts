@@ -1,13 +1,13 @@
 /**
  * Inquiry model types
  */
-import { InquiryStatus } from '../enums';
+import { InquiryStatus } from "../enums";
 
 export interface Inquiry {
   id: string;
   userId: string;
   content: string;
-  language: 'ja' | 'en';
+  language: "ja" | "en";
   timestamp: Date;
   status: InquiryStatus;
   metadata: {
@@ -19,7 +19,7 @@ export interface Inquiry {
 
 export interface InquiryResult {
   inquiryId: string;
-  status: 'processing' | 'needs_clarification' | 'task_working' | 'completed';
-  generatedStories?: import('./story').Story[];
+  status: "processing" | "needs_clarification" | "task_working" | "completed";
+  generatedStories?: import("./story").Story[];
   clarificationQuestions?: string[];
 }
