@@ -1,0 +1,11 @@
+"""
+Priority level enumeration
+"""
+from enum import Enum
+
+
+class Priority(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    URGENT = "urgent"

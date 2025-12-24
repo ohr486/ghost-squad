@@ -2,7 +2,7 @@
 
 ## 概要
 
-ストーリーボードシステムは、自然言語の問い合わせを構造化されたタスクに変換し、既存のカンバンシステムに統合するためのWebアプリケーションです。システムは問い合わせの受付、AI駆動のタスク生成、ユーザーレビュー、外部システム統合の4つの主要フェーズで構成されます。
+ストーリーボードシステムは、自然言語の問い合わせを構造化されたストーリーに変換し、既存のカンバンシステムに統合するためのWebアプリケーションです。システムは問い合わせの受付、AI駆動のストーリー生成、ユーザーレビュー、外部システム統合の4つの主要フェーズで構成されます。
 
 ## アーキテクチャ
 
@@ -17,14 +17,14 @@ graph TB
     
     subgraph "アプリケーション層"
         IS[問い合わせサービス]
-        TS[タスクサービス]
+        SS[ストーリーサービス]
         NS[通知サービス]
         ES[エクスポートサービス]
     end
     
     subgraph "ドメイン層"
-        TC[タスク変換器]
-        TM[タスクモデル]
+        SC[ストーリー変換器]
+        SM[ストーリーモデル]
         IM[問い合わせモデル]
         PR[パターン認識器]
     end
@@ -38,16 +38,16 @@ graph TB
     
     UI --> API
     API --> IS
-    API --> TS
+    API --> SS
     API --> NS
     API --> ES
     
-    IS --> TC
-    TS --> TM
-    TS --> PR
+    IS --> SC
+    SS --> SM
+    SS --> PR
     
-    TC --> AI
-    TM --> DB
+    SC --> AI
+    SM --> DB
     IM --> DB
     ES --> EXT
     NS --> NOTIF
@@ -70,49 +70,49 @@ interface InquiryService {
 
 interface InquiryResult {
   inquiryId: string
-  status: 'processing' | 'needs_clarification' | 'task_working' | 'completed'
-  generatedTasks?: Task[]
+  status: 'processing' | 'needs_clarification' | 'story_working' | 'completed'
+  generatedStories?: Story[]
   clarificationQuestions?: string[]
 }
 ```
 
-### 2. タスク変換器 (TaskConverter)
+### 2. ストーリー変換器 (StoryConverter)
 
-**責任**: AI APIを使用した問い合わせのタスク変換
+**責任**: AI APIを使用した問い合わせのストーリー変換
 
 ```typescript
-interface TaskConverter {
-  convertToTasks(inquiry: Inquiry): Promise<Task[]>
+interface StoryConverter {
+  convertToStories(inquiry: Inquiry): Promise<Story[]>
   extractDeadlines(inquiry: string): Promise<Date | null>
-  categorizeTask(taskDescription: string): Promise<TaskCategory>
-  estimateEffort(taskDescription: string): Promise<number>
+  categorizeStory(storyDescription: string): Promise<StoryCategory>
+  estimateEffort(storyDescription: string): Promise<number>
 }
 
-interface Task {
+interface Story {
   id: string
   title: string
   description: string
-  category: TaskCategory
+  category: StoryCategory
   priority: Priority
   estimatedEffort: number
   deadline?: Date
-  status: TaskStatus
-  metadata: TaskMetadata
+  status: StoryStatus
+  metadata: StoryMetadata
 }
 ```
 
 ### 3. パターン認識器 (PatternRecognizer)
 
-**責任**: タスクパターンの識別とテンプレート適用
+**責任**: ストーリーパターンの識別とテンプレート適用
 
 ```typescript
 interface PatternRecognizer {
-  identifyPattern(taskDescription: string): Promise<TaskPattern>
-  applyTemplate(pattern: TaskPattern, task: Task): Promise<Task>
-  learnFromHistory(tasks: Task[]): Promise<void>
+  identifyPattern(storyDescription: string): Promise<StoryPattern>
+  applyTemplate(pattern: StoryPattern, story: Story): Promise<Story>
+  learnFromHistory(stories: Story[]): Promise<void>
 }
 
-enum TaskPattern {
+enum StoryPattern {
   BUG_FIX = 'bug_fix',
   FEATURE_ADDITION = 'feature_addition',
   INVESTIGATION = 'investigation',
@@ -121,30 +121,30 @@ enum TaskPattern {
 }
 ```
 
-### 4. タスクサービス (TaskService)
+### 4. ストーリーサービス (StoryService)
 
-**責任**: タスクのCRUD操作、レビュー管理
+**責任**: ストーリーのCRUD操作、レビュー管理
 
 ```typescript
-interface TaskService {
-  getPendingTasks(userId: string): Promise<Task[]>
-  updateTask(taskId: string, updates: Partial<Task>): Promise<Task>
-  approveTask(taskId: string): Promise<void>
-  rejectTask(taskId: string, reason?: string): Promise<void>
-  batchApprove(taskIds: string[]): Promise<void>
-  getTaskHistory(taskId: string): Promise<TaskVersion[]>
+interface StoryService {
+  getPendingStories(userId: string): Promise<Story[]>
+  updateStory(storyId: string, updates: Partial<Story>): Promise<Story>
+  approveStory(storyId: string): Promise<void>
+  rejectStory(storyId: string, reason?: string): Promise<void>
+  batchApprove(storyIds: string[]): Promise<void>
+  getStoryHistory(storyId: string): Promise<StoryVersion[]>
 }
 ```
 
 ### 5. エクスポートサービス (ExportService)
 
-**責任**: 外部カンバンシステムへのタスク出力
+**責任**: 外部カンバンシステムへのストーリー出力
 
 ```typescript
 interface ExportService {
-  exportToKanban(tasks: Task[], targetSystem: KanbanSystem): Promise<ExportResult>
+  exportToKanban(stories: Story[], targetSystem: KanbanSystem): Promise<ExportResult>
   getSupportedSystems(): KanbanSystem[]
-  trackSyncStatus(taskId: string): Promise<SyncStatus>
+  trackSyncStatus(storyId: string): Promise<SyncStatus>
 }
 
 interface KanbanSystem {
@@ -161,9 +161,9 @@ interface KanbanSystem {
 
 ```typescript
 interface NotificationService {
-  sendTaskCompletionNotification(userId: string, tasks: Task[]): Promise<void>
+  sendStoryCompletionNotification(userId: string, stories: Story[]): Promise<void>
   sendErrorAlert(userId: string, error: Error): Promise<void>
-  sendDeadlineReminder(userId: string, tasks: Task[]): Promise<void>
+  sendDeadlineReminder(userId: string, stories: Story[]): Promise<void>
   configureNotificationSettings(userId: string, settings: NotificationSettings): Promise<void>
 }
 ```
@@ -191,34 +191,34 @@ enum InquiryStatus {
   RECEIVED = 'received',
   PROCESSING = 'processing',
   NEEDS_CLARIFICATION = 'needs_clarification',
-  TASK_WORKING = 'task_working',
+  STORY_WORKING = 'story_working',
   COMPLETED = 'completed',
   FAILED = 'failed'
 }
 ```
 
-### タスクモデル
+### ストーリーモデル
 
 ```typescript
-interface Task {
+interface Story {
   id: string
   inquiryId: string
   title: string
   description: string
-  category: TaskCategory
+  category: StoryCategory
   priority: Priority
   estimatedEffort: number // 時間単位
   deadline?: Date
-  status: TaskStatus
+  status: StoryStatus
   assignee?: string
   tags: string[]
-  dependencies: string[] // 他のタスクID
-  metadata: TaskMetadata
+  dependencies: string[] // 他のストーリーID
+  metadata: StoryMetadata
   createdAt: Date
   updatedAt: Date
 }
 
-enum TaskCategory {
+enum StoryCategory {
   DEVELOPMENT = 'development',
   TESTING = 'testing',
   DOCUMENTATION = 'documentation',
@@ -234,14 +234,14 @@ enum Priority {
   URGENT = 'urgent'
 }
 
-enum TaskStatus {
+enum StoryStatus {
   PENDING_REVIEW = 'pending_review',
   APPROVED = 'approved',
   EXPORTED = 'exported',
   REJECTED = 'rejected'
 }
 
-interface TaskMetadata {
+interface StoryMetadata {
   originalInquiry: string
   generationLog: string[]
   appliedTemplate?: string
@@ -253,10 +253,10 @@ interface TaskMetadata {
 ### テンプレートモデル
 
 ```typescript
-interface TaskTemplate {
+interface StoryTemplate {
   id: string
   name: string
-  pattern: TaskPattern
+  pattern: StoryPattern
   fields: TemplateField[]
   checklist: string[]
   defaultEstimate: number
@@ -281,12 +281,12 @@ interface TemplateField {
 *任意の*有効な問い合わせに対して、システムが受け付けた場合、その問い合わせはデータベースに永続化され、一意のIDが割り当てられる
 **検証: 要件 1.1, 6.1, 9.1**
 
-### プロパティ2: タスク変換の完全性
-*任意の*受け付けられた問い合わせに対して、タスク変換器は少なくとも1つの実行可能なタスクを抽出するか、明確化要求を生成する
+### プロパティ2: ストーリー変換の完全性
+*任意の*受け付けられた問い合わせに対して、ストーリー変換器は少なくとも1つの実行可能なストーリーを抽出するか、明確化要求を生成する
 **検証: 要件 1.2, 1.4**
 
-### プロパティ3: 複数タスク分離
-*任意の*複数のタスクを含む問い合わせに対して、システムは各タスクに対して個別のタスク項目を作成し、それぞれに一意のIDを割り当てる
+### プロパティ3: 複数ストーリー分離
+*任意の*複数のストーリーを含む問い合わせに対して、システムは各ストーリーに対して個別のストーリー項目を作成し、それぞれに一意のIDを割り当てる
 **検証: 要件 1.3**
 
 ### プロパティ4: 日本語サポート
@@ -294,11 +294,11 @@ interface TemplateField {
 **検証: 要件 1.5, 8.6**
 
 ### プロパティ5: 自動分類の一貫性
-*任意の*作成されたタスクに対して、システムは有効なカテゴリ、優先度レベル、推定工数を割り当てる
+*任意の*作成されたストーリーに対して、システムは有効なカテゴリ、優先度レベル、推定工数を割り当てる
 **検証: 要件 2.1, 2.2**
 
 ### プロパティ6: 緊急キーワード検出
-*任意の*緊急キーワード（緊急、至急、ASAP）を含むタスクに対して、システムは高優先度を割り当てる
+*任意の*緊急キーワード（緊急、至急、ASAP）を含むストーリーに対して、システムは高優先度を割り当てる
 **検証: 要件 2.3**
 
 ### プロパティ7: カスタムカテゴリサポート
@@ -306,31 +306,31 @@ interface TemplateField {
 **検証: 要件 2.4**
 
 ### プロパティ8: 依存関係自動識別
-*任意の*関連するタスクセットに対して、システムは適切な依存関係を識別し、循環依存を作成しない
+*任意の*関連するストーリーセットに対して、システムは適切な依存関係を識別し、循環依存を作成しない
 **検証: 要件 2.5**
 
-### プロパティ9: タスク初期状態
-*任意の*生成されたタスクに対して、システムは初期状態を「レビュー待ち」に設定し、必要なメタデータを含める
+### プロパティ9: ストーリー初期状態
+*任意の*生成されたストーリーに対して、システムは初期状態を「レビュー待ち」に設定し、必要なメタデータを含める
 **検証: 要件 3.1, 6.1**
 
 ### プロパティ10: レビューデータ完全性
-*任意の*レビュー対象タスクに対して、システムはタイトル、説明、カテゴリ、優先度、推定工数、期限のすべてのフィールドを編集可能な形式で表示する
+*任意の*レビュー対象ストーリーに対して、システムはタイトル、説明、カテゴリ、優先度、推定工数、期限のすべてのフィールドを編集可能な形式で表示する
 **検証: 要件 3.2**
 
 ### プロパティ11: 変更履歴保持
-*任意の*タスク修正に対して、システムは変更前後の状態を記録し、変更履歴を維持する
+*任意の*ストーリー修正に対して、システムは変更前後の状態を記録し、変更履歴を維持する
 **検証: 要件 3.3, 6.5**
 
 ### プロパティ12: 状態遷移の正確性
-*任意の*タスクに対して、承認時は「送信待ち」状態に、拒否時は「拒否」状態または削除状態に遷移する
+*任意の*ストーリーに対して、承認時は「送信待ち」状態に、拒否時は「拒否」状態または削除状態に遷移する
 **検証: 要件 3.4, 3.5**
 
 ### プロパティ13: 一括処理の原子性
-*任意の*一括操作に対して、すべてのタスクが成功するか、すべてが失敗するかのいずれかになる（部分的成功はない）
+*任意の*一括操作に対して、すべてのストーリーが成功するか、すべてが失敗するかのいずれかになる（部分的成功はない）
 **検証: 要件 3.6**
 
 ### プロパティ14: 出力データ完全性
-*任意の*出力されるタスクに対して、タイトル、説明、カテゴリ、優先度、推定工数、期限（設定されている場合）のすべての情報が含まれる
+*任意の*出力されるストーリーに対して、タイトル、説明、カテゴリ、優先度、推定工数、期限（設定されている場合）のすべての情報が含まれる
 **検証: 要件 4.2, 10.3**
 
 ### プロパティ15: 外部システム統合
@@ -338,7 +338,7 @@ interface TemplateField {
 **検証: 要件 4.3, 4.4, 4.5**
 
 ### プロパティ16: パターン認識とテンプレート適用
-*任意の*認識されたタスクパターンに対して、システムは対応するテンプレートを適用し、テンプレートの必須フィールドを設定する
+*任意の*認識されたストーリーパターンに対して、システムは対応するテンプレートを適用し、テンプレートの必須フィールドを設定する
 **検証: 要件 5.1, 5.2, 5.4**
 
 ### プロパティ17: カスタムテンプレート管理
@@ -346,11 +346,11 @@ interface TemplateField {
 **検証: 要件 5.3**
 
 ### プロパティ18: 生成ログ記録
-*任意の*タスク生成プロセスに対して、システムは分析ステップ、適用されたルール、使用されたテンプレートをログとして記録する
+*任意の*ストーリー生成プロセスに対して、システムは分析ステップ、適用されたルール、使用されたテンプレートをログとして記録する
 **検証: 要件 6.2, 6.3**
 
 ### プロパティ19: コメント機能
-*任意の*タスクに対して、ユーザーが追加したコメントやメモは適切に保存され、タスクと関連付けられる
+*任意の*ストーリーに対して、ユーザーが追加したコメントやメモは適切に保存され、ストーリーと関連付けられる
 **検証: 要件 6.4**
 
 ### プロパティ20: 通知配信
@@ -362,11 +362,11 @@ interface TemplateField {
 **検証: 要件 7.5**
 
 ### プロパティ22: 検索機能
-*任意の*検索クエリに対して、システムは関連する問い合わせとタスクを適切にフィルタリングして返す
+*任意の*検索クエリに対して、システムは関連する問い合わせとストーリーを適切にフィルタリングして返す
 **検証: 要件 8.4**
 
 ### プロパティ23: 進捗状況更新
-*任意の*タスク生成またはレビュープロセスに対して、システムはリアルタイムで進捗状況を更新し、UIに反映する
+*任意の*ストーリー生成またはレビュープロセスに対して、システムはリアルタイムで進捗状況を更新し、UIに反映する
 **検証: 要件 8.5**
 
 ### プロパティ24: データ復元
@@ -378,23 +378,23 @@ interface TemplateField {
 **検証: 要件 9.4**
 
 ### プロパティ26: 同期状態追跡
-*任意の*外部システムへのタスク出力に対して、システムは同期状態を追跡し、同期の成功/失敗を記録する
+*任意の*外部システムへのストーリー出力に対して、システムは同期状態を追跡し、同期の成功/失敗を記録する
 **検証: 要件 9.5**
 
 ### プロパティ27: 期限自動設定
-*任意の*期限情報を含む問い合わせに対して、システムは自然言語から適切な日付を抽出し、タスクの期限として設定する
+*任意の*期限情報を含む問い合わせに対して、システムは自然言語から適切な日付を抽出し、ストーリーの期限として設定する
 **検証: 要件 10.2**
 
 ### プロパティ28: 期限通知
-*任意の*期限が設定されたタスクに対して、期限が近づいた時（設定可能な日数前）にユーザーに通知を送信する
+*任意の*期限が設定されたストーリーに対して、期限が近づいた時（設定可能な日数前）にユーザーに通知を送信する
 **検証: 要件 10.4**
 
 ### プロパティ29: 期限による優先度調整
-*任意の*期限が設定されたタスクに対して、期限までの残り時間に基づいて優先度を自動的に調整する
+*任意の*期限が設定されたストーリーに対して、期限までの残り時間に基づいて優先度を自動的に調整する
 **検証: 要件 10.5**
 
 ### プロパティ30: 問い合わせステータス管理
-*任意の*問い合わせに対して、関連するすべてのタスクが完了状態（exported）になった場合はステータスを「completed」に、未完了のタスクがある場合は「task_working」に設定する
+*任意の*問い合わせに対して、関連するすべてのストーリーが完了状態（exported）になった場合はステータスを「completed」に、未完了のストーリーがある場合は「story_working」に設定する
 **検証: 要件 1.1, 3.4**
 ## エラーハンドリング
 
