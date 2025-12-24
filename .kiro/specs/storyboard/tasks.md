@@ -21,7 +21,7 @@
     - _要件: 全般_
 
 - [ ] 2. 開発環境とツールチェーンの設定
-  - [ ] 2.1 Docker Compose設定
+  - [x] 2.1 Docker Compose設定
     - PostgreSQLデータベースコンテナ
     - Redisキャッシュコンテナ
     - バックエンドAPIコンテナ
