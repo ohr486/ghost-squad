@@ -12,7 +12,7 @@ export interface TemplateField {
 }
 
 export interface StoryTemplate {
-  id: string;
+  id: number;
   name: string;
   pattern: StoryPattern;
   fields: TemplateField[];

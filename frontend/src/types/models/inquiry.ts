@@ -4,7 +4,7 @@
 import { InquiryStatus } from "../enums";
 
 export interface Inquiry {
-  id: string;
+  id: number;
   userId: string;
   content: string;
   language: "ja" | "en";
@@ -18,7 +18,7 @@ export interface Inquiry {
 }
 
 export interface InquiryResult {
-  inquiryId: string;
+  inquiryId: number;
   status: "processing" | "needs_clarification" | "task_working" | "completed";
   generatedStories?: import("./story").Story[];
   clarificationQuestions?: string[];

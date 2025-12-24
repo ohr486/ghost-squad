@@ -17,7 +17,7 @@ class TemplateField(BaseModel):
 
 
 class StoryTemplate(BaseModel):
-    id: str
+    id: int
     name: str
     pattern: StoryPattern
     fields: List[TemplateField]

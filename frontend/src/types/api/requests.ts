@@ -18,7 +18,7 @@ export interface StoryUpdateRequest {
   deadline?: string; // ISO string format
   assignee?: string;
   tags?: string[];
-  dependencies?: string[];
+  dependencies?: number[];
 }
 
 export interface RejectRequest {

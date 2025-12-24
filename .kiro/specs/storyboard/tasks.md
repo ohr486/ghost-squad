@@ -1,8 +1,8 @@
-# 実装計画: ストーリーボード
+# ストーリーボード機能 実装計画
 
 ## 概要
 
-ストーリーボードシステムをPython（バックエンド）とTypeScript（フロントエンド）で実装します。**WebUIを先行実装**してユーザー体験を早期に確認できるよう、最小限のAPIエンドポイントとフロントエンドを優先的に実装し、その後バックエンド機能を段階的に拡張します。バックエンドはFastAPIを使用したWebアプリケーション、フロントエンドはReact + TypeScriptのSPAとして構築し、SQLAlchemyによるデータベース管理、OpenAI APIを使用したストーリー変換、外部カンバンシステムとの統合を含みます。
+Ghost Squadのストーリーボード機能をPython（FastAPIバックエンド）とTypeScript（Reactフロントエンド）で実装します。**WebUIを先行実装**してユーザー体験を早期に確認できるよう、最小限のAPIエンドポイントとReact TypeScriptフロントエンドを優先的に実装し、その後バックエンド機能を段階的に拡張します。バックエンドはFastAPI + SQLAlchemy + PostgreSQL、フロントエンドはReact + TypeScript + Tailwind CSSで構築し、OpenAI APIを使用したストーリー変換、外部カンバンシステム（Trello、Jira、GitHub Projects）との統合を含みます。
 
 ## タスク
 
@@ -78,28 +78,37 @@
     - _要件: 全般_
 
 - [ ] 3. WebUI用最小APIとデータモデルの実装
-  - [ ] 3.1 WebUI用SQLAlchemyモデルの実装
+  - [x] 3.1 WebUI用SQLAlchemyモデルの実装
     - InquiryModel、StoryModelクラス
     - InquiryStatus、StoryStatus、Priority、StoryCategoryエnum
     - _要件: 6.1, 9.1_
 
-  - [ ] 3.2 データベース接続とマイグレーション
+  - [x] 3.2 データベース接続とマイグレーション
     - Alembicによるマイグレーション設定
     - データベース接続管理
     - Makefileとの統合（make db-migrate, make db-reset）
     - 初期データシード機能
     - _要件: 9.1, 9.3_
 
+  - [ ] 3.2.1 データベーススキーマ整合性の修正
+    - story_metadataカラムにserver_default='{}'を追加するマイグレーション作成
+    - SQLAlchemyモデルにPythonレベルのdefault=dictを追加
+    - story_templates.fieldsとchecklistカラムの設定確認と修正
+    - マイグレーション安全性テスト（既存データ保持確認）
+    - _要件: 11.1, 11.2, 11.3, 11.4_
+
   - [ ] 3.3 FastAPIアプリケーション初期設定
     - FastAPIアプリケーションインスタンス作成
     - CORSMiddleware設定（フロントエンド連携用）
     - APIRouter設定（/api プレフィックス）
+    - lifespan context manager実装（モダンなFastAPI 0.104.0+対応）
     - _要件: 8.1, 8.2_
 
   - [ ] 3.4 問い合わせAPIエンドポイント実装
     - POST /api/inquiries（InquiryCreateRequest → InquiryResponse）
     - GET /api/inquiries（→ List[InquiryResponse]）
     - GET /api/inquiries/{id}（→ InquiryResponse）
+    - FastAPI依存性注入によるデータベースセッション管理（get_db）
     - _要件: 1.1, 6.3_
 
 - [ ] 4. React + TypeScriptフロントエンドの実装
@@ -193,7 +202,8 @@
   - [ ] 9.3 データモデルプロパティテスト実装
     - **プロパティ1: 問い合わせ受付と保存**
     - **プロパティ9: ストーリー初期状態**
-    - **検証: 要件 1.1, 6.1, 9.1, 3.1**
+    - **プロパティ31: データベーススキーマの整合性**
+    - **検証: 要件 1.1, 6.1, 9.1, 3.1, 11.1, 11.2, 11.3, 11.4**
 
   - [ ] 9.4 InquiryServiceクラス実装
     - submit_inquiry()、get_inquiry_history()、update_inquiry_status()メソッド

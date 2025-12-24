@@ -1,18 +1,18 @@
-# 設計ドキュメント
+# ストーリーボード機能 設計ドキュメント
 
 ## 概要
 
-ストーリーボードシステムは、自然言語の問い合わせを構造化されたストーリーに変換し、既存のカンバンシステムに統合するためのWebアプリケーションです。システムは問い合わせの受付、AI駆動のストーリー生成、ユーザーレビュー、外部システム統合の4つの主要フェーズで構成されます。
+Ghost Squadのストーリーボード機能は、日本語自然言語の問い合わせを構造化されたユーザーストーリーに変換し、既存のカンバンシステム（Trello、Jira、GitHub Projects）に統合するためのWebアプリケーション機能です。システムは問い合わせの受付、OpenAI API駆動のストーリー生成、ユーザーレビュー、外部システム統合の4つの主要フェーズで構成されます。
 
 ## アーキテクチャ
 
-システムは以下のレイヤーで構成されるクリーンアーキテクチャを採用します：
+Ghost Squadのストーリーボード機能は、以下のレイヤーで構成されるクリーンアーキテクチャを採用します：
 
 ```mermaid
 graph TB
     subgraph "プレゼンテーション層"
-        UI[Web UI]
-        API[REST API]
+        UI[React TypeScript WebUI]
+        API[FastAPI REST API]
     end
     
     subgraph "アプリケーション層"
@@ -30,8 +30,8 @@ graph TB
     end
     
     subgraph "インフラストラクチャ層"
-        DB[(データベース)]
-        AI[AI API]
+        DB[(PostgreSQL)]
+        AI[OpenAI API]
         EXT[外部カンバンAPI]
         NOTIF[通知プロバイダー]
     end
@@ -63,13 +63,13 @@ graph TB
 interface InquiryService {
   submitInquiry(inquiry: string, userId: string): Promise<InquiryResult>
   getInquiryHistory(userId: string): Promise<Inquiry[]>
-  requestClarification(inquiryId: string, questions: string[]): Promise<void>
-  updateInquiryStatus(inquiryId: string): Promise<void>
-  checkTaskCompletion(inquiryId: string): Promise<boolean>
+  requestClarification(inquiryId: number, questions: string[]): Promise<void>
+  updateInquiryStatus(inquiryId: number): Promise<void>
+  checkTaskCompletion(inquiryId: number): Promise<boolean>
 }
 
 interface InquiryResult {
-  inquiryId: string
+  inquiryId: number
   status: 'processing' | 'needs_clarification' | 'story_working' | 'completed'
   generatedStories?: Story[]
   clarificationQuestions?: string[]
@@ -89,7 +89,7 @@ interface StoryConverter {
 }
 
 interface Story {
-  id: string
+  id: number
   title: string
   description: string
   category: StoryCategory
@@ -128,11 +128,11 @@ enum StoryPattern {
 ```typescript
 interface StoryService {
   getPendingStories(userId: string): Promise<Story[]>
-  updateStory(storyId: string, updates: Partial<Story>): Promise<Story>
-  approveStory(storyId: string): Promise<void>
-  rejectStory(storyId: string, reason?: string): Promise<void>
-  batchApprove(storyIds: string[]): Promise<void>
-  getStoryHistory(storyId: string): Promise<StoryVersion[]>
+  updateStory(storyId: number, updates: Partial<Story>): Promise<Story>
+  approveStory(storyId: number): Promise<void>
+  rejectStory(storyId: number, reason?: string): Promise<void>
+  batchApprove(storyIds: number[]): Promise<void>
+  getStoryHistory(storyId: number): Promise<StoryVersion[]>
 }
 ```
 
@@ -144,7 +144,7 @@ interface StoryService {
 interface ExportService {
   exportToKanban(stories: Story[], targetSystem: KanbanSystem): Promise<ExportResult>
   getSupportedSystems(): KanbanSystem[]
-  trackSyncStatus(storyId: string): Promise<SyncStatus>
+  trackSyncStatus(storyId: number): Promise<SyncStatus>
 }
 
 interface KanbanSystem {
@@ -170,11 +170,25 @@ interface NotificationService {
 
 ## データモデル
 
+### ID型について
+
+**重要な設計決定**: Ghost Squadのすべてのエンティティ（Inquiry、Story、StoryTemplate）のIDフィールドは、パフォーマンスと外部システム統合を考慮してBigInteger（64ビット整数）を使用します。
+
+- **利点**:
+  - データベースインデックスの効率性向上
+  - 結合処理の高速化
+  - ストレージ効率の改善（16バイト → 8バイト）
+  - 順序性の保証（作成順序の把握が容易）
+  - 外部システムとの統合の簡素化
+
+- **自動インクリメント**: すべてのIDは自動的に生成され、1から開始
+- **範囲**: 1から9,223,372,036,854,775,807まで（実用上無制限）
+
 ### 問い合わせモデル
 
 ```typescript
 interface Inquiry {
-  id: string
+  id: number
   userId: string
   content: string
   language: 'ja' | 'en'
@@ -201,8 +215,8 @@ enum InquiryStatus {
 
 ```typescript
 interface Story {
-  id: string
-  inquiryId: string
+  id: number
+  inquiryId: number
   title: string
   description: string
   category: StoryCategory
@@ -212,7 +226,7 @@ interface Story {
   status: StoryStatus
   assignee?: string
   tags: string[]
-  dependencies: string[] // 他のストーリーID
+  dependencies: number[] // 他のストーリーID
   metadata: StoryMetadata
   createdAt: Date
   updatedAt: Date
@@ -254,7 +268,7 @@ interface StoryMetadata {
 
 ```typescript
 interface StoryTemplate {
-  id: string
+  id: number
   name: string
   pattern: StoryPattern
   fields: TemplateField[]
@@ -396,7 +410,55 @@ interface TemplateField {
 ### プロパティ30: 問い合わせステータス管理
 *任意の*問い合わせに対して、関連するすべてのストーリーが完了状態（exported）になった場合はステータスを「completed」に、未完了のストーリーがある場合は「story_working」に設定する
 **検証: 要件 1.1, 3.4**
-## エラーハンドリング
+
+### プロパティ31: データベーススキーマの整合性
+*任意の*JSONカラムに対して、nullable=Falseの場合は適切なデフォルト値が設定され、データ挿入時にエラーが発生しない
+**検証: 要件 11.1, 11.2, 11.3, 11.4**
+## データベーススキーマ整合性の設計
+
+### 問題の特定
+
+現在のデータベーススキーマには以下の問題があります：
+
+1. **story_metadata カラム**: `nullable=False` だが、サーバーレベルのデフォルト値が設定されていない
+2. **他のJSONカラムの潜在的問題**: `fields`、`checklist` カラム（story_templates テーブル）も同様の問題を抱える可能性
+
+### 解決方針
+
+#### 1. サーバーデフォルト値の追加
+- `story_metadata` カラムに `server_default='{}' ` を設定
+- 既存データに影響を与えない安全なマイグレーション
+
+#### 2. SQLAlchemyモデルの更新
+- Python レベルでのデフォルト値も設定（`default=dict`）
+- 二重の保護により確実なデータ整合性を確保
+
+#### 3. 他のJSONカラムの検証
+- `story_templates.fields` と `story_templates.checklist` の設定確認
+- 必要に応じて同様の修正を適用
+
+### マイグレーション戦略
+
+```python
+# 安全なマイグレーション手順
+def upgrade():
+    # 1. 既存のnullable=Falseカラムにserver_defaultを追加
+    op.alter_column('stories', 'story_metadata',
+                   server_default='{}')
+    
+    # 2. 他のJSONカラムも同様に処理（必要に応じて）
+    op.alter_column('story_templates', 'fields',
+                   server_default='[]')
+    op.alter_column('story_templates', 'checklist', 
+                   server_default='[]')
+```
+
+### 検証方法
+
+1. **マイグレーション前後のデータ整合性確認**
+2. **新規データ挿入テスト**（値なしでの挿入）
+3. **既存データの保持確認**
+4. **ロールバックテスト**
 
 ### エラー分類
 
