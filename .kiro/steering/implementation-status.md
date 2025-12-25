@@ -60,19 +60,21 @@ inclusion: always
 **1. React TypeScriptフロントエンド**
 - 基本セットアップ（Create React App + TypeScript）
 - ルーティング設定（React Router DOM）
-- レイアウトシステム（基本的なLayout.tsx）
-- ページ構造（HomePage, InquiriesPage, TasksPage - プレースホルダー）
-- 型定義（35ファイル、バックエンドと完全対応）
+- レイアウトシステム（Layout.tsx + ダークモード対応）
+- ページ構造（HomePage完成, InquiriesPage, TasksPage）
+- 型定義（42ファイル、バックエンドと完全対応）
 - 依存関係（TanStack Query, React Hook Form, Zod, Tailwind CSS）
-- **未実装**: 実際のコンポーネント、API統合、状態管理
+- **実装済み**: InquiryForm（React Hook Form + Zod）、apiClient、inquiryService
+- **実装済み**: useDarkModeフック
+- **未実装**: ストーリー表示コンポーネント、一覧表示の完全実装
 
 **2. フロントエンド型システム**
-- 完全なTypeScript型定義（35ファイル）
+- 完全なTypeScript型定義（42ファイル）
 - Enumクラス（バックエンドと完全対応）
 - APIリクエスト・レスポンス型
 - モデル型定義
 - エクスポート型定義
-- **未実装**: 実際の使用、バリデーション統合
+- **実装済み**: InquiryFormでのバリデーション統合（Zod）
 
 ### ❌ 未実装（計画済み）
 
@@ -236,17 +238,19 @@ POST   /api/export/github          # GitHub Projectsエクスポート
 ```
 実装済み:
 - App.tsx（ルーティング設定）
-- Layout.tsx（基本レイアウト）
+- Layout.tsx（レイアウト + ダークモード切替）
 - HomePage.tsx（機能紹介、API接続確認）
-- 型定義（35ファイル、完全）
+- InquiryForm.tsx（問い合わせフォーム、React Hook Form + Zod）
+- 型定義（42ファイル、完全）
+- apiClient.ts（Axiosベースクライアント）
+- inquiryService.ts（問い合わせAPI呼び出し）
+- useDarkMode.ts（カスタムフック）
 
-プレースホルダー:
-- InquiriesPage.tsx（"Coming Soon"メッセージのみ）
+進行中:
+- InquiriesPage.tsx（フォーム統合、一覧表示実装中）
 - TasksPage.tsx（基本構造のみ）
 
 空ディレクトリ:
-- hooks/（カスタムフック用）
-- services/（API クライアント用）
 - utils/（ユーティリティ関数用）
 ```
 
@@ -285,9 +289,9 @@ POST   /api/export/github          # GitHub Projectsエクスポート
 ## 🚀 次のマイルストーン
 
 ### 短期目標（1-2週間）
-- [ ] **APIクライアントサービス作成** - services/inquiryService.ts
-- [ ] **問い合わせ入力フォーム実装** - components/forms/InquiryForm.tsx
-- [ ] **問い合わせ履歴表示実装** - components/lists/InquiryList.tsx
+- [x] **APIクライアントサービス作成** - services/inquiryService.ts（完了）
+- [x] **問い合わせ入力フォーム実装** - components/forms/InquiryForm.tsx（完了）
+- [ ] **問い合わせ履歴表示実装** - InquiriesPage.tsx（進行中）
 - [ ] **フロントエンド・バックエンド統合テスト**
 
 ### 中期目標（1ヶ月）
@@ -305,21 +309,21 @@ POST   /api/export/github          # GitHub Projectsエクスポート
 
 ## 📈 開発進捗追跡
 
-### 完了済み機能（推定40%）
+### 完了済み機能（推定50%）
 - ✅ プロジェクト基盤
 - ✅ バックエンドAPI（問い合わせ管理）
 - ✅ データベース設計・マイグレーション
 - ✅ 開発環境・ツール
 - ✅ 型定義システム
+- ✅ フロントエンド基本構造（フォーム、APIクライアント）
 
-### 進行中機能（推定20%）
-- 🚧 フロントエンド基本構造
+### 進行中機能（推定15%）
+- 🚧 問い合わせ一覧表示（InquiriesPage）
 - 🚧 テストカバレッジ拡張
 
-### 未着手機能（推定40%）
+### 未着手機能（推定35%）
 - ❌ ストーリー管理API
 - ❌ AI統合
-- ❌ フロントエンド機能コンポーネント
 - ❌ 外部システム統合
 
-この実装状況ガイドラインは、プロジェクトの進捗に応じて定期的に更新されます。最終更新: 2025年12月25日
+この実装状況ガイドラインは、プロジェクトの進捗に応じて定期的に更新されます。最終更新: 2025年12月26日
