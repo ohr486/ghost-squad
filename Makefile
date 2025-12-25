@@ -5,7 +5,7 @@
 export PIP_ROOT_USER_ACTION=ignore
 PIP_ENV_VARS = -e PIP_ROOT_USER_ACTION=ignore
 
-.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset db-reset-migrations db-connect db-tables db-data clean logs logs-backend logs-frontend logs-db status disk-usage docker-cleanup volume-list volume-cleanup volume-cleanup-force
+.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset db-reset-migrations db-connect db-tables db-data clean clean-deep logs logs-backend logs-frontend logs-db status disk-usage docker-cleanup volume-list volume-cleanup volume-cleanup-force
 
 # Default target
 help:
@@ -14,6 +14,7 @@ help:
 	@echo "Setup and Environment:"
 	@echo "  make setup          - 初期環境構築 (Initial environment setup)"
 	@echo "  make clean          - 環境クリーンアップ (Environment cleanup)"
+	@echo "  make clean-deep     - 徹底的なクリーンアップ (Deep cleanup including node_modules)"
 	@echo ""
 	@echo "Development:"
 	@echo "  make dev            - 開発サーバー起動 (Start development servers in background)"
@@ -404,15 +405,45 @@ clean:
 	docker volume prune -f
 	@echo "🧹 Removing unused Docker networks..."
 	docker network prune -f
-	@echo "🧹 Cleaning backend cache..."
-	@if [ -d "backend/__pycache__" ]; then rm -rf backend/__pycache__; fi
-	@if [ -d "backend/.pytest_cache" ]; then rm -rf backend/.pytest_cache; fi
+	@echo "🧹 Cleaning backend cache and build artifacts..."
+	@find backend -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@find backend -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find backend -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find backend -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	@if [ -f "backend/.coverage" ]; then rm -f backend/.coverage; fi
 	@if [ -d "backend/htmlcov" ]; then rm -rf backend/htmlcov; fi
-	@echo "🧹 Cleaning frontend cache..."
+	@if [ -d "backend/.bandit" ]; then rm -rf backend/.bandit; fi
+	@if [ -d ".pytest_cache" ]; then rm -rf .pytest_cache; fi
+	@echo "🧹 Cleaning frontend cache and build artifacts..."
 	@if [ -d "frontend/node_modules/.cache" ]; then rm -rf frontend/node_modules/.cache; fi
 	@if [ -d "frontend/build" ]; then rm -rf frontend/build; fi
+	@if [ -d "frontend/dist" ]; then rm -rf frontend/dist; fi
 	@if [ -d "frontend/coverage" ]; then rm -rf frontend/coverage; fi
+	@if [ -f "frontend/.eslintcache" ]; then rm -f frontend/.eslintcache; fi
+	@echo "🧹 Cleaning system files..."
+	@find . -type f -name ".DS_Store" -delete 2>/dev/null || true
 	@echo "✅ Cleanup completed"
+
+# 徹底的なクリーンアップ (Deep cleanup including dependencies)
+clean-deep:
+	@echo "🧹 Starting deep cleanup..."
+	@echo "⚠️  This will remove node_modules and require reinstallation (npm install)"
+	@echo "⚠️  Press Ctrl+C to cancel, or wait 5 seconds to continue..."
+	@sleep 5
+	@echo "🔄 Running standard cleanup first..."
+	$(MAKE) clean
+	@echo "🧹 Removing node_modules..."
+	@if [ -d "frontend/node_modules" ]; then \
+		echo "📦 Removing frontend/node_modules (this may take a moment)..."; \
+		rm -rf frontend/node_modules; \
+		echo "✅ node_modules removed"; \
+	else \
+		echo "ℹ️  node_modules not found, skipping"; \
+	fi
+	@echo "🧹 Removing package-lock files..."
+	@if [ -f "frontend/package-lock.json" ]; then rm -f frontend/package-lock.json; fi
+	@echo "✅ Deep cleanup completed"
+	@echo "💡 Run 'make setup' or 'npm install' in frontend/ to reinstall dependencies"
 
 # Development utilities
 logs:
