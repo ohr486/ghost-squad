@@ -57,41 +57,30 @@ const InquiriesPage: React.FC = () => {
         />
       )}
 
-      {/* Content Area */}
+      {/* Inquiry History */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow border dark:border-gray-700">
         <div className="p-6">
-          {!showForm ? (
-            <div className="text-center py-12">
-              <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                問い合わせを作成
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">
-                「新しい問い合わせ」ボタンをクリックして開始してください
-              </p>
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4 max-w-md mx-auto">
-                <p className="text-sm text-blue-800 dark:text-blue-300">
-                  <strong>利用可能な機能:</strong>
-                  <br />
-                  ✅ 問い合わせ入力フォーム
-                  <br />
-                  <strong>実装予定:</strong>
-                  <br />
-                  • 問い合わせ履歴表示
-                  <br />• AIストーリー生成機能
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                問い合わせ履歴
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400">
-                問い合わせ履歴表示機能は次のタスクで実装予定です
+          <div className="text-center py-12">
+            <MessageSquare className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              問い合わせ履歴
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              問い合わせ履歴表示機能は次のタスクで実装予定です
+            </p>
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md p-4 max-w-md mx-auto">
+              <p className="text-sm text-blue-800 dark:text-blue-300">
+                <strong>実装予定の機能:</strong>
+                <br />
+                • 問い合わせ履歴の一覧表示
+                <br />
+                • 各問い合わせの詳細表示
+                <br />
+                • ステータス別フィルタリング
+                <br />• AIによるストーリー生成結果の確認
               </p>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

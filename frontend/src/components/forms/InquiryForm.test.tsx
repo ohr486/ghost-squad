@@ -60,7 +60,7 @@ describe("InquiryForm", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("問い合わせ内容を入力してください"),
+        screen.getByText("問い合わせ内容は10文字以上で入力してください"),
       ).toBeInTheDocument();
     });
   });

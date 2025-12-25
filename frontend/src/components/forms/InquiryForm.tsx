@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -11,7 +11,6 @@ import type { InquiryCreateRequest, InquiryResponse } from "../../types/api";
 const inquiryFormSchema = z.object({
   content: z
     .string()
-    .min(1, "問い合わせ内容を入力してください")
     .min(10, "問い合わせ内容は10文字以上で入力してください")
     .max(5000, "問い合わせ内容は5000文字以内で入力してください"),
   language: z.enum(["ja", "en"]).default("ja"),
@@ -34,6 +33,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     "idle" | "loading" | "success" | "error"
   >("idle");
 
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -48,6 +49,15 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     },
     mode: "onBlur",
   });
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const contentValue = watch("content");
   const characterCount = contentValue?.length || 0;
@@ -78,7 +88,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
 
       // Reset success state after 3 seconds
-      setTimeout(() => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
         setSubmitState("idle");
       }, 3000);
     } catch (error) {
@@ -93,7 +106,10 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
 
       // Reset error state after 5 seconds
-      setTimeout(() => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
         setSubmitState("idle");
       }, 5000);
     }
@@ -145,6 +161,19 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         return `${baseClass} text-white bg-red-600 hover:bg-red-700 focus:ring-red-500`;
       default:
         return `${baseClass} text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed`;
+    }
+  };
+
+  const getSubmitButtonAriaLabel = () => {
+    switch (submitState) {
+      case "loading":
+        return "問い合わせを送信中です";
+      case "success":
+        return "問い合わせの送信が完了しました";
+      case "error":
+        return "送信に失敗しました。再試行してください";
+      default:
+        return "問い合わせを送信";
     }
   };
 
@@ -234,6 +263,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             type="submit"
             disabled={!isValid || submitState === "loading"}
             className={getSubmitButtonClass()}
+            aria-label={getSubmitButtonAriaLabel()}
+            aria-busy={submitState === "loading"}
           >
             {getSubmitButtonContent()}
           </button>
@@ -241,9 +272,16 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
 
         {/* Status Messages */}
         {submitState === "success" && (
-          <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-4">
+          <div
+            className="rounded-md bg-green-50 dark:bg-green-900/20 p-4"
+            role="status"
+            aria-live="polite"
+          >
             <div className="flex">
-              <CheckCircle className="h-5 w-5 text-green-400" />
+              <CheckCircle
+                className="h-5 w-5 text-green-400"
+                aria-hidden="true"
+              />
               <div className="ml-3">
                 <p className="text-sm font-medium text-green-800 dark:text-green-200">
                   問い合わせが正常に送信されました
@@ -257,9 +295,16 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         )}
 
         {submitState === "error" && (
-          <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+          <div
+            className="rounded-md bg-red-50 dark:bg-red-900/20 p-4"
+            role="alert"
+            aria-live="assertive"
+          >
             <div className="flex">
-              <AlertCircle className="h-5 w-5 text-red-400" />
+              <AlertCircle
+                className="h-5 w-5 text-red-400"
+                aria-hidden="true"
+              />
               <div className="ml-3">
                 <p className="text-sm font-medium text-red-800 dark:text-red-200">
                   送信に失敗しました

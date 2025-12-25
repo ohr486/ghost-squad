@@ -46,9 +46,14 @@ describe("InquiriesPage", () => {
         <InquiriesPage />
       </TestWrapper>,
     );
-    expect(screen.getByText("利用可能な機能:")).toBeInTheDocument();
-    expect(screen.getByText("実装予定:")).toBeInTheDocument();
-    expect(screen.getByText(/問い合わせ履歴表示/)).toBeInTheDocument();
-    expect(screen.getByText(/AIストーリー生成機能/)).toBeInTheDocument();
+    expect(screen.getByText("問い合わせ履歴")).toBeInTheDocument();
+    expect(
+      screen.getByText("問い合わせ履歴表示機能は次のタスクで実装予定です"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("実装予定の機能:")).toBeInTheDocument();
+    expect(screen.getByText(/問い合わせ履歴の一覧表示/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/AIによるストーリー生成結果の確認/),
+    ).toBeInTheDocument();
   });
 });

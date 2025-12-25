@@ -183,7 +183,7 @@ inclusion: always
 ### フロントエンド
 - **技術スタック**: React 18.2.0 + TypeScript 4.9.5 + Tailwind CSS 3.3.5
 - **状態管理**: TanStack React Query 5.8.4（設定済み、未使用）
-- **フォーム**: React Hook Form 7.47.0 + Zod 3.22.4（設定済み、未使用）
+- **フォーム**: React Hook Form 7.43.0 + Zod 3.22.4（設定済み、未使用）
 - **API通信**: Axios 1.6.2（プロキシ設定済み）
 - **型安全性**: 35の型定義ファイル、バックエンドと完全対応
 
@@ -262,7 +262,9 @@ POST   /api/export/github          # GitHub Projectsエクスポート
 4. **型定義**: TypeScript側の型定義も同時更新
 
 ### コード品質
-- **テストカバレッジ**: 現在は問い合わせAPIのみカバー、新機能は80%以上を目標
+- **テストカバレッジ**:
+  - バックエンド: 現在は問い合わせAPIのみカバー、新機能は80%以上を目標
+  - フロントエンド: 最低50%（段階的に70%へ引き上げ）、新機能は80%以上を目標
 - **型安全性**: TypeScript strict mode、mypy strict mode
 - **コードスタイル**: 既存のフォーマット設定に従う
   - Backend: black 23.11.0 + flake8 6.1.0 + mypy 1.7.1

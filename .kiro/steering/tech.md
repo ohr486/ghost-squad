@@ -24,7 +24,7 @@ Ghost Squadプロジェクトの技術スタックと開発環境に関するガ
 - **ビルドツール**: Create React App (react-scripts 5.0.1)
 - **ルーティング**: React Router DOM 6.18.0
 - **状態管理**: TanStack React Query 5.8.4（サーバー状態管理）
-- **フォーム**: React Hook Form 7.47.0 + Zod 3.22.4 バリデーション
+- **フォーム**: React Hook Form 7.43.0 + Zod 3.22.4 バリデーション
 - **スタイリング**: Tailwind CSS 3.3.5 + @tailwindcss/forms 0.5.7
 - **HTTPクライアント**: Axios 1.6.2（プロキシ設定済み）
 - **UI**: Lucide React 0.294.0 + clsx 2.0.0 + react-hot-toast 2.4.1
@@ -164,7 +164,9 @@ npm test -- --coverage --watchAll=false
 ```
 
 **品質基準**
-- **テストカバレッジ**: 現在14+テスト（問い合わせAPI完全カバー）、新機能は80%以上
+- **テストカバレッジ**:
+  - バックエンド: 現在14+テスト（問い合わせAPI完全カバー）、新機能は80%以上
+  - フロントエンド: 最低50%（段階的に70%へ引き上げ予定）、新機能は80%以上
 - **型安全性**: TypeScript strict mode、mypy strict mode
 - **コードスタイル**: Black（Python）、Prettier（TypeScript）
 - **セキュリティ**: Bandit（Python）、ESLint security rules
