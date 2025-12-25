@@ -112,7 +112,7 @@ test: test-backend test-frontend
 test-backend:
 	@echo "🧪 Running backend tests..."
 	@if [ -d "backend/tests" ]; then \
-		docker-compose run --rm backend python -m pytest tests/ -v --cov=models --cov-report=term-missing --cov-report=html; \
+		docker-compose run --rm backend python -m pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-config=.coveragerc; \
 	else \
 		echo "ℹ️ No tests directory found. Create backend/tests/ directory and add test files."; \
 	fi
@@ -131,14 +131,14 @@ lint-backend:
 	@echo "🔍 Running backend linting..."
 	@echo "📝 Running flake8..."
 	@if [ -d "backend/tests" ]; then \
-		docker-compose run --rm backend flake8 models/ main.py tests/; \
+		docker-compose run --rm backend flake8 api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
 	else \
-		docker-compose run --rm backend flake8 models/ main.py; \
+		docker-compose run --rm backend flake8 api/ models/ main.py database.py manage_db.py seed_data.py; \
 	fi
 	@echo "🔍 Running mypy type checking..."
-	docker-compose run --rm backend mypy models/ main.py
+	docker-compose run --rm backend mypy api/ models/ main.py database.py manage_db.py seed_data.py
 	@echo "🛡️ Running bandit security check..."
-	docker-compose run --rm backend bandit -r models/ -f json
+	docker-compose run --rm backend bandit -r api/ models/ -f json
 
 # フロントエンドコード品質チェック (Run frontend linting)
 lint-frontend:
@@ -157,15 +157,15 @@ format-backend:
 	@echo "🎨 Formatting backend code..."
 	@echo "📝 Running black formatter..."
 	@if [ -d "backend/tests" ]; then \
-		docker-compose run --rm backend black models/ main.py tests/; \
+		docker-compose run --rm backend black api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
 	else \
-		docker-compose run --rm backend black models/ main.py; \
+		docker-compose run --rm backend black api/ models/ main.py database.py manage_db.py seed_data.py; \
 	fi
 	@echo "📦 Running isort import sorter..."
 	@if [ -d "backend/tests" ]; then \
-		docker-compose run --rm backend isort models/ main.py tests/; \
+		docker-compose run --rm backend isort api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
 	else \
-		docker-compose run --rm backend isort models/ main.py; \
+		docker-compose run --rm backend isort api/ models/ main.py database.py manage_db.py seed_data.py; \
 	fi
 
 # フロントエンドコードフォーマット (Format frontend code)

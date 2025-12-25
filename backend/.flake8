@@ -8,3 +8,5 @@ exclude =
     alembic/versions,
     .venv,
     venv
+per-file-ignores =
+    manage_db.py:E402

@@ -112,7 +112,7 @@ Ghost Squadのストーリーボード機能をPython（FastAPIバックエン�
     - _要件: 1.1, 6.3_
 
 - [ ] 4. React + TypeScriptフロントエンドの実装
-  - [ ] 4.1 Reactアプリケーション初期設定
+  - [x] 4.1 Reactアプリケーション初期設定
     - Create React App with TypeScript
     - React Router設定（/, /inquiries, /tasks ルート）
     - Axios APIクライアント設定

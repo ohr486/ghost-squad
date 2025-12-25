@@ -53,10 +53,20 @@ api_router = APIRouter(prefix="/api")
 # Include inquiry router
 api_router.include_router(inquiry_router)
 
+# APIルーターをアプリケーションに追加
+app.include_router(api_router)
 
-# APIの基本情報エンドポイント
-@api_router.get("/info", tags=["system"])
+
+# ルートエンドポイント
+@app.get("/")
+async def root():
+    return {"message": "Hello, GhostSquad"}
+
+
+# システム関連エンドポイント（ルートレベル）
+@app.get("/info", tags=["system"])
 async def api_info():
+    """API基本情報エンドポイント"""
     return {
         "name": "Ghost Squad API",
         "version": "0.0.1",
@@ -64,8 +74,20 @@ async def api_info():
     }
 
 
+# ヘルスチェックエンドポイント
+@app.get("/health", tags=["system"])
+async def health_check():
+    """ヘルスチェックエンドポイント"""
+    db_status = check_database_connection()
+    return {
+        "status": "healthy" if db_status else "unhealthy",
+        "service": "ghost-squad-backend",
+        "database": "connected" if db_status else "disconnected",
+    }
+
+
 # データベーステストエンドポイント
-@api_router.get("/db-test", tags=["system"])
+@app.get("/db-test", tags=["system"])
 async def db_test(db: Session = Depends(get_db)):
     """データベース接続とデータ確認用のテストエンドポイント"""
     from models.database.inquiry import InquiryModel
@@ -83,24 +105,3 @@ async def db_test(db: Session = Depends(get_db)):
             "error": str(e),
             "message": "Database connection failed",
         }
-
-
-# APIルーターをアプリケーションに追加
-app.include_router(api_router)
-
-
-# ルートエンドポイント
-@app.get("/")
-async def root():
-    return {"message": "Hello, GhostSquad"}
-
-
-# ヘルスチェックエンドポイント
-@app.get("/health")
-async def health_check():
-    db_status = check_database_connection()
-    return {
-        "status": "healthy" if db_status else "unhealthy",
-        "service": "ghost-squad-backend",
-        "database": "connected" if db_status else "disconnected",
-    }
