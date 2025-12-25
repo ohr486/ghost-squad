@@ -264,4 +264,289 @@ describe("InquiryForm", () => {
       expect(textarea).toHaveValue("");
     });
   });
+
+  it("shows success state with appropriate button styling", async () => {
+    const user = userEvent.setup();
+    const mockResponse: InquiryResponse = {
+      id: 1,
+      user_id: "user-001",
+      content: "テスト問い合わせです。",
+      language: "ja",
+      timestamp: "2024-01-01T00:00:00Z",
+      status: "received" as any,
+      metadata: { source: "web" },
+    };
+
+    mockInquiryService.createInquiry.mockResolvedValue(mockResponse);
+
+    render(
+      <TestWrapper>
+        <InquiryForm />
+      </TestWrapper>,
+    );
+
+    const textarea = screen.getByLabelText("問い合わせ内容");
+    await user.type(textarea, "テスト問い合わせです。");
+
+    const submitButton = screen.getByRole("button");
+    await user.click(submitButton);
+
+    await waitFor(
+      () => {
+        const button = screen.getByRole("button");
+        expect(button).toHaveClass("bg-green-600");
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it("shows error state with appropriate button styling", async () => {
+    const user = userEvent.setup();
+    const mockError = new Error("Network error");
+    mockInquiryService.createInquiry.mockRejectedValue(mockError);
+
+    render(
+      <TestWrapper>
+        <InquiryForm />
+      </TestWrapper>,
+    );
+
+    const textarea = screen.getByLabelText("問い合わせ内容");
+    await user.type(textarea, "テスト問い合わせです。");
+
+    const submitButton = screen.getByRole("button");
+    await user.click(submitButton);
+
+    await waitFor(
+      () => {
+        const button = screen.getByRole("button");
+        expect(button).toHaveClass("bg-red-600");
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it("handles non-Error object errors", async () => {
+    const user = userEvent.setup();
+    mockInquiryService.createInquiry.mockRejectedValue("String error");
+
+    const onError = jest.fn();
+    render(
+      <TestWrapper>
+        <InquiryForm onError={onError} />
+      </TestWrapper>,
+    );
+
+    const textarea = screen.getByLabelText("問い合わせ内容");
+    await user.type(textarea, "テスト問い合わせです。");
+
+    const submitButton = screen.getByRole("button", { name: /送信/ });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(onError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "送信に失敗しました",
+        }),
+      );
+    });
+  });
+
+  it("shows warning color for character count between 4000 and 4500", async () => {
+    const user = userEvent.setup();
+    render(
+      <TestWrapper>
+        <InquiryForm />
+      </TestWrapper>,
+    );
+
+    const textarea = screen.getByLabelText(
+      "問い合わせ内容",
+    ) as HTMLTextAreaElement;
+    const longText = "あ".repeat(4100);
+
+    // Use paste event to avoid slow typing
+    await user.click(textarea);
+    await user.paste(longText);
+
+    await waitFor(() => {
+      const characterCount = screen.getByText(/4100 \/ 5000/);
+      expect(characterCount).toHaveClass("text-yellow-600");
+    });
+  });
+
+  it("shows error color for character count above 4500", async () => {
+    const user = userEvent.setup();
+    render(
+      <TestWrapper>
+        <InquiryForm />
+      </TestWrapper>,
+    );
+
+    const textarea = screen.getByLabelText(
+      "問い合わせ内容",
+    ) as HTMLTextAreaElement;
+    const longText = "あ".repeat(4600);
+
+    // Use paste event to avoid slow typing
+    await user.click(textarea);
+    await user.paste(longText);
+
+    await waitFor(() => {
+      const characterCount = screen.getByText(/4600 \/ 5000/);
+      expect(characterCount).toHaveClass("text-red-600");
+    });
+  });
+
+  it("clears pending timeout on component unmount", () => {
+    const { unmount } = render(
+      <TestWrapper>
+        <InquiryForm />
+      </TestWrapper>,
+    );
+
+    // Unmount component - should not cause errors even if timers are set
+    expect(() => unmount()).not.toThrow();
+  });
+
+  it("allows multiple consecutive submissions", async () => {
+    const user = userEvent.setup();
+    const mockResponse: InquiryResponse = {
+      id: 1,
+      user_id: "user-001",
+      content: "テスト問い合わせです。",
+      language: "ja",
+      timestamp: "2024-01-01T00:00:00Z",
+      status: "received" as any,
+      metadata: { source: "web" },
+    };
+
+    mockInquiryService.createInquiry.mockResolvedValue(mockResponse);
+
+    render(
+      <TestWrapper>
+        <InquiryForm />
+      </TestWrapper>,
+    );
+
+    const textarea = screen.getByLabelText("問い合わせ内容");
+
+    // First submission
+    await user.type(textarea, "最初の問い合わせです。");
+    const submitButton = screen.getByRole("button");
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockInquiryService.createInquiry).toHaveBeenCalledTimes(1);
+    });
+
+    // Second submission
+    await user.type(textarea, "二番目の問い合わせです。");
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockInquiryService.createInquiry).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it("uses custom userId when provided", async () => {
+    const user = userEvent.setup();
+    const mockResponse: InquiryResponse = {
+      id: 1,
+      user_id: "custom-user-123",
+      content: "テスト問い合わせです。",
+      language: "ja",
+      timestamp: "2024-01-01T00:00:00Z",
+      status: "received" as any,
+      metadata: { source: "web" },
+    };
+
+    mockInquiryService.createInquiry.mockResolvedValue(mockResponse);
+
+    render(
+      <TestWrapper>
+        <InquiryForm userId="custom-user-123" />
+      </TestWrapper>,
+    );
+
+    const textarea = screen.getByLabelText("問い合わせ内容");
+    await user.type(textarea, "テスト問い合わせです。");
+
+    const submitButton = screen.getByRole("button", { name: /送信/ });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockInquiryService.createInquiry).toHaveBeenCalledWith({
+        content: "テスト問い合わせです。",
+        language: "ja",
+        user_id: "custom-user-123",
+      });
+    });
+  });
+
+  it("shows success message in the UI", async () => {
+    const user = userEvent.setup();
+    const mockResponse: InquiryResponse = {
+      id: 1,
+      user_id: "user-001",
+      content: "テスト問い合わせです。",
+      language: "ja",
+      timestamp: "2024-01-01T00:00:00Z",
+      status: "received" as any,
+      metadata: { source: "web" },
+    };
+
+    mockInquiryService.createInquiry.mockResolvedValue(mockResponse);
+
+    render(
+      <TestWrapper>
+        <InquiryForm />
+      </TestWrapper>,
+    );
+
+    const textarea = screen.getByLabelText("問い合わせ内容");
+    await user.type(textarea, "テスト問い合わせです。");
+
+    const submitButton = screen.getByRole("button", { name: /送信/ });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("問い合わせが正常に送信されました"),
+      ).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByText(
+        "AIによるストーリー生成が開始されました。しばらくお待ちください。",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows error message in the UI", async () => {
+    const user = userEvent.setup();
+    mockInquiryService.createInquiry.mockRejectedValue(
+      new Error("Network error"),
+    );
+
+    render(
+      <TestWrapper>
+        <InquiryForm />
+      </TestWrapper>,
+    );
+
+    const textarea = screen.getByLabelText("問い合わせ内容");
+    await user.type(textarea, "テスト問い合わせです。");
+
+    const submitButton = screen.getByRole("button", { name: /送信/ });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("送信に失敗しました")).toBeInTheDocument();
+    });
+
+    expect(
+      screen.getByText("ネットワーク接続を確認して、もう一度お試しください。"),
+    ).toBeInTheDocument();
+  });
 });

@@ -11,10 +11,10 @@ from alembic import context
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # Import all models to ensure they are registered with SQLAlchemy
-from models.database.base import Base
-from models.database.inquiry import InquiryModel
-from models.database.story import StoryModel
-from models.database.story_template import StoryTemplateModel
+from models.database.base import Base  # noqa: E402
+from models.database.inquiry import InquiryModel  # noqa: E402, F401
+from models.database.story import StoryModel  # noqa: E402, F401
+from models.database.story_template import StoryTemplateModel  # noqa: E402, F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
