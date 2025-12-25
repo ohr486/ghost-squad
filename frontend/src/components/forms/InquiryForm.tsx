@@ -11,8 +11,13 @@ import type { InquiryCreateRequest, InquiryResponse } from "../../types/api";
 const inquiryFormSchema = z.object({
   content: z
     .string()
-    .min(10, "問い合わせ内容は10文字以上で入力してください")
-    .max(5000, "問い合わせ内容は5000文字以内で入力してください"),
+    .transform((val) => val.trim())
+    .pipe(
+      z
+        .string()
+        .min(10, "問い合わせ内容は10文字以上で入力してください")
+        .max(5000, "問い合わせ内容は5000文字以内で入力してください"),
+    ),
   language: z.enum(["ja", "en"]).default("ja"),
 });
 
@@ -54,7 +59,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       content: "",
       language: "ja",
     },
-    mode: "onBlur",
+    mode: "all",
   });
 
   // Cleanup timeout on unmount
@@ -67,15 +72,21 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   }, []);
 
   const contentValue = watch("content");
-  const characterCount = contentValue?.length || 0;
+  const characterCount = contentValue?.trim().length || 0;
 
   const onSubmit = async (data: InquiryFormData) => {
+    // Clear any pending timeout from previous submissions
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
     try {
       setSubmitState("loading");
 
       // Create the request payload
       const requestData: InquiryCreateRequest = {
-        content: data.content.trim(),
+        content: data.content, // Already trimmed by validation schema
         language: data.language,
         user_id: userId,
       };
@@ -105,7 +116,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       setSubmitState("error");
       const errorMessage =
         error instanceof Error ? error.message : "送信に失敗しました";
-      toast.error(`エラー: ${errorMessage}`);
+      // Note: Toast notification is handled by apiClient interceptor to avoid duplicates
 
       // Call error callback if provided
       if (onError) {
