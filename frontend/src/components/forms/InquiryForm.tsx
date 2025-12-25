@@ -106,9 +106,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
 
       // Reset success state after 3 seconds
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
       timeoutRef.current = setTimeout(() => {
         setSubmitState("idle");
       }, 3000);
@@ -124,9 +121,6 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       }
 
       // Reset error state after 5 seconds
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
       timeoutRef.current = setTimeout(() => {
         setSubmitState("idle");
       }, 5000);
