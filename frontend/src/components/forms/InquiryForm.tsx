@@ -22,12 +22,19 @@ interface InquiryFormProps {
   onSuccess?: (inquiry: InquiryResponse) => void;
   onError?: (error: Error) => void;
   className?: string;
+  /**
+   * User ID to associate with the inquiry.
+   * Defaults to "user-001" until authentication is implemented.
+   * This should be replaced with the actual authenticated user ID from auth context.
+   */
+  userId?: string;
 }
 
 const InquiryForm: React.FC<InquiryFormProps> = ({
   onSuccess,
   onError,
   className = "",
+  userId = "user-001",
 }) => {
   const [submitState, setSubmitState] = useState<
     "idle" | "loading" | "success" | "error"
@@ -70,7 +77,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
       const requestData: InquiryCreateRequest = {
         content: data.content.trim(),
         language: data.language,
-        user_id: "user-001", // TODO: Get from auth context when implemented
+        user_id: userId,
       };
 
       // Submit the inquiry
@@ -198,7 +205,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
             htmlFor="language"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
-            言語
+            問い合わせの言語
           </label>
           <select
             {...register("language")}
@@ -232,18 +239,28 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
               resize: "vertical",
               minHeight: "120px",
             }}
+            aria-invalid={errors.content ? "true" : "false"}
+            aria-describedby={
+              errors.content ? "content-error" : "content-character-count"
+            }
           />
 
           {/* Character Count */}
           <div className="flex justify-between items-center mt-1">
             <div>
               {errors.content && (
-                <p className="text-sm text-red-600 dark:text-red-400">
+                <p
+                  id="content-error"
+                  className="text-sm text-red-600 dark:text-red-400"
+                  role="alert"
+                  aria-live="assertive"
+                >
                   {errors.content.message}
                 </p>
               )}
             </div>
             <p
+              id="content-character-count"
               className={`text-xs ${
                 characterCount > 4500
                   ? "text-red-600 dark:text-red-400"
@@ -251,6 +268,8 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                     ? "text-yellow-600 dark:text-yellow-400"
                     : "text-gray-500 dark:text-gray-400"
               }`}
+              aria-live="polite"
+              aria-label={`問い合わせ内容の文字数: ${characterCount}文字（最大5000文字まで）`}
             >
               {characterCount} / 5000
             </p>

@@ -39,7 +39,7 @@ describe("InquiryForm", () => {
     );
 
     expect(screen.getByText("新しい問い合わせ")).toBeInTheDocument();
-    expect(screen.getByLabelText("言語")).toBeInTheDocument();
+    expect(screen.getByLabelText("問い合わせの言語")).toBeInTheDocument();
     expect(screen.getByLabelText("問い合わせ内容")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /送信/ })).toBeInTheDocument();
   });
@@ -222,7 +222,7 @@ describe("InquiryForm", () => {
       </TestWrapper>,
     );
 
-    const languageSelect = screen.getByLabelText("言語");
+    const languageSelect = screen.getByLabelText("問い合わせの言語");
     await user.selectOptions(languageSelect, "en");
 
     expect(languageSelect).toHaveValue("en");
