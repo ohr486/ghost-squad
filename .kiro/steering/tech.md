@@ -9,25 +9,27 @@ Ghost Squadプロジェクトの技術スタックと開発環境に関するガ
 ## 技術スタック
 
 **バックエンド (Python 3.11+)**
-- **フレームワーク**: FastAPI 0.104.1 + Uvicorn ASGIサーバー
+- **フレームワーク**: FastAPI 0.104.1 + Uvicorn 0.24.0 ASGIサーバー
 - **データベース**: PostgreSQL 15 + SQLAlchemy 2.0.23 ORM
 - **マイグレーション**: Alembic 1.12.1によるスキーマ管理
 - **AI統合**: OpenAI API 1.3.7（GPT-4使用推奨）
-- **認証**: python-jose + cryptographyによるJWT
-- **バリデーション**: Pydantic 2.x（FastAPI統合）
-- **テスト**: pytest + asyncio + coverage + hypothesis（PBT）
-- **コード品質**: black + flake8 + mypy + isort + bandit
+- **認証**: python-jose[cryptography] 3.3.0 + passlib[bcrypt] 1.7.4
+- **バリデーション**: Pydantic 2.5.0 + pydantic-settings 2.1.0
+- **テスト**: pytest 7.4.3 + pytest-asyncio + pytest-cov 4.1.0 + hypothesis 6.92.1（PBT）
+- **コード品質**: black 23.11.0 + flake8 6.1.0 + mypy 1.7.1 + isort 5.12.0 + bandit 1.7.5
+- **開発支援**: rich 13.7.0 + structlog 23.2.0 + ipdb 0.13.13
 
 **フロントエンド (Node.js 18+)**
-- **フレームワーク**: React 18.2.0 + TypeScript 4.9.5+
+- **フレームワーク**: React 18.2.0 + TypeScript 4.9.5
 - **ビルドツール**: Create React App (react-scripts 5.0.1)
 - **ルーティング**: React Router DOM 6.18.0
-- **状態管理**: TanStack React Query 5.8.4（サーバー状態）
-- **フォーム**: React Hook Form 7.47.0 + Zod バリデーション
-- **スタイリング**: Tailwind CSS 3.3.5 + Tailwind Forms
-- **HTTPクライアント**: Axios 1.6.2（インターセプター設定済み）
-- **アイコン**: Lucide React 0.294.0
-- **テスト**: Jest + React Testing Library + fast-check（PBT）
+- **状態管理**: TanStack React Query 5.8.4（サーバー状態管理）
+- **フォーム**: React Hook Form 7.47.0 + Zod 3.22.4 バリデーション
+- **スタイリング**: Tailwind CSS 3.3.5 + @tailwindcss/forms 0.5.7
+- **HTTPクライアント**: Axios 1.6.2（プロキシ設定済み）
+- **UI**: Lucide React 0.294.0 + clsx 2.0.0 + react-hot-toast 2.4.1
+- **ユーティリティ**: date-fns 2.30.0
+- **テスト**: Jest + React Testing Library + fast-check 3.15.0（PBT）
 
 **インフラストラクチャ**
 - **コンテナ化**: Docker + Docker Compose（開発環境）
@@ -44,23 +46,25 @@ Ghost Squadプロジェクトの技術スタックと開発環境に関するガ
 - エディタ：VS Code推奨（拡張機能設定あり）
 
 **推奨VS Code拡張機能**
-- Python（Microsoft）
-- TypeScript Importer
-- Tailwind CSS IntelliSense
-- ESLint + Prettier
-- Docker
-- GitLens
+- Python（Microsoft）- バックエンド開発
+- TypeScript Importer - インポート自動化
+- Tailwind CSS IntelliSense - CSS補完
+- ESLint + Prettier - コード品質・フォーマット
+- Docker - コンテナ管理
+- GitLens - Git統合
+- Thunder Client - API テスト（Postman代替）
+- SQLTools - データベース管理
 
 ## よく使うコマンド
 
 ### 環境セットアップ・管理
 ```bash
-make setup          # 初期環境構築（.env作成、依存関係インストール）
+make setup          # 初期環境構築（.env作成、依存関係インストール、DB設定）
 make dev            # 開発サーバー起動（バックグラウンド）
 make stop           # 全サービス停止
 make restart        # 全サービス再起動
 make clean          # 環境クリーンアップ（ボリューム削除）
-make rebuild        # コンテナ再ビルド
+make status         # サービス健全性確認
 ```
 
 ### 開発ワークフロー
@@ -68,32 +72,38 @@ make rebuild        # コンテナ再ビルド
 make test           # 全テスト実行（カバレッジレポート生成）
 make test-backend   # バックエンドテスト（pytest + coverage）
 make test-frontend  # フロントエンドテスト（Jest + coverage）
-make test-watch     # テスト監視モード
 make lint           # コード品質チェック（全体）
+make lint-backend   # バックエンドリント（flake8 + mypy + bandit）
+make lint-frontend  # フロントエンドリント（ESLint + TypeScript）
 make format         # コードフォーマット（black + prettier）
-make type-check     # 型チェック（mypy + tsc）
+make format-backend # バックエンドフォーマット（black + isort）
+make format-frontend# フロントエンドフォーマット（prettier + ESLint --fix）
 ```
 
 ### データベース管理
 ```bash
 make db-migrate     # マイグレーション実行
+make db-init        # Alembic初期化
 make db-revision    # 新しいマイグレーション作成
+make db-status      # マイグレーション状態確認
 make db-seed        # テストデータ投入
 make db-reset       # データベースリセット（破壊的操作）
-make db-status      # マイグレーション状態確認
+make db-reset-migrations # マイグレーション履歴リセット
 make db-connect     # インタラクティブDB接続（psql）
-make db-backup      # データベースバックアップ
+make db-tables      # データベース内のテーブル一覧表示
+make db-data        # データベース内のデータ表示
 ```
 
 ### 監視・デバッグ
 ```bash
-make status         # サービス健全性確認
 make logs           # 全サービスログ表示
 make logs-backend   # バックエンドログのみ
 make logs-frontend  # フロントエンドログのみ
 make logs-db        # データベースログのみ
-make shell-backend  # バックエンドコンテナシェル
-make shell-db       # データベースコンテナシェル
+make disk-usage     # ディスク容量とDocker使用量確認
+make docker-cleanup # Docker不要データ削除
+make volume-list    # Dockerボリューム一覧表示
+make volume-cleanup # 未使用ボリューム削除
 ```
 
 ## 開発環境設定
@@ -102,7 +112,7 @@ make shell-db       # データベースコンテナシェル
 - **バックエンド**: 8000（API文書: http://localhost:8000/docs）
 - **フロントエンド**: 3000（アプリ: http://localhost:3000）
 - **データベース**: 5432（外部接続可能）
-- **Adminer**: 8080（DB管理UI: http://localhost:8080）
+- **PostgreSQL管理**: psql経由（`make db-connect`）
 
 **環境変数管理**
 ```bash
@@ -110,16 +120,18 @@ make shell-db       # データベースコンテナシェル
 cp .env.example .env
 
 # 必須環境変数
-DATABASE_URL=postgresql://user:password@localhost:5432/ghost_squad
+DATABASE_URL=postgresql://gs_user:gs_password@db:5432/gs_db
 OPENAI_API_KEY=your_openai_api_key
-JWT_SECRET_KEY=your_jwt_secret
+SECRET_KEY=your_jwt_secret
 ENVIRONMENT=development
+DEBUG=true
 ```
 
 **ホットリロード設定**
-- バックエンド：Uvicorn `--reload` フラグ
-- フロントエンド：React Scripts開発サーバー
+- バックエンド：Uvicorn `--reload` フラグ（ファイル変更時自動再起動）
+- フロントエンド：React Scripts開発サーバー（ホットリロード）
 - データベース：ボリュームマウントでデータ永続化
+- 型定義：TypeScript watch mode（`npm run type-check`）
 
 ## コード品質基準
 
@@ -152,10 +164,11 @@ npm test -- --coverage --watchAll=false
 ```
 
 **品質基準**
-- **テストカバレッジ**: 最低80%（重要な機能は90%以上）
+- **テストカバレッジ**: 現在14+テスト（問い合わせAPI完全カバー）、新機能は80%以上
 - **型安全性**: TypeScript strict mode、mypy strict mode
 - **コードスタイル**: Black（Python）、Prettier（TypeScript）
 - **セキュリティ**: Bandit（Python）、ESLint security rules
+- **API設計**: RESTful、日本語エラーメッセージ、適切なHTTPステータス
 
 ## 依存関係管理
 
