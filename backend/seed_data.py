@@ -251,7 +251,7 @@ def create_sample_templates() -> List[StoryTemplateModel]:
     return templates
 
 
-def seed_data():
+def seed_data() -> None:
     """
     Seed the database with sample data for development
     """
@@ -282,7 +282,8 @@ def seed_data():
 
         # Set dependencies after stories have IDs
         if len(stories) >= 2:
-            stories[1].dependencies = [stories[0].id]  # Second story depends on first
+            # Second story depends on first
+            stories[1].dependencies = [stories[0].id]  # type: ignore
 
         print("📄 Creating sample templates...")
         templates = create_sample_templates()
@@ -304,7 +305,7 @@ def seed_data():
         db.close()
 
 
-def clear_data():
+def clear_data() -> None:
     """
     Clear all data from the database (for testing)
     """

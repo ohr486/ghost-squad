@@ -6,7 +6,7 @@ import { StoryCategory, Priority } from "../enums";
 export interface InquiryCreateRequest {
   content: string;
   language?: "ja" | "en";
-  userId: string;
+  user_id: string;
 }
 
 export interface StoryUpdateRequest {

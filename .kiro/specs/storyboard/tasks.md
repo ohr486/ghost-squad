@@ -118,7 +118,7 @@ Ghost Squadのストーリーボード機能をPython（FastAPIバックエン�
     - Axios APIクライアント設定
     - _要件: 8.1, 8.6_
 
-  - [ ] 4.2 InquiryFormコンポーネント実装
+  - [x] 4.2 InquiryFormコンポーネント実装
     - 問い合わせ入力フォーム（textarea + submit button）
     - 日本語入力対応
     - 送信状態表示（loading, success, error）

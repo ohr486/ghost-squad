@@ -6,7 +6,7 @@ import { StoryMetadata } from "../models";
 
 export interface InquiryResponse {
   id: number;
-  userId: string;
+  user_id: string;
   content: string;
   language: "ja" | "en";
   timestamp: string; // ISO string format for API
