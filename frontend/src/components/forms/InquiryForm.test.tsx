@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { BrowserRouter } from "react-router-dom";
 import InquiryForm from "./InquiryForm";
@@ -53,7 +53,6 @@ describe("InquiryForm", () => {
     );
 
     const textarea = screen.getByLabelText("問い合わせ内容");
-    const submitButton = screen.getByRole("button", { name: /送信/ });
 
     // Focus and blur the textarea to trigger validation
     await user.click(textarea);
@@ -132,14 +131,7 @@ describe("InquiryForm", () => {
     );
 
     const submitButton = screen.getByRole("button", { name: /送信/ });
-
-    // Trigger form validation by blurring the textarea
-    await user.click(textarea);
-    await user.tab();
-
-    // Force submit the form by triggering the form submit event directly
-    const form = submitButton.closest("form")!;
-    fireEvent.submit(form);
+    await user.click(submitButton);
 
     await waitFor(() => {
       expect(mockInquiryService.createInquiry).toHaveBeenCalledWith({
@@ -174,14 +166,7 @@ describe("InquiryForm", () => {
     );
 
     const submitButton = screen.getByRole("button", { name: /送信/ });
-
-    // Trigger form validation by blurring the textarea
-    await user.click(textarea);
-    await user.tab();
-
-    // Force submit the form by triggering the form submit event directly
-    const form = submitButton.closest("form")!;
-    fireEvent.submit(form);
+    await user.click(submitButton);
 
     await waitFor(() => {
       expect(onError).toHaveBeenCalledWith(mockError);
@@ -209,14 +194,7 @@ describe("InquiryForm", () => {
     );
 
     const submitButton = screen.getByRole("button", { name: /送信/ });
-
-    // Trigger form validation by blurring the textarea
-    await user.click(textarea);
-    await user.tab();
-
-    // Force submit the form by triggering the form submit event directly
-    const form = submitButton.closest("form")!;
-    fireEvent.submit(form);
+    await user.click(submitButton);
 
     await waitFor(() => {
       expect(screen.getByText(/送信中/)).toBeInTheDocument();
@@ -280,14 +258,7 @@ describe("InquiryForm", () => {
     );
 
     const submitButton = screen.getByRole("button", { name: /送信/ });
-
-    // Trigger form validation by blurring the textarea
-    await user.click(textarea);
-    await user.tab();
-
-    // Force submit the form by triggering the form submit event directly
-    const form = submitButton.closest("form")!;
-    fireEvent.submit(form);
+    await user.click(submitButton);
 
     await waitFor(() => {
       expect(textarea).toHaveValue("");
