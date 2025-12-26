@@ -1,501 +1,1581 @@
-# ストーリーボード機能 技術設計ドキュメント
+# ストーリーボード機能 技術設計書
 
-## Overview
+## 概要
 
-**Purpose**: ストーリーボード機能は、報告者からの自然言語による問い合わせを受け付け、AI駆動でそれを構造化されたユーザーストーリーに変換し、ユーザー（開発者・プロジェクトマネージャー）が承認・管理できるエンドツーエンドのワークフローを提供する。本機能により、非構造化要件を効率的に処理可能な作業項目へと変換し、開発プロセスの初期段階を大幅に効率化する。
+ストーリーボード機能は、報告者からの自然言語問い合わせを受け付け、AIを活用して構造化されたユーザーストーリーへ変換するシステムである。本機能は問い合わせの作成・管理、AI駆動のストーリー生成、人間によるレビュー・承認という3つの主要フローを提供する。
 
-**Users**:
-- **報告者**: 自然言語で問い合わせを入力し、システムに要求を投げる利用者（社内ユーザー、クライアント、プロダクトオーナー等）
-- **ユーザー（開発者・プロジェクトマネージャー）**: 問い合わせを承認・却下し、AI生成されたストーリーをレビュー・編集・承認し、開発バックログとして管理する利用者
+### 設計目標
 
-**Impact**:
-既存のGhostSquadプラットフォームに以下の変更を加える：
-- **問い合わせ管理の拡張**: 既存の問い合わせCRUD機能に編集、承認・却下ワークフロー、検索機能を追加
-- **新規AI統合層の導入**: OpenAI APIを利用したストーリー生成機能を新規実装
-- **新規ストーリー管理層の導入**: AI生成されたストーリーのCRUD、レビュー、承認機能を新規実装
-- **フロントエンドUI拡張**: 問い合わせとストーリーの一覧表示、詳細表示、編集、管理UIを新規実装
+- **型安全性**: すべてのインターフェースで明示的な型定義を使用し、`any`型を排除する
+- **疎結合**: コンポーネント間の依存関係を最小化し、明確な境界を設定する
+- **拡張性**: 将来的な外部システム連携やAIモデル変更に対応できる設計
+- **可観測性**: すべての重要な操作でログ記録とエラー追跡を実装する
+- **言語対応**: 日本語を主言語として設計し、国際化を考慮する
 
-### Goals
+### 非目標
 
-- 報告者が自然言語で問い合わせを作成・編集でき、ユーザーが問い合わせを一覧表示・検索・承認・却下できるワークフローの完成
-- AI（OpenAI GPT-4o）を使用して、承認された問い合わせから構造化されたユーザーストーリーを自動生成する機能の実装
-- ユーザーがAI生成ストーリーを確認・編集・承認し、品質を保証できる管理機能の提供
-- 型安全性を維持し、既存の設計パターン（FastAPI、React、SQLAlchemy）に整合する拡張性の高いアーキテクチャの確立
-- エンドツーエンドのテストカバレッジ80%以上を達成し、高品質なコードベースを維持
+- リアルタイムコラボレーション機能（将来検討）
+- 複数AIプロバイダーの同時使用（Phase 1では単一プロバイダー）
+- 問い合わせの自動分類（初期バージョンではAI生成時のみ分類）
+- モバイルアプリケーション（WebUIのみ）
 
-### Non-Goals
+## 要件トレーサビリティ
 
-- ユーザー認証・認可機能（現在は`user_id`ハードコード、将来フェーズで実装）
-- 複数ストーリー生成（1問い合わせから複数ストーリー生成）（初期実装は1対1、将来拡張検討）
-- ストーリーテンプレートのUI管理機能（初期実装はコード内ハードコード、将来DB管理へ移行）
+| 要件ID | 要件概要 | 主要コンポーネント | 主要インターフェース | フロー |
+|--------|----------|-------------------|---------------------|--------|
+| 1.1-1.6 | 問い合わせの作成 | InquiryRepository, InquiryValidator | createInquiry, validateInquiry | 問い合わせ作成フロー |
+| 2.1-2.9 | 問い合わせの一覧・検索・編集 | InquiryRepository, InquiryQueryService | listInquiries, getInquiry, updateInquiry | 問い合わせ管理フロー |
+| 3.1-3.5 | 問い合わせの承認・却下 | InquiryWorkflowService | approveInquiry, rejectInquiry | ステータス変更フロー |
+| 4.1-4.8 | ストーリー生成 | AIStoryGenerator, StoryRepository | generateStory, validateStoryStructure | AI変換フロー |
+| 5.1-5.7 | ストーリーの管理・レビュー | StoryRepository, StoryWorkflowService | listStories, updateStory, approveStory | ストーリーレビューフロー |
+| 6.1-6.7 | ユーザーインターフェース | InquiryForm, InquiryList, StoryBoard | すべてのUI関連インターフェース | 全UIフロー |
 
-## Architecture
+## アーキテクチャ概要
 
-### Existing Architecture Analysis
-
-GhostSquadは既存のレイヤードアーキテクチャを採用しており、以下の層で構成されている：
-
-**既存の層構成**:
-- **API層（FastAPI）**: `backend/api/inquiries.py`に問い合わせCRUD操作が実装済み（POST、GET一覧、GET詳細）
-- **モデル層（SQLAlchemy ORM）**: `backend/models/database/`に`InquiryModel`、`StoryModel`、`StoryTemplateModel`が完全実装済み、Alembicマイグレーション適用済み
-- **Pydanticスキーマ層**: `backend/models/api/`にRequest/Responseモデルが実装済み、型安全性を確保
-- **Enum層**: `backend/models/enums/`に`InquiryStatus`、`StoryStatus`、`Priority`、`StoryCategory`が実装済み
-- **フロントエンド**: React 18.2 + TypeScript 4.9.5、`InquiryForm`コンポーネント（React Hook Form + Zod）が実装済み、TanStack Query 5.8.4が設定済み
-
-**既存の制約とパターン**:
-- **データモデル**: BigInteger ID使用、`inquiry_metadata`と`story_metadata`にJSON形式でメタデータを格納
-- **エラーハンドリング**: 日本語エラーメッセージ、詳細なロギング（`exc_info=True`）、適切なHTTPステータスコード（201、200、404、422、500）
-- **依存性注入**: `Depends(get_db)`でDBセッション管理
-- **バリデーション**: PydanticとZodによる二重バリデーション（フロントエンド・バックエンド両方）
-- **CORS設定**: `localhost:3000`、`127.0.0.1:3000`、`frontend:3000`が許可済み
-
-**不足している層**:
-- **サービス層**: `backend/services/`ディレクトリ自体が存在せず、ビジネスロジックを集約する層が未実装
-
-### Architecture Pattern & Boundary Map
-
-**選択したパターン**: **レイヤードアーキテクチャ（サービス層追加）**
-
-**根拠**:
-既存システムとの一貫性を保ちつつ、ビジネスロジック（AI統合、ワークフロー管理、ストーリー生成）を明確に分離するため、サービス層を新規追加する。ヘキサゴナルアーキテクチャは実装コストが高く、既存との整合性に課題があるため不採用。イベント駆動アーキテクチャは複雑性が高く、初期実装には適さないため将来拡張として保留。
-
+### システムアーキテクチャ図
 
 ```mermaid
 graph TB
-    subgraph Frontend
-        InquiryForm[InquiryForm Component]
-        InquiryList[InquiryList Component]
-        InquiryDetail[InquiryDetail Component]
-        StoryList[StoryList Component]
-        StoryDetail[StoryDetail Component]
-        StoryEditForm[StoryEditForm Component]
+    subgraph クライアント層
+        WebUI[Web UI]
     end
 
-    subgraph Backend_API
-        InquiryAPI[Inquiry API Routes]
-        StoryAPI[Story API Routes]
+    subgraph API層
+        InquiryAPI[Inquiry API]
+        StoryAPI[Story API]
+        HealthAPI[Health API]
     end
 
-    subgraph Backend_Services
-        WorkflowService[WorkflowService FSM]
-        AIService[AIService OpenAI]
-        StoryService[StoryService]
+    subgraph サービス層
+        InquiryService[Inquiry Service]
+        StoryService[Story Service]
+        AIService[AI Service]
+        ValidationService[Validation Service]
+        WorkflowService[Workflow Service]
     end
 
-    subgraph Backend_Repository
-        InquiryRepo[InquiryModel ORM]
-        StoryRepo[StoryModel ORM]
+    subgraph データアクセス層
+        InquiryRepo[Inquiry Repository]
+        StoryRepo[Story Repository]
     end
 
-    subgraph External
-        OpenAI[OpenAI API GPT-4o]
-        PostgreSQL[(PostgreSQL DB)]
+    subgraph 外部システム
+        OpenAI[OpenAI API]
+        Database[(PostgreSQL)]
     end
 
-    InquiryForm --> InquiryAPI
-    InquiryList --> InquiryAPI
-    InquiryDetail --> InquiryAPI
-    StoryList --> StoryAPI
-    StoryDetail --> StoryAPI
-    StoryEditForm --> StoryAPI
+    WebUI --> InquiryAPI
+    WebUI --> StoryAPI
 
-    InquiryAPI --> WorkflowService
-    InquiryAPI --> AIService
-    InquiryAPI --> InquiryRepo
-    StoryAPI --> WorkflowService
+    InquiryAPI --> InquiryService
     StoryAPI --> StoryService
-    StoryAPI --> StoryRepo
+
+    InquiryService --> InquiryRepo
+    InquiryService --> ValidationService
+    InquiryService --> WorkflowService
+
+    StoryService --> StoryRepo
+    StoryService --> AIService
+    StoryService --> ValidationService
+    StoryService --> WorkflowService
 
     AIService --> OpenAI
-    StoryService --> AIService
-    StoryService --> StoryRepo
-    WorkflowService --> InquiryRepo
-    WorkflowService --> StoryRepo
 
-    InquiryRepo --> PostgreSQL
-    StoryRepo --> PostgreSQL
+    InquiryRepo --> Database
+    StoryRepo --> Database
+
+    InquiryAPI --> HealthAPI
+    StoryAPI --> HealthAPI
 ```
 
-**Architecture Integration**:
-- **選択パターン**: レイヤードアーキテクチャ + サービス層追加。既存のAPI層とモデル層の間にサービス層を挿入し、ビジネスロジックを集約する。
-- **ドメイン境界**:
-  - **問い合わせドメイン**: 問い合わせCRUD、承認・却下ワークフロー（InquiryAPI、WorkflowService、InquiryModel）
-  - **ストーリードメイン**: ストーリーCRUD、AI生成、レビュー・承認（StoryAPI、StoryService、AIService、StoryModel）
-  - **AI統合ドメイン**: OpenAI API呼び出し、プロンプト管理、リトライロジック（AIService）
-  - **ワークフロードメイン**: ステータス遷移管理、FSM実装（WorkflowService）
-- **既存パターン保持**: FastAPI Router、Pydantic、依存性注入、詳細なエラーハンドリング、ロギング
-- **新規コンポーネント根拠**:
-  - **サービス層**: ビジネスロジックをAPI層から分離し、テスト容易性と再利用性を向上
-  - **AIService**: OpenAI API統合を専用サービスに隔離し、プロンプト管理とリトライロジックを集約
-  - **WorkflowService**: ステータス遷移ルールをFSMで管理し、不正遷移を防止
-  - **StoryService**: ストーリー生成とバリデーションのビジネスロジックを集約
-- **Steering準拠**: product.md、structure.md、tech.mdに整合
+### レイヤー責務
 
-### Technology Stack
+- **クライアント層**: ユーザー入力の受付、データ表示、バリデーションフィードバック
+- **API層**: HTTPリクエスト処理、認証・認可、リクエスト/レスポンスのシリアライゼーション
+- **サービス層**: ビジネスロジック実装、ワークフロー制御、外部システム統合
+- **データアクセス層**: データベースCRUD操作、クエリ最適化、トランザクション管理
+- **外部システム**: AI処理、データ永続化
 
-| Layer | Choice / Version | Role in Feature | Notes |
-|-------|------------------|-----------------|-------|
-| **Frontend** | React 18.2.0 + TypeScript 4.9.5 | フロントエンドフレームワーク、型安全性確保 | 既存設定を踏襲、strict mode有効化済み |
-| Frontend | TanStack React Query 5.8.4 | サーバー状態管理、無限スクロール実装 | 既存依存関係、useInfiniteQuery使用 |
-| Frontend | React Hook Form 7.43.0 + Zod 3.22.4 | フォーム管理・バリデーション | 既存パターン（InquiryForm）を踏襲 |
-| Frontend | Tailwind CSS 3.3.5 + Lucide React 0.294.0 | スタイリング・アイコン | 既存UI設計との一貫性維持 |
-| **Backend** | FastAPI 0.104.1 + Uvicorn 0.24.0 | APIフレームワーク、非同期処理 | 既存API層を拡張 |
-| Backend | SQLAlchemy 2.0.23 + Alembic 1.12.1 | ORM、マイグレーション管理 | 既存モデル（InquiryModel、StoryModel）活用 |
-| Backend | Pydantic 2.5.0 | リクエスト・レスポンスバリデーション | 既存パターン踏襲、構造化出力に使用 |
-| Backend | OpenAI API 1.3.7（GPT-4o gpt-4o-2024-08-06） | AI駆動ストーリー生成 | 構造化出力ネイティブサポート、コストパフォーマンス良好 |
-| Backend | python-statemachine 2.5.0+ | FSM実装、ステータス遷移管理 | asyncサポート、FastAPI統合実績あり |
-| Backend | tenacity 8.x | リトライロジック | OpenAI公式推奨、Exponential backoff with jitter |
-| **Data** | PostgreSQL 15 Alpine | データ永続化 | 既存DB接続設定活用、BigInteger ID使用 |
-| **Infrastructure** | Docker Compose | 開発環境オーケストレーション | 既存環境を維持、新規サービス不要 |
+## 技術スタック
 
-**新規依存関係**: `python-statemachine`（v2.5.0+）、`tenacity`（v8.x）をrequirements.txtに追加
+### バックエンド
 
-## System Flows
+| レイヤー | 技術 | バージョン | 役割 |
+|---------|------|-----------|------|
+| APIフレームワーク | FastAPI | 0.104.1 | RESTful API提供、OpenAPI自動生成 |
+| ASGIサーバー | Uvicorn | 0.24.0 | 非同期リクエスト処理 |
+| ORM | SQLAlchemy | 2.0.23 | データベース抽象化レイヤー |
+| マイグレーション | Alembic | 1.12.1 | スキーマバージョン管理 |
+| バリデーション | Pydantic | 2.5.0 | データ検証・シリアライゼーション |
+| AI統合 | OpenAI | 1.3.7 | ストーリー生成エンジン |
+| テスト | pytest | 7.4.3 | ユニット・統合テスト |
 
-### 問い合わせ承認・却下フロー
+### フロントエンド
+
+| レイヤー | 技術 | バージョン | 役割 |
+|---------|------|-----------|------|
+| UIフレームワーク | React | 18.2.0 | コンポーネントベースUI構築 |
+| 型システム | TypeScript | 4.9.5 | 静的型チェック |
+| 状態管理 | TanStack Query | 5.8.4 | サーバー状態管理・キャッシング |
+| フォーム | React Hook Form | 7.43.0 | フォーム状態管理 |
+| バリデーション | Zod | 3.22.4 | スキーマバリデーション |
+| HTTP | Axios | 1.6.2 | API通信 |
+| スタイリング | Tailwind CSS | 3.3.5 | ユーティリティファーストCSS |
+
+### データ層
+
+| レイヤー | 技術 | バージョン | 役割 |
+|---------|------|-----------|------|
+| データベース | PostgreSQL | 15 | リレーショナルデータ永続化 |
+| コンテナ | Docker | latest | 開発環境統一 |
+
+### 新規依存関係
+
+本機能では既存のGhost Squadスタックをそのまま使用し、新規依存関係は追加しない。
+
+## システムフロー
+
+### 問い合わせ作成フロー
+
+```mermaid
+sequenceDiagram
+    participant Reporter as 報告者
+    participant UI as Web UI
+    participant API as Inquiry API
+    participant Validator as Validation Service
+    participant Workflow as Workflow Service
+    participant Repo as Inquiry Repository
+    participant DB as Database
+
+    Reporter->>UI: 問い合わせ入力
+    UI->>UI: クライアント側バリデーション
+    UI->>API: POST /api/inquiries
+    API->>Validator: validateInquiry
+
+    alt バリデーションエラー
+        Validator-->>API: ValidationError
+        API-->>UI: 400 Bad Request
+        UI-->>Reporter: エラー表示
+    else バリデーション成功
+        Validator-->>API: Valid
+        API->>Workflow: initializeInquiryWorkflow
+        Workflow->>Repo: createInquiry
+        Repo->>DB: INSERT inquiry
+        DB-->>Repo: inquiry_id
+        Repo-->>Workflow: InquiryEntity
+        Workflow-->>API: InquiryResponse
+        API-->>UI: 201 Created
+        UI-->>Reporter: 成功メッセージ
+    end
+```
+
+### AI変換フロー
 
 ```mermaid
 sequenceDiagram
     participant User as ユーザー
-    participant UI as InquiryDetail UI
-    participant API as InquiryAPI
-    participant WF as WorkflowService
-    participant DB as InquiryModel
+    participant UI as Web UI
+    participant API as Story API
+    participant Workflow as Workflow Service
+    participant AI as AI Service
+    participant OpenAI as OpenAI API
+    participant Repo as Story Repository
+    participant InqRepo as Inquiry Repository
+    participant DB as Database
 
-    User->>UI: 問い合わせ詳細を表示
-    UI->>API: GET /api/inquiries/{id}
-    API->>DB: クエリ実行
-    DB-->>API: 問い合わせデータ
-    API-->>UI: InquiryResponse
-    UI-->>User: 詳細表示（ステータス: RECEIVED）
+    User->>UI: ストーリー生成要求
+    UI->>API: POST /api/stories/generate
+    API->>Workflow: initiateStoryGeneration
 
-    User->>UI: 承認ボタンクリック
-    UI->>API: PATCH /api/inquiries/{id}/approve
-    API->>WF: approve(inquiry)
-    WF->>WF: ステータス遷移検証（RECEIVED→APPROVED）
-    alt 遷移許可
-        WF->>DB: status='approved', metadata更新
-        DB-->>WF: 更新成功
-        WF-->>API: 遷移成功
-        API-->>UI: 200 OK
-        UI-->>User: 承認完了通知
-    else 遷移不許可
-        WF-->>API: 403 Forbidden
-        API-->>UI: エラーメッセージ
+    Workflow->>InqRepo: updateStatus(processing)
+    InqRepo->>DB: UPDATE inquiry
+
+    Workflow->>AI: generateStory
+    AI->>OpenAI: API call with prompt
+
+    alt AI処理成功
+        OpenAI-->>AI: Generated content
+        AI->>AI: validateStoryStructure
+
+        alt 構造検証成功
+            AI-->>Workflow: ValidStory
+            Workflow->>Repo: createStory
+            Repo->>DB: INSERT story
+            Workflow->>InqRepo: updateStatus(task_working)
+            InqRepo->>DB: UPDATE inquiry
+            Workflow-->>API: StoryResponse
+            API-->>UI: 201 Created
+            UI-->>User: ストーリー表示
+        else 構造検証失敗
+            AI-->>Workflow: StructureError
+            Workflow->>InqRepo: updateStatus(failed)
+            Workflow-->>API: 422 Unprocessable Entity
+            API-->>UI: エラー応答
+            UI-->>User: エラー表示
+        end
+    else AI処理失敗
+        OpenAI-->>AI: API Error
+        AI-->>Workflow: AIError
+        Workflow->>InqRepo: updateStatus(failed)
+        InqRepo->>DB: UPDATE inquiry
+        Workflow-->>API: 503 Service Unavailable
+        API-->>UI: エラー応答
         UI-->>User: エラー表示
     end
 ```
 
-### AI駆動ストーリー生成フロー
+### ストーリーレビューフロー
 
 ```mermaid
-sequenceDiagram
-    participant User as ユーザー
-    participant UI as InquiryDetail UI
-    participant API as InquiryAPI
-    participant WF as WorkflowService
-    participant SS as StoryService
-    participant AI as AIService
-    participant OpenAI as OpenAI API
-    participant DB as Database
+stateDiagram-v2
+    [*] --> pending_review: ストーリー生成
 
-    User->>UI: ストーリー変換ボタンクリック
-    UI->>API: POST /api/inquiries/{id}/convert
+    pending_review --> approved: ユーザー承認
+    pending_review --> rejected: ユーザー拒否
+    pending_review --> pending_review: ユーザー編集
 
-    API->>DB: 問い合わせ取得（ステータス確認）
-    DB-->>API: 問い合わせデータ
-    alt ステータス != APPROVED
-        API-->>UI: 403 Forbidden（未承認）
-        UI-->>User: エラー通知
-    else ステータス == APPROVED
-        API->>WF: start_conversion(inquiry)
-        WF->>DB: status='processing'更新
+    approved --> exported: 外部連携実行
+    approved --> approved: メタデータ更新
 
-        API->>SS: create_story_from_inquiry(inquiry)
-        SS->>AI: generate_story(inquiry.content)
-        AI->>OpenAI: client.beta.chat.completions.parse
+    rejected --> [*]: 終了
+    exported --> [*]: 終了
 
-        alt OpenAI成功
-            OpenAI-->>AI: ストーリーデータ（構造化JSON）
-            AI-->>SS: StoryGenerationResponse
-            SS->>DB: StoryModel作成（status='pending_review'）
-            SS->>WF: complete(inquiry)
-            WF->>DB: inquiry.status='task_working'更新
-            SS-->>API: StoryResponse
-            API-->>UI: 200 OK
-            UI-->>User: ストーリー生成成功通知
-        else OpenAI失敗
-            AI->>AI: Tenacityリトライ（最大6回）
-            alt リトライ失敗
-                SS->>WF: fail(inquiry)
-                WF->>DB: inquiry.status='failed'更新
-                SS-->>API: 500 Error
-                API-->>UI: エラーレスポンス
-                UI-->>User: エラー通知
-            end
-        end
-    end
+    note right of pending_review
+        編集可能
+        タイトル、説明、受入基準の変更
+        優先度、カテゴリの調整
+    end note
+
+    note right of approved
+        読み取り専用
+        エクスポート待機
+    end note
 ```
 
-## Requirements Traceability
+## コンポーネント設計
 
-| Requirement | Summary | Components | Interfaces | Flows |
-|-------------|---------|------------|------------|-------|
-| 1.1 | 問い合わせ作成機能 | InquiryForm、InquiryAPI（POST）、InquiryModel | POST /api/inquiries | - |
-| 2.1 | 問い合わせ一覧表示（ページネーション） | InquiryList、InquiryAPI（GET一覧）、useInfiniteInquiries | GET /api/inquiries | - |
-| 2.2 | 問い合わせ検索機能 | InquiryList、InquiryAPI（GET一覧拡張） | GET /api/inquiries | - |
-| 2.3 | 問い合わせ編集機能 | InquiryDetail、InquiryAPI（PUT） | PUT /api/inquiries/{id} | - |
-| 3.1 | 問い合わせ承認機能 | InquiryDetail、InquiryAPI（PATCH approve）、WorkflowService | PATCH /api/inquiries/{id}/approve | 問い合わせ承認・却下フロー |
-| 3.2 | 問い合わせ却下機能 | InquiryDetail、InquiryAPI（PATCH reject）、WorkflowService | PATCH /api/inquiries/{id}/reject | 問い合わせ承認・却下フロー |
-| 4.1 | AI駆動ストーリー生成 | InquiryDetail、InquiryAPI（POST convert）、StoryService、AIService | POST /api/inquiries/{id}/convert | AI駆動ストーリー生成フロー |
-| 4.2 | ストーリー構造化 | AIService、StoryService | StoryGenerationResponse Pydantic Model | AI駆動ストーリー生成フロー |
-| 5.1 | ストーリー一覧表示 | StoryList、StoryAPI（GET一覧） | GET /api/stories | - |
-| 5.2 | ストーリー詳細表示 | StoryDetail、StoryAPI（GET詳細） | GET /api/stories/{id} | - |
-| 5.3 | ストーリー編集機能 | StoryEditForm、StoryAPI（PUT） | PUT /api/stories/{id} | - |
-| 5.4 | ストーリー承認・拒否 | StoryDetail、StoryAPI（PATCH）、WorkflowService | PATCH /api/stories/{id}/approve | - |
-| 6.1 | Web UI（問い合わせ） | InquiryForm、InquiryList、InquiryDetail | - | - |
-| 6.2 | Web UI（ストーリー） | StoryList、StoryDetail、StoryEditForm | - | - |
+### コンポーネント概要
 
-## Components and Interfaces
+| コンポーネント | ドメイン | 責務 | 要件カバレッジ | 依存関係 |
+|--------------|---------|------|--------------|---------|
+| InquiryRepository | データアクセス | 問い合わせCRUD | 1.1-1.6, 2.1-2.9 | Database |
+| StoryRepository | データアクセス | ストーリーCRUD | 4.1-4.8, 5.1-5.7 | Database |
+| InquiryValidator | サービス | 入力検証 | 1.4, 2.8 | - |
+| AIStoryGenerator | サービス | AI生成 | 4.1-4.8 | OpenAI API |
+| WorkflowService | サービス | ワークフロー制御 | 3.1-3.5, 4.1-4.8, 5.1-5.7 | InquiryRepo, StoryRepo |
+| InquiryQueryService | サービス | 検索・ページネーション | 2.1-2.4 | InquiryRepo |
+| InquiryAPI | API | 問い合わせエンドポイント | 1.1-3.5 | InquiryService |
+| StoryAPI | API | ストーリーエンドポイント | 4.1-5.7 | StoryService |
+| InquiryForm | UI | 問い合わせ入力 | 6.1-6.3 | InquiryAPI |
+| InquiryList | UI | 問い合わせ一覧 | 6.4-6.5 | InquiryAPI |
+| StoryBoard | UI | ストーリー管理 | 6.6-6.7 | StoryAPI |
 
-詳細なコンポーネント設計は以下の通り：
+### 依存関係詳細
 
-### Backend / API Layer
+| 依存先 | 方向 | 重要度 | 説明 |
+|--------|------|--------|------|
+| PostgreSQL | External | P0 | データ永続化、全機能がブロックされる |
+| OpenAI API | External | P0 | ストーリー生成、AI機能がブロックされる |
+| SQLAlchemy | Inbound | P0 | ORM、データアクセス層で必須 |
+| FastAPI | Inbound | P0 | APIフレームワーク、全エンドポイントで必須 |
+| React | Inbound | P0 | UIフレームワーク、全画面で必須 |
+| Pydantic | Inbound | P1 | バリデーション、代替手段あり |
+| TanStack Query | Inbound | P1 | 状態管理、代替手段あり |
 
-#### InquiryAPI
-- **Intent**: 問い合わせのCRUD操作、検索、承認・却下、ストーリー変換のAPIエンドポイントを提供
-- **Requirements**: 1.1, 2.1, 2.2, 2.3, 3.1, 3.2, 4.1
-- **Contracts**: API、Service
+## データモデル
 
-**API Contract**:
-- POST /api/inquiries - 問い合わせ作成
-- GET /api/inquiries - 一覧取得（limit、offset、status、search等）
-- GET /api/inquiries/{id} - 個別取得
-- PUT /api/inquiries/{id} - 更新
-- PATCH /api/inquiries/{id}/approve - 承認
-- PATCH /api/inquiries/{id}/reject - 却下
-- POST /api/inquiries/{id}/convert - ストーリー変換
+### ドメインモデル
 
-#### StoryAPI
-- **Intent**: ストーリーのCRUD操作、承認・拒否のAPIエンドポイントを提供
-- **Requirements**: 5.1, 5.2, 5.3, 5.4
-- **Contracts**: API、Service
+```mermaid
+erDiagram
+    INQUIRY ||--o{ STORY : generates
 
-**API Contract**:
-- GET /api/stories - 一覧取得（limit、offset、status、priority等）
-- GET /api/stories/{id} - 個別取得
-- PUT /api/stories/{id} - 更新
-- PATCH /api/stories/{id}/approve - 承認
-- PATCH /api/stories/{id}/reject - 拒否
+    INQUIRY {
+        bigint id PK
+        string user_id
+        text content
+        string source_system
+        timestamp timestamp
+        enum status
+        timestamp created_at
+        timestamp updated_at
+    }
 
-### Backend / Service Layer
-
-#### AIService
-- **Intent**: OpenAI APIとの統合、プロンプト管理、リトライロジック、構造化出力の生成を担当
-- **Requirements**: 4.1, 4.2
-- **Contracts**: Service
-
-**主要メソッド**:
-```python
-@retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
-async def generate_story(inquiry_content: str) -> StoryGenerationResponse:
-    # Pydantic Response Modelで構造化出力
-    response = await self.client.beta.chat.completions.parse(
-        model="gpt-4o-2024-08-06",
-        messages=[{"role": "user", "content": prompt}],
-        response_format=StoryGenerationResponse,
-        timeout=60
-    )
-    return response.choices[0].message.parsed
+    STORY {
+        bigint id PK
+        bigint inquiry_id FK
+        string title
+        text description
+        text acceptance_criteria
+        enum category
+        enum priority
+        float estimated_effort
+        timestamp deadline
+        string assignee
+        enum status
+        timestamp created_at
+        timestamp updated_at
+    }
 ```
 
-#### StoryService
-- **Intent**: ストーリー生成ビジネスロジック、バリデーション、AIServiceとの統合を担当
-- **Requirements**: 4.1, 4.2, 5.3
-- **Contracts**: Service
+#### エンティティ定義
 
-**主要メソッド**:
-```python
-async def create_story_from_inquiry(inquiry: InquiryModel, db: Session) -> StoryModel:
-    generation_response = await self.ai_service.generate_story(inquiry.content)
-    self._validate_story_generation(generation_response)
-    story = StoryModel(
-        inquiry_id=inquiry.id,
-        title=generation_response.title,
-        description=generation_response.description,
-        status=StoryStatus.PENDING_REVIEW.value,
-        # ... その他のフィールド
-    )
-    db.add(story)
-    db.commit()
-    return story
+**Inquiry（問い合わせ）**
+
+- **責務**: 報告者からの自然言語問い合わせを表現する
+- **集約ルート**: Inquiry自身
+- **不変条件**:
+  - `content`は空文字列を許可しない
+  - `status`はInquiryStatusの有効な値のみ
+  - `source_system`は送信元システムを識別する文字列（例: "manual", "email", "chat"）
+
+**Story（ストーリー）**
+
+- **責務**: 構造化されたユーザーストーリーを表現する
+- **集約ルート**: Story自身（Inquiryへの参照を持つ）
+- **不変条件**:
+  - `inquiry_id`は有効なInquiryを参照する
+  - `title`は500文字以内
+  - `description`と`acceptance_criteria`は空文字列を許可しない
+  - `estimated_effort`は正の数値
+  - `dependencies`内のIDは有効なStoryを参照する
+
+#### 列挙型定義
+
+**InquiryStatus**
+
+```typescript
+type InquiryStatus =
+  | 'received'              // 受付済み
+  | 'processing'            // AI処理中
+  | 'needs_clarification'   // 明確化要求
+  | 'task_working'          // タスク作業中
+  | 'completed'             // 完了
+  | 'failed';               // 失敗
 ```
+
+**StoryStatus**
+
+```typescript
+type StoryStatus =
+  | 'pending_review'        // レビュー待ち
+  | 'approved'              // 承認済み
+  | 'rejected'              // 拒否
+  | 'exported';             // エクスポート済み
+```
+
+**Priority**
+
+```typescript
+type Priority =
+  | 'low'                   // 低
+  | 'medium'                // 中
+  | 'high'                  // 高
+  | 'urgent';               // 緊急
+```
+
+**StoryCategory**
+
+```typescript
+type StoryCategory =
+  | 'development'           // 開発
+  | 'testing'               // テスト
+  | 'documentation'         // ドキュメント
+  | 'research'              // 調査
+  | 'maintenance'           // メンテナンス
+  | 'custom';               // カスタム
+```
+
+### 論理データモデル
+
+#### インデックス戦略
+
+```sql
+-- 問い合わせテーブル
+CREATE INDEX ix_inquiries_status ON inquiries(status);
+CREATE INDEX ix_inquiries_user_id ON inquiries(user_id);
+CREATE INDEX ix_inquiries_created_at ON inquiries(created_at DESC);
+CREATE INDEX ix_inquiries_composite ON inquiries(status, created_at DESC);
+
+-- ストーリーテーブル
+CREATE INDEX ix_stories_inquiry_id ON stories(inquiry_id);
+CREATE INDEX ix_stories_status ON stories(status);
+CREATE INDEX ix_stories_priority ON stories(priority);
+CREATE INDEX ix_stories_assignee ON stories(assignee);
+CREATE INDEX ix_stories_deadline ON stories(deadline);
+CREATE INDEX ix_stories_composite ON stories(status, priority, created_at DESC);
+
+-- 全文検索用（将来）
+CREATE INDEX ix_inquiries_content_gin ON inquiries USING gin(to_tsvector('japanese', content));
+CREATE INDEX ix_stories_title_gin ON stories USING gin(to_tsvector('japanese', title));
+```
+
+#### データ整合性制約
+
+```sql
+-- 外部キー制約
+ALTER TABLE stories
+  ADD CONSTRAINT fk_stories_inquiry
+  FOREIGN KEY (inquiry_id)
+  REFERENCES inquiries(id)
+  ON DELETE CASCADE;
+
+-- チェック制約
+ALTER TABLE inquiries
+  ADD CONSTRAINT chk_inquiries_content_not_empty
+  CHECK (length(trim(content)) > 0);
+
+ALTER TABLE stories
+  ADD CONSTRAINT chk_stories_title_length
+  CHECK (length(title) <= 500);
+
+ALTER TABLE stories
+  ADD CONSTRAINT chk_stories_effort_positive
+  CHECK (estimated_effort > 0);
+```
+
+### データ契約・統合
+
+#### API レスポンス型
+
+**InquiryResponse**
+
+```typescript
+interface InquiryResponse {
+  id: number;
+  user_id: string;
+  content: string;
+  source_system: string;
+  timestamp: string;  // ISO 8601形式
+  status: InquiryStatus;
+  created_at: string;  // ISO 8601形式
+  updated_at: string;  // ISO 8601形式
+}
+```
+
+**StoryResponse**
+
+```typescript
+interface StoryResponse {
+  id: number;
+  inquiry_id: number;
+  title: string;
+  description: string;
+  acceptance_criteria: string;
+  category: StoryCategory;
+  priority: Priority;
+  estimated_effort: number;
+  deadline: string | null;  // ISO 8601形式
+  assignee: string | null;
+  status: StoryStatus;
+  created_at: string;  // ISO 8601形式
+  updated_at: string;  // ISO 8601形式
+}
+```
+
+**PaginatedResponse**
+
+```typescript
+interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    has_next: boolean;
+  };
+  timestamp: string;  // ISO 8601形式
+}
+```
+
+#### API リクエスト型
+
+**CreateInquiryRequest**
+
+```typescript
+interface CreateInquiryRequest {
+  user_id: string;
+  content: string;
+  source_system: string;  // 送信元システム (例: "manual", "email", "chat")
+}
+```
+
+**UpdateInquiryRequest**
+
+```typescript
+interface UpdateInquiryRequest {
+  content?: string;
+  source_system?: string;
+}
+```
+
+**GenerateStoryRequest**
+
+```typescript
+interface GenerateStoryRequest {
+  inquiry_id: number;
+  template_id?: number;  // 将来使用
+}
+```
+
+**UpdateStoryRequest**
+
+```typescript
+interface UpdateStoryRequest {
+  title?: string;
+  description?: string;
+  acceptance_criteria?: string;
+  category?: StoryCategory;
+  priority?: Priority;
+  estimated_effort?: number;
+  deadline?: string | null;
+  assignee?: string | null;
+}
+```
+
+## コンポーネント・インターフェース詳細
+
+### データアクセス層
+
+#### InquiryRepository
+
+**責務**: 問い合わせのCRUD操作とクエリ実行
+
+**契約種別**: Service
+
+**サービスインターフェース**
+
+```typescript
+interface InquiryRepository {
+  // 作成操作（要件1.1）
+  create(data: CreateInquiryData): Promise<InquiryEntity>;
+
+  // 読み取り操作（要件2.3, 2.5）
+  findById(id: number): Promise<InquiryEntity | null>;
+  findMany(options: FindManyOptions): Promise<InquiryEntity[]>;
+  count(filter: InquiryFilter): Promise<number>;
+
+  // 更新操作（要件2.8, 3.1-3.2）
+  update(id: number, data: UpdateInquiryData): Promise<InquiryEntity>;
+  updateStatus(id: number, status: InquiryStatus): Promise<InquiryEntity>;
+
+  // 削除操作（将来）
+  delete(id: number): Promise<void>;
+}
+
+interface CreateInquiryData {
+  user_id: string;
+  content: string;
+  source_system: string;
+  timestamp: Date;
+  status: InquiryStatus;
+}
+
+interface UpdateInquiryData {
+  content?: string;
+  source_system?: string;
+}
+
+interface FindManyOptions {
+  filter?: InquiryFilter;
+  sort?: SortOption[];
+  pagination?: PaginationOption;
+}
+
+interface InquiryFilter {
+  status?: InquiryStatus | InquiryStatus[];
+  user_id?: string;
+  created_after?: Date;
+  created_before?: Date;
+}
+
+interface SortOption {
+  field: 'created_at' | 'updated_at' | 'status';
+  direction: 'asc' | 'desc';
+}
+
+interface PaginationOption {
+  page: number;      // 1-indexed
+  limit: number;     // 1-100
+}
+
+interface InquiryEntity {
+  id: number;
+  user_id: string;
+  content: string;
+  source_system: string;
+  timestamp: Date;
+  status: InquiryStatus;
+  created_at: Date;
+  updated_at: Date;
+}
+```
+
+**実装ノート**
+
+- SQLAlchemyセッション管理は依存性注入で提供される
+- すべての書き込み操作でタイムスタンプを自動更新する
+- `findMany`はデフォルトで`created_at DESC`でソートする
+- ページネーションの`limit`は1-100の範囲に制限する
+- トランザクション境界はサービス層で管理する
+
+**エラーハンドリング**
+
+- `EntityNotFoundError`: 指定されたIDのエンティティが存在しない
+- `DatabaseError`: データベース操作失敗
+- `ValidationError`: データ検証失敗
+
+#### StoryRepository
+
+**責務**: ストーリーのCRUD操作とクエリ実行
+
+**契約種別**: Service
+
+**サービスインターフェース**
+
+```typescript
+interface StoryRepository {
+  // 作成操作（要件4.2-4.5）
+  create(data: CreateStoryData): Promise<StoryEntity>;
+
+  // 読み取り操作（要件5.1-5.2）
+  findById(id: number): Promise<StoryEntity | null>;
+  findMany(options: FindManyOptions): Promise<StoryEntity[]>;
+  findByInquiryId(inquiryId: number): Promise<StoryEntity[]>;
+  count(filter: StoryFilter): Promise<number>;
+
+  // 更新操作（要件5.3-5.5）
+  update(id: number, data: UpdateStoryData): Promise<StoryEntity>;
+  updateStatus(id: number, status: StoryStatus): Promise<StoryEntity>;
+
+  // 削除操作（将来）
+  delete(id: number): Promise<void>;
+}
+
+interface CreateStoryData {
+  inquiry_id: number;
+  title: string;
+  description: string;
+  acceptance_criteria: string;
+  category: StoryCategory;
+  priority: Priority;
+  estimated_effort: number;
+  deadline?: Date | null;
+  assignee?: string | null;
+  status: StoryStatus;
+}
+
+interface UpdateStoryData {
+  title?: string;
+  description?: string;
+  acceptance_criteria?: string;
+  category?: StoryCategory;
+  priority?: Priority;
+  estimated_effort?: number;
+  deadline?: Date | null;
+  assignee?: string | null;
+}
+
+interface StoryFilter {
+  status?: StoryStatus | StoryStatus[];
+  priority?: Priority | Priority[];
+  category?: StoryCategory | StoryCategory[];
+  assignee?: string;
+  deadline_before?: Date;
+  deadline_after?: Date;
+}
+
+interface StoryEntity {
+  id: number;
+  inquiry_id: number;
+  title: string;
+  description: string;
+  acceptance_criteria: string;
+  category: StoryCategory;
+  priority: Priority;
+  estimated_effort: number;
+  deadline: Date | null;
+  assignee: string | null;
+  status: StoryStatus;
+  created_at: Date;
+  updated_at: Date;
+}
+```
+
+**実装ノート**
+
+- 依存関係の循環参照チェックは`update`時に実行する
+- `findByInquiryId`は関連ストーリーの一括取得に使用する
+- デフォルトソートは`priority DESC, created_at DESC`
+- `dependencies`配列内のIDは存在検証を行う
+
+**エラーハンドリング**
+
+- `EntityNotFoundError`: 指定されたIDのエンティティが存在しない
+- `CircularDependencyError`: 依存関係に循環が検出された
+- `DatabaseError`: データベース操作失敗
+- `ValidationError`: データ検証失敗
+
+### サービス層
+
+#### InquiryValidator
+
+**責務**: 問い合わせデータのバリデーション
+
+**契約種別**: Service
+
+**サービスインターフェース**
+
+```typescript
+interface InquiryValidator {
+  // 作成時検証（要件1.4）
+  validateCreate(data: CreateInquiryRequest): ValidationResult;
+
+  // 更新時検証（要件2.8）
+  validateUpdate(data: UpdateInquiryRequest): ValidationResult;
+
+  // コンテンツ検証
+  validateContent(content: string): ValidationResult;
+}
+
+interface ValidationResult {
+  valid: boolean;
+  errors: ValidationError[];
+}
+
+interface ValidationError {
+  field: string;
+  message: string;
+  code: string;  // GS-xxx形式
+}
+```
+
+**バリデーションルール**
+
+- `content`: 空文字列禁止、最大長10,000文字
+- `user_id`: 必須、英数字とアンダースコアのみ、最大50文字
+- `source_system`: 必須、送信元システムを識別する文字列（例: "manual", "email", "chat"）、最大50文字
+
+**実装ノート**
+
+- すべてのエラーメッセージは日本語で提供する
+- エラーコードは`GS-001`から開始する一意のコード体系
+- クライアント側とサーバー側で同じルールを共有する
+
+#### AIStoryGenerator
+
+**責務**: OpenAI APIを使用したストーリー生成
+
+**契約種別**: Service, API
+
+**サービスインターフェース**
+
+```typescript
+interface AIStoryGenerator {
+  // ストーリー生成（要件4.1-4.3）
+  generateStory(request: GenerationRequest): Promise<GeneratedStory>;
+
+  // 生成結果検証（要件4.7）
+  validateStructure(story: GeneratedStory): ValidationResult;
+}
+
+interface GenerationRequest {
+  inquiry_content: string;
+  template_content?: string;  // 将来使用
+  generation_config?: GenerationConfig;
+}
+
+interface GenerationConfig {
+  model: string;          // デフォルト: "gpt-4"
+  temperature: number;    // デフォルト: 0.7
+  max_tokens: number;     // デフォルト: 2000
+}
+
+interface GeneratedStory {
+  title: string;
+  description: string;
+  acceptance_criteria: string;
+  category: StoryCategory;
+  priority: Priority;
+  estimated_effort: number;
+}
+```
+
+**API契約（OpenAI）**
+
+- **エンドポイント**: `https://api.openai.com/v1/chat/completions`
+- **認証**: Bearer Token（環境変数`OPENAI_API_KEY`）
+- **レート制限**: 3,500 RPM（tier dependent）
+- **タイムアウト**: 30秒
+- **リトライ戦略**: 指数バックオフ、最大3回
+
+**プロンプト構造**
+
+```
+以下の問い合わせから、アジャイル開発で使用するユーザーストーリーを生成してください。
+
+問い合わせ内容：
+{inquiry_content}
+
+出力形式（JSON）：
+{
+  "title": "簡潔なタイトル（最大100文字）",
+  "description": "As a [ユーザー], I want [機能] so that [価値]",
+  "acceptance_criteria": "- 具体的な基準1\n- 具体的な基準2\n- 具体的な基準3",
+  "category": "development|testing|documentation|research|maintenance|custom",
+  "priority": "low|medium|high|urgent",
+  "estimated_effort": 数値（ストーリーポイント）
+}
+
+制約：
+- タイトルは100文字以内
+- 説明はユーザーストーリー形式
+- 受入基準は3-5項目
+- カテゴリは6種類から選択
+- 優先度は4段階から選択
+- 推定工数は0.5-13の範囲（フィボナッチ数列）
+```
+
+**実装ノート**
+
+- AI生成中は`inquiry.status = 'processing'`に設定する（要件4.8）
+- 生成失敗時は`inquiry.status = 'failed'`に設定する（要件4.6）
+- レスポンスのJSON構造を検証し、必須フィールドの存在を確認する
+- タイムアウト、ネットワークエラー、APIエラーを適切にハンドリングする
+
+**エラーハンドリング**
+
+- `AIServiceUnavailableError`: OpenAI APIへの接続失敗
+- `AIGenerationTimeoutError`: 生成処理タイムアウト
+- `InvalidResponseFormatError`: レスポンス形式が不正
+- `AIQuotaExceededError`: APIクォータ超過
 
 #### WorkflowService
-- **Intent**: ステータス遷移管理をFSMで実装し、不正遷移を防止
-- **Requirements**: 3.1, 3.2, 5.4
-- **Contracts**: Service、State
 
-**ステートマシン定義**:
-```python
-class InquiryStateMachine(StateMachine):
-    received = State('RECEIVED', initial=True)
-    approved = State('APPROVED')
-    rejected = State('REJECTED')
-    processing = State('PROCESSING')
-    task_working = State('TASK_WORKING')
-    completed = State('COMPLETED')
-    failed = State('FAILED')
+**責務**: 問い合わせとストーリーのワークフロー制御
 
-    approve = received.to(approved)
-    reject = received.to(rejected)
-    start_conversion = approved.to(processing)
-    complete = processing.to(task_working)
-    fail = processing.to(failed)
+**契約種別**: Service
+
+**サービスインターフェース**
+
+```typescript
+interface WorkflowService {
+  // 問い合わせワークフロー（要件3.1-3.5）
+  approveInquiry(inquiryId: number): Promise<InquiryEntity>;
+  rejectInquiry(inquiryId: number): Promise<InquiryEntity>;
+
+  // ストーリーワークフロー（要件5.4-5.5）
+  approveStory(storyId: number): Promise<StoryEntity>;
+  rejectStory(storyId: number): Promise<StoryEntity>;
+
+  // ストーリー生成ワークフロー（要件4.1-4.8）
+  initiateStoryGeneration(inquiryId: number): Promise<StoryEntity>;
+}
 ```
 
-### Frontend / UI Components
+**ワークフロールール**
+
+問い合わせステータス遷移:
+- `received` → `processing`: ストーリー生成開始時
+- `processing` → `task_working`: ストーリー生成成功時
+- `processing` → `failed`: ストーリー生成失敗時
+- `task_working` → `completed`: すべてのストーリーが完了時
+
+ストーリーステータス遷移:
+- 初期状態: `pending_review`（要件4.4）
+- `pending_review` → `approved`: ユーザー承認時
+- `pending_review` → `rejected`: ユーザー拒否時
+- `approved` → `exported`: 外部システムエクスポート時（将来）
+
+**実装ノート**
+
+- すべてのステータス変更で`updated_at`タイムスタンプを更新する（要件3.3）
+- 無効なステータス遷移は`InvalidStateTransitionError`を発生させる
+- ワークフロー実行はトランザクション内で行う
+
+**エラーハンドリング**
+
+- `InvalidStateTransitionError`: 無効なステータス遷移
+- `InquiryNotFoundError`: 問い合わせが存在しない
+- `StoryNotFoundError`: ストーリーが存在しない
+
+#### InquiryQueryService
+
+**責務**: 問い合わせの検索とページネーション
+
+**契約種別**: Service
+
+**サービスインターフェース**
+
+```typescript
+interface InquiryQueryService {
+  // 一覧取得（要件2.1-2.3）
+  listInquiries(request: ListInquiriesRequest): Promise<PaginatedInquiries>;
+
+  // 詳細取得（要件2.5）
+  getInquiry(id: number): Promise<InquiryEntity>;
+}
+
+interface ListInquiriesRequest {
+  page?: number;          // デフォルト: 1
+  limit?: number;         // デフォルト: 20、範囲: 1-100（要件2.2）
+  status?: InquiryStatus | InquiryStatus[];
+  user_id?: string;
+  sort_by?: 'created_at' | 'updated_at';
+  sort_order?: 'asc' | 'desc';  // デフォルト: 'desc'（要件2.3）
+}
+
+interface PaginatedInquiries {
+  data: InquiryEntity[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    has_next: boolean;
+  };
+}
+```
+
+**実装ノート**
+
+- デフォルトソートは`created_at DESC`（要件2.3）
+- ページネーションは1-indexed
+- `limit`の範囲検証を実施し、範囲外の値は最大値にクランプする
+- `getInquiry`で存在しないIDは404エラー（要件2.6）
+
+**エラーハンドリング**
+
+- `InquiryNotFoundError`: 指定されたIDの問い合わせが存在しない（要件2.6）
+- `InvalidPaginationError`: ページネーションパラメータが不正
+
+### API層
+
+#### InquiryAPI
+
+**責務**: 問い合わせ関連のHTTPエンドポイント
+
+**契約種別**: API
+
+**APIエンドポイント**
+
+```typescript
+// 問い合わせ作成（要件1.1-1.6）
+POST /api/inquiries
+Request: CreateInquiryRequest
+Response: 201 Created, InquiryResponse
+Errors: 400 Bad Request, 500 Internal Server Error
+
+// 問い合わせ一覧（要件2.1-2.4）
+GET /api/inquiries?page=1&limit=20&status=received&sort_by=created_at&sort_order=desc
+Response: 200 OK, PaginatedResponse<InquiryResponse>
+Errors: 400 Bad Request, 500 Internal Server Error
+
+// 問い合わせ詳細（要件2.5-2.6）
+GET /api/inquiries/{id}
+Response: 200 OK, InquiryResponse
+Errors: 404 Not Found, 500 Internal Server Error
+
+// 問い合わせ更新（要件2.8-2.9）
+PUT /api/inquiries/{id}
+Request: UpdateInquiryRequest
+Response: 200 OK, InquiryResponse
+Errors: 400 Bad Request, 404 Not Found, 500 Internal Server Error
+
+// 問い合わせ承認（要件3.1）
+POST /api/inquiries/{id}/approve
+Response: 200 OK, InquiryResponse
+Errors: 404 Not Found, 409 Conflict, 500 Internal Server Error
+
+// 問い合わせ却下（要件3.2）
+POST /api/inquiries/{id}/reject
+Response: 200 OK, InquiryResponse
+Errors: 404 Not Found, 409 Conflict, 500 Internal Server Error
+```
+
+**実装ノート**
+
+- すべてのエンドポイントでJSONシリアライゼーション/デシリアライゼーションを実施
+- バリデーションエラーは400 Bad Requestで日本語エラーメッセージを返す（要件1.3）
+- タイムスタンプはISO 8601形式で返す
+- CORS設定は開発環境で`http://localhost:3000`を許可
+- エラーレスポンスは統一フォーマット
+
+**エラーレスポンス形式**
+
+```typescript
+interface ErrorResponse {
+  errors: Array<{
+    code: string;      // GS-xxx形式
+    message: string;   // 日本語メッセージ
+    field?: string;    // バリデーションエラー時のフィールド名
+  }>;
+  timestamp: string;   // ISO 8601形式
+}
+```
+
+#### StoryAPI
+
+**責務**: ストーリー関連のHTTPエンドポイント
+
+**契約種別**: API
+
+**APIエンドポイント**
+
+```typescript
+// ストーリー生成（要件4.1-4.8）
+POST /api/stories/generate
+Request: GenerateStoryRequest
+Response: 201 Created, StoryResponse
+Errors: 400 Bad Request, 404 Not Found, 422 Unprocessable Entity, 503 Service Unavailable
+
+// ストーリー一覧（要件5.1）
+GET /api/stories?page=1&limit=20&status=pending_review&priority=high
+Response: 200 OK, PaginatedResponse<StoryResponse>
+Errors: 400 Bad Request, 500 Internal Server Error
+
+// ストーリー詳細（要件5.2）
+GET /api/stories/{id}
+Response: 200 OK, StoryResponse
+Errors: 404 Not Found, 500 Internal Server Error
+
+// ストーリー更新（要件5.3）
+PUT /api/stories/{id}
+Request: UpdateStoryRequest
+Response: 200 OK, StoryResponse
+Errors: 400 Bad Request, 404 Not Found, 500 Internal Server Error
+
+// ストーリー承認（要件5.4）
+POST /api/stories/{id}/approve
+Response: 200 OK, StoryResponse
+Errors: 404 Not Found, 409 Conflict, 500 Internal Server Error
+
+// ストーリー拒否（要件5.5）
+POST /api/stories/{id}/reject
+Response: 200 OK, StoryResponse
+Errors: 404 Not Found, 409 Conflict, 500 Internal Server Error
+```
+
+**実装ノート**
+
+- `/generate`エンドポイントはAI処理のため最大30秒のタイムアウト
+- AI処理失敗時は503 Service Unavailableを返す（要件4.6）
+- 構造検証失敗時は422 Unprocessable Entityを返す（要件4.7）
+- ストーリー生成中の問い合わせは`processing`ステータス（要件4.8）
+
+### UI層
+
+#### InquiryForm
+
+**責務**: 問い合わせ入力フォーム
+
+**契約種別**: UI
+
+**プロパティ**
+
+```typescript
+interface InquiryFormProps {
+  onSubmit: (inquiry: CreateInquiryRequest) => Promise<void>;
+  onCancel?: () => void;
+  isLoading?: boolean;
+  initialData?: Partial<CreateInquiryRequest>;
+}
+```
+
+**実装ノート（要件6.1-6.3）**
+
+- React Hook Formでフォーム状態を管理
+- Zodスキーマでクライアント側バリデーションを実施
+- バリデーションエラーはフィールド直下に日本語で表示
+- 送信中は送信ボタンを無効化し、ローディング状態を表示
+- 成功時はreact-hot-toastで成功メッセージを表示
+- サーバーエラーはフォーム上部にエラーバナーで表示
+
+**バリデーションルール**
+
+- `content`: 必須、最大10,000文字
+- `user_id`: 必須、英数字とアンダースコア、最大50文字
 
 #### InquiryList
-- **Intent**: 問い合わせ一覧を表示し、検索・フィルタリング機能を提供
-- **Requirements**: 2.1, 2.2, 6.1
-- **実装**: TanStack Query useInfiniteQuery、Intersection Observer、ステータスバッジ
+
+**責務**: 問い合わせ一覧表示
+
+**契約種別**: UI
+
+**プロパティ**
+
+```typescript
+interface InquiryListProps {
+  onInquiryClick: (inquiryId: number) => void;
+  onApprove?: (inquiryId: number) => Promise<void>;
+  onReject?: (inquiryId: number) => Promise<void>;
+  statusFilter?: InquiryStatus[];
+}
+```
+
+**実装ノート（要件6.4-6.5）**
+
+- TanStack Queryでページネーションとキャッシュを管理
+- デフォルトページサイズは20件
+- 各行に問い合わせID、内容（省略表示）、ステータス、タイムスタンプを表示（要件2.4）
+- ステータスフィルタードロップダウンを提供
+- 行クリックで詳細ページへ遷移
+- ページネーションコントロール（前へ/次へ/ページ番号）
 
 #### InquiryDetail
-- **Intent**: 問い合わせ詳細を表示し、編集・承認・却下・ストーリー変換機能を提供
-- **Requirements**: 2.3, 3.1, 3.2, 4.1, 6.1
-- **実装**: React Hook Form + Zod、楽観的更新、確認ダイアログ
 
-#### StoryList
-- **Intent**: ストーリー一覧を表示し、フィルタリング機能を提供
-- **Requirements**: 5.1, 6.2
-- **実装**: TanStack Query、カード型レイアウト
+**責務**: 問い合わせ詳細表示・編集
+
+**契約種別**: UI
+
+**プロパティ**
+
+```typescript
+interface InquiryDetailProps {
+  inquiryId: number;
+  onUpdate: (data: UpdateInquiryRequest) => Promise<void>;
+  onApprove: () => Promise<void>;
+  onReject: () => Promise<void>;
+  onGenerateStory: () => Promise<void>;
+}
+```
+
+**実装ノート（要件6.5）**
+
+- 読み取りモードと編集モードを切り替え可能
+- 編集モードではインライン編集をサポート
+- 承認/却下/ストーリー生成ボタンを提供（要件3.4, 4.1）
+- 関連ストーリーがある場合はリンクを表示
+- 更新履歴を時系列で表示（`updated_at`タイムスタンプ）
+
+#### StoryBoard
+
+**責務**: ストーリー一覧・詳細表示
+
+**契約種別**: UI
+
+**プロパティ**
+
+```typescript
+interface StoryBoardProps {
+  onStoryClick: (storyId: number) => void;
+  statusFilter?: StoryStatus[];
+  priorityFilter?: Priority[];
+}
+```
+
+**実装ノート（要件6.6-6.7）**
+
+- カンバンボード形式でストーリーをステータス別に表示
+- 各カードにタイトル、優先度、推定工数、担当者を表示（要件5.2）
+- ドラッグ&ドロップでステータス変更（将来機能）
+- フィルタリング機能（ステータス、優先度、カテゴリ、担当者）
+- ソート機能（優先度、期限、作成日時）
 
 #### StoryDetail
-- **Intent**: ストーリー詳細を表示し、承認・拒否機能を提供
-- **Requirements**: 5.2, 5.4, 6.2
-- **実装**: 受入基準の箇条書き表示、確認ダイアログ
 
-#### StoryEditForm
-- **Intent**: ストーリーを編集するフォームを提供
-- **Requirements**: 5.3, 6.2
-- **実装**: React Hook Form + Zod、クロスフィールドバリデーション
+**責務**: ストーリー詳細表示・編集
 
-## Data Models
+**契約種別**: UI
 
-### Domain Model
-- **Inquiry Entity**: 問い合わせの主要エンティティ（BigInteger ID、user_id、content、language、timestamp、status、inquiry_metadata）
-- **Story Entity**: ストーリーの主要エンティティ（BigInteger ID、inquiry_id、title、description、category、priority、estimated_effort、status等）
-- **Business Rules**: 承認済み問い合わせのみストーリー変換可能、ストーリーは生成時にpending_review、問い合わせ削除時ストーリーもカスケード削除
+**プロパティ**
 
-### Logical Data Model
-既存の`InquiryModel`と`StoryModel`を活用し、新規フィールドやリレーションシップの追加は不要。
+```typescript
+interface StoryDetailProps {
+  storyId: number;
+  onUpdate: (data: UpdateStoryRequest) => Promise<void>;
+  onApprove: () => Promise<void>;
+  onReject: () => Promise<void>;
+}
+```
 
-**Inquiry Model**:
-- id: BigInteger、主キー、自動インクリメント
-- user_id: String(255)
-- content: Text（必須）
-- language: String(2)（デフォルト: 'ja'）
-- timestamp: DateTime（UTC）
-- status: String(50)（RECEIVED、APPROVED、REJECTED等）
-- inquiry_metadata: JSON
-- **Relationship**: stories（1対多、カスケード削除）
+**実装ノート（要件5.3-5.5）**
 
-**Story Model**:
-- id: BigInteger、主キー、自動インクリメント
-- inquiry_id: BigInteger、外部キー（inquiries.id、NOT NULL）
-- title: String(500)（必須）
-- description: Text（必須）
-- category、priority、estimated_effort、deadline、status、assignee、tags、dependencies、story_metadata
-- created_at、updated_at: DateTime（UTC）
-- **Relationship**: inquiry（多対1）
+- 全フィールドの詳細表示（タイトル、説明、受入基準、メタデータ）
+- 編集モードでインライン編集をサポート
+- 承認/拒否ボタンを提供
+- 元の問い合わせへのリンクを表示
+- 依存関係の視覚化（依存先ストーリーへのリンク）
+- 担当者・期限の設定UI（要件5.7）
 
-## Error Handling
+## エラーハンドリング
 
-### Error Strategy
-- **User Errors（4xx）**: バリデーションエラー、認証エラー、リソース未検出
-- **System Errors（5xx）**: データベースエラー、外部APIエラー、予期しないエラー
-- **Business Logic Errors（422）**: ステータス遷移エラー、AI生成失敗
+### エラー分類
 
-### Error Categories and Responses
-- **400 Bad Request**: 不正なリクエストフォーマット → フィールドレベルのエラーメッセージ（日本語）
-- **403 Forbidden**: 不正なステータス遷移 → 「現在のステータスからは実行できません」
-- **404 Not Found**: リソース未検出 → 「指定されたIDの問い合わせ/ストーリーが見つかりません」
-- **422 Unprocessable Entity**: バリデーションエラー → フィールドごとの詳細エラーメッセージ
-- **500 Internal Server Error**: データベースエラー、OpenAI APIエラー → 「データベースエラーが発生しました」、「AI生成処理に失敗しました」
+| エラータイプ | HTTPステータス | 説明 | ユーザーアクション |
+|------------|--------------|------|------------------|
+| ValidationError | 400 | 入力値検証失敗 | 入力値を修正して再送信 |
+| EntityNotFoundError | 404 | リソースが存在しない | URLを確認 |
+| InvalidStateTransitionError | 409 | 不正な状態遷移 | 現在の状態を確認 |
+| InvalidResponseFormatError | 422 | AI生成結果が不正 | 再試行 |
+| AIServiceUnavailableError | 503 | OpenAI API接続失敗 | しばらく待って再試行 |
+| DatabaseError | 500 | データベースエラー | サポートに連絡 |
 
-### Monitoring
-- Pythonロギング（`logging`モジュール、`exc_info=True`）
-- OpenAI API使用量追跡（AIServiceでメトリクス記録）
-- データベース接続プール監視（`pool_pre_ping=True`）
+### エラーコード体系
 
-## Testing Strategy
+```
+GS-001: 問い合わせ内容が空です
+GS-002: 問い合わせ内容が長すぎます（最大10,000文字）
+GS-003: ユーザーIDが不正です
+GS-004: 言語コードが不正です
+GS-005: 指定された問い合わせが見つかりません
+GS-006: 指定されたストーリーが見つかりません
+GS-007: 不正なステータス遷移です
+GS-008: AI生成処理に失敗しました
+GS-009: AI生成結果の構造が不正です
+GS-010: データベース操作に失敗しました
+GS-011: ページネーションパラメータが不正です
+GS-012: ストーリーに循環依存が検出されました
+GS-013: AI APIへの接続に失敗しました
+GS-014: AI APIのクォータを超過しました
+GS-015: 処理がタイムアウトしました
+```
 
-### Unit Tests
-**Backend**:
-- test_workflow_service.py: FSMテスト（正常遷移、不正遷移、コールバック、15テストケース）
-- test_ai_service.py: OpenAI API統合テスト（モック使用、リトライロジック、12テストケース）
-- test_story_service.py: ストーリー生成ビジネスロジックテスト（10テストケース）
-- test_inquiry_api.py: 問い合わせAPI拡張テスト（更新、承認・却下、検索、変換、20テストケース）
-- test_story_api.py: ストーリーAPIテスト（CRUD、承認・拒否、15テストケース）
+### エラーログ戦略
 
-**Frontend**:
-- InquiryList.test.tsx、InquiryDetail.test.tsx、StoryList.test.tsx、StoryDetail.test.tsx、StoryEditForm.test.tsx
-- 合計40-50テストケース
+**構造化ログ形式**
 
-**Target Coverage**: 80%以上（新規コード）
+```json
+{
+  "timestamp": "2024-01-01T12:00:00Z",
+  "level": "ERROR",
+  "message": "AI generation failed",
+  "error_code": "GS-008",
+  "context": {
+    "inquiry_id": 123,
+    "user_id": "user_001",
+    "ai_model": "gpt-4",
+    "error_details": "Connection timeout"
+  },
+  "stack_trace": "..."
+}
+```
 
-### Integration Tests
-- 問い合わせ作成 → 承認 → ストーリー変換 → ストーリー承認のエンドツーエンドフロー（5テストケース）
-- ストーリー変換失敗 → エラーハンドリング → ステータス更新フロー（3テストケース）
-- WorkflowService + InquiryModel統合テスト（4テストケース）
-- フロントエンド統合テスト（6テストケース）
+**ログレベル**
 
-**Target Tests**: 20テストケース
+- `DEBUG`: 開発環境のみ、詳細なデバッグ情報
+- `INFO`: 通常の操作ログ（問い合わせ作成、ストーリー生成開始など）
+- `WARNING`: 警告（リトライ実行、パフォーマンス低下など）
+- `ERROR`: エラー（バリデーション失敗、AI生成失敗など）
+- `CRITICAL`: 致命的エラー（データベース接続失敗など）
 
-### E2E / UI Tests
-- 問い合わせ作成 → 承認 → ストーリー変換 → 承認（クリティカルパス）
-- 問い合わせ編集 → 保存
-- ストーリー編集 → 承認
-- 問い合わせ検索・フィルタリング
-- ストーリーフィルタリング
+**監視対象メトリクス**
 
-**Target Tests**: 5テストケース
+- AI生成成功率（目標: 95%以上）
+- AI生成平均時間（目標: 10秒以内）
+- API応答時間P95（目標: 500ms以内）
+- エラー発生率（目標: 1%未満）
 
-### Performance / Load
-- 問い合わせ作成: < 500ms
-- AI生成処理: < 30秒（通常 < 10秒、タイムアウト60秒）
-- 同時ユーザー数: 100人（初期）
-- AI生成処理: 5リクエスト/秒（OpenAI APIレート制限考慮）
+## テスト戦略
 
-**Target Tests**: 4テストケース
+### テスト範囲
 
-## Security Considerations
+| レイヤー | テスト種別 | カバレッジ目標 | ツール |
+|---------|----------|--------------|--------|
+| データアクセス | ユニットテスト | 90% | pytest + SQLite |
+| サービス層 | ユニットテスト | 85% | pytest + Mock |
+| API層 | 統合テスト | 80% | pytest + TestClient |
+| UI層 | コンポーネントテスト | 70% | Jest + RTL |
+| E2E | E2Eテスト | 主要フロー | Playwright（将来） |
 
-- OpenAI APIキーの環境変数管理（`.env`、`.gitignore`登録）
-- 入力値サニタイゼーション（PydanticとZodによる二重バリデーション）
+### テストケース優先度
+
+**P0（必須）**
+- 問い合わせ作成フロー全体（要件1.1-1.6）
+- AI生成フロー全体（要件4.1-4.8）
+- ステータス遷移ロジック（要件3.1-3.5, 5.4-5.5）
+- バリデーションルール（要件1.4, 2.8）
+
+**P1（高優先度）**
+- ページネーション機能（要件2.1-2.3）
+- エラーハンドリング全般
+- データ整合性制約
+- 依存関係の循環検出
+
+**P2（中優先度）**
+- UI コンポーネント個別機能
+- ソート・フィルタリング
+- メタデータ処理
+
+### テスト例
+
+**ユニットテスト例: InquiryValidator**
+
+```python
+def test_validate_create_with_empty_content():
+    validator = InquiryValidator()
+    data = CreateInquiryRequest(
+        user_id="test_user",
+        content="",
+        source_system="manual"
+    )
+    result = validator.validate_create(data)
+
+    assert result.valid is False
+    assert len(result.errors) == 1
+    assert result.errors[0].code == "GS-001"
+    assert "空です" in result.errors[0].message
+```
+
+**統合テスト例: Story Generation API**
+
+```python
+@pytest.mark.asyncio
+async def test_generate_story_success(client, db_session, mock_openai):
+    # Arrange
+    inquiry = create_test_inquiry(db_session, content="ログイン機能が欲しい")
+    mock_openai.return_value = {
+        "title": "ログイン機能の実装",
+        "description": "As a user, I want to log in...",
+        "acceptance_criteria": "- ユーザー名とパスワードで認証できる",
+        "category": "development",
+        "priority": "high",
+        "estimated_effort": 5
+    }
+
+    # Act
+    response = await client.post(
+        "/api/stories/generate",
+        json={"inquiry_id": inquiry.id}
+    )
+
+    # Assert
+    assert response.status_code == 201
+    story = response.json()
+    assert story["title"] == "ログイン機能の実装"
+    assert story["status"] == "pending_review"
+
+    # Verify inquiry status updated
+    updated_inquiry = db_session.get(Inquiry, inquiry.id)
+    assert updated_inquiry.status == "task_working"
+```
+
+**コンポーネントテスト例: InquiryForm**
+
+```typescript
+test('displays validation error for empty content', async () => {
+  const mockSubmit = jest.fn();
+  render(<InquiryForm onSubmit={mockSubmit} />);
+
+  const submitButton = screen.getByRole('button', { name: /送信/ });
+  fireEvent.click(submitButton);
+
+  await waitFor(() => {
+    expect(screen.getByText(/問い合わせ内容が空です/)).toBeInTheDocument();
+  });
+
+  expect(mockSubmit).not.toHaveBeenCalled();
+});
+```
+
+### プロパティベーステスト
+
+```python
+from hypothesis import given, strategies as st
+
+@given(
+    content=st.text(min_size=1, max_size=10000),
+    user_id=st.text(min_size=1, max_size=50)
+)
+def test_inquiry_creation_properties(content, user_id):
+    """Test that valid inputs always create valid inquiries"""
+    data = CreateInquiryData(
+        user_id=user_id,
+        content=content,
+        source_system="manual",
+        timestamp=datetime.now(),
+        status=InquiryStatus.RECEIVED
+    )
+
+    # Should not raise exception
+    inquiry = InquiryRepository().create(data)
+
+    # Invariants
+    assert inquiry.id > 0
+    assert inquiry.content == content
+    assert inquiry.status == InquiryStatus.RECEIVED
+```
+
+## セキュリティ
+
+### 認証・認可
+
+**Phase 1（現在）**
+- 認証なし（開発環境のみ）
+- CORS設定で`http://localhost:3000`のみ許可
+
+**Phase 2（将来）**
+- JWT認証導入
+- ユーザーロール（reporter, user, admin）
+- 問い合わせの所有者検証
+
+### 入力値検証
+
+- すべての入力値をPydanticスキーマで検証
 - SQLインジェクション対策（SQLAlchemy ORM使用）
-- XSS対策（React標準機能）
-- 将来: JWTトークンベース認証、RBAC、シークレット管理サービス統合
+- XSS対策（React標準のエスケープ機能）
+- CSRF対策（将来実装）
 
-## Performance & Scalability
+### データ保護
 
-**Performance Targets**:
-- 問い合わせ作成: < 500ms
-- 問い合わせ一覧取得: < 1秒（100件）
-- AI生成処理: < 30秒（通常 < 10秒）
-- ストーリー一覧取得: < 1秒（100件）
+- データベース接続文字列は環境変数で管理
+- OpenAI APIキーは環境変数で管理、ログに出力しない
+- 個人情報の最小化（`user_id`のみ、名前・メールアドレスは保存しない）
+- データ暗号化（本番環境でのみ、PostgreSQL透過的暗号化）
 
-**Scalability Strategy**:
-- 同時ユーザー数: 100人（初期）→ 1000人（目標）
-- ストーリー数: 10,000件（初期）→ 100,000件（目標）
-- AI API呼び出し: 1,000回/日（初期）→ 10,000回/日（目標）
+### 外部API連携
 
-**Caching**:
-- TanStack Queryキャッシュ戦略: `staleTime: 5分`、`cacheTime: 30分`
-- 将来: RedisキャッシュでAPI応答を高速化検討
+- OpenAI APIキーをSecretとして管理
+- API呼び出し時のタイムアウト設定（30秒）
+- レート制限の監視とアラート
+- APIレスポンスの検証（信頼できないデータとして扱う）
 
-**Database Optimization**:
-- インデックス追加（inquiries.status、stories.status、stories.priority、stories.created_at）
-- クエリパフォーマンス分析（EXPLAIN ANALYZE）
-- 接続プール設定（`pool_pre_ping=True`、`pool_recycle=300`）
+## パフォーマンス
+
+### 目標値
+
+| メトリクス | 目標 | 計測方法 |
+|----------|------|---------|
+| 問い合わせ作成 | < 500ms | API P95応答時間 |
+| 問い合わせ一覧表示 | < 1秒 | API P95応答時間 |
+| AI生成処理 | < 30秒 | API最大応答時間 |
+| ストーリー更新 | < 500ms | API P95応答時間 |
+| UI初期表示 | < 2秒 | Lighthouse FCP |
+
+### 最適化戦略
+
+**データベース**
+- 適切なインデックス設計（ステータス、作成日時の複合インデックス）
+- クエリ結果のページネーション（最大100件）
+- 接続プール設定（最小5、最大20接続）
+- N+1問題の回避（eager loading）
+
+**API層**
+- レスポンスのgzip圧縮
+- キャッシュヘッダー設定（静的リソース）
+- 非同期処理（FastAPI標準）
+
+**フロントエンド**
+- TanStack Queryによるキャッシング（staleTime: 30秒）
+- 仮想スクロール（react-window、将来）
+- コード分割（React.lazy、将来）
+- 画像最適化（WebP形式、将来）
+
+**AI処理**
+- タイムアウト設定（30秒）
+- リトライ戦略（指数バックオフ）
+- 生成結果のキャッシング（同一問い合わせの再生成時、将来）
+
+### スケーラビリティ
+
+**初期目標**
+- 同時ユーザー数: 100人
+- 問い合わせ数: 10,000件
+- ストーリー数: 30,000件
+- AI生成: 1,000回/日
+
+**スケーリング戦略**
+- データベース: インデックス最適化、パーティショニング（将来）
+- APIサーバー: 水平スケーリング（複数インスタンス）
+- AI処理: 非同期タスクキュー（Celery、将来）
+- キャッシュ: Redis導入（将来）
+
+## 移行戦略
+
+### データベーススキーマ
+
+**マイグレーション手順**
+
+1. Alembicマイグレーションスクリプト生成
+   ```bash
+   make db-revision
+   ```
+
+2. マイグレーション実行
+   ```bash
+   make db-migrate
+   ```
+
+3. データ整合性検証
+   ```bash
+   make db-status
+   make db-tables
+   ```
+
+**ロールバック計画**
+
+- 各マイグレーションに`downgrade()`関数を実装
+- 本番適用前にステージング環境でテスト
+- データバックアップ取得後に実行
+
+### 既存システムとの統合
+
+現在は新規機能であり、既存システムとの統合は不要。将来的には以下の統合を検討：
+
+- 外部タスク管理システム（Trello、Jira）へのエクスポート
+- 認証システムとの統合
+- 通知システムとの統合
+
+### デプロイメント戦略
+
+**Phase 1: 開発環境**
+- Docker Composeによるローカル開発環境
+- ホットリロード有効化
+- デバッグログ出力
+
+**Phase 2: ステージング環境（将来）**
+- 本番同等の環境
+- CI/CD自動デプロイ
+- E2Eテスト実行
+
+**Phase 3: 本番環境（将来）**
+- ブルーグリーンデプロイメント
+- ヘルスチェック監視
+- ロールバック機能
+
+## 未解決事項
+
+### 技術的課題
+
+1. **AI生成品質の評価**: 生成されたストーリーの品質をどのように評価するか（将来検討）
+2. **長時間処理の対応**: AI生成が30秒を超える場合の非同期処理化（Phase 2で検討）
+3. **大量データの性能**: 問い合わせ数が10万件を超えた場合のパフォーマンス最適化
+4. **全文検索**: PostgreSQLの全文検索機能 vs Elasticsearch導入の判断
+
+### ビジネス要件
+
+1. **外部連携の優先順位**: Trello、Jira、GitHub Projectsのどれを優先実装するか
+2. **テンプレート機能の詳細**: テンプレートの作成・管理UI仕様
+3. **通知機能**: ストーリー生成完了時の通知方法（メール、Slack、Webhook）
+4. **監査ログの範囲**: どこまで詳細なログを保存するか
+
+### オープンな設計判断
+
+1. **ストーリー依存関係の可視化**: どのようなUI/UXで表示するか（グラフ、リストなど）
+2. **バッチエクスポート**: 複数ストーリーの一括エクスポート機能の詳細仕様
+3. **リアルタイム更新**: WebSocketによるリアルタイム状態同期の必要性
+4. **国際化の範囲**: 日本語以外の言語サポートの優先順位
+
+## 付録
+
+### 参照ドキュメント
+
+- [FastAPI公式ドキュメント](https://fastapi.tiangolo.com/)
+- [SQLAlchemy 2.0ドキュメント](https://docs.sqlalchemy.org/en/20/)
+- [OpenAI API Reference](https://platform.openai.com/docs/api-reference)
+- [React公式ドキュメント](https://react.dev/)
+- [TanStack Query](https://tanstack.com/query/latest)
+
+### 用語集
+
+- **問い合わせ（Inquiry）**: 報告者からの自然言語による要求
+- **ストーリー（Story）**: 構造化されたユーザーストーリー
+- **AI生成（AI Generation）**: OpenAI APIを使用した自動ストーリー生成
+- **ワークフロー（Workflow）**: ステータス遷移の制御ロジック
+- **レビュー（Review）**: 人間によるストーリー確認・編集プロセス
+- **エクスポート（Export）**: 外部システムへのデータ連携
+
+### 変更履歴
+
+| 日付 | バージョン | 変更内容 | 承認者 |
+|------|----------|---------|-------|
+| 2025-12-27 | 1.0 | 初版作成（ゼロベース再生成） | - |
