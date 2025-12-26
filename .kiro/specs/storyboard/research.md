@@ -246,6 +246,66 @@
 | **無限スクロールのメモリリーク** | Medium | Low | Windowing実装、ページ上限設定、定期的なクリーンアップ |
 | **Pydantic検証の互換性問題** | Low | Medium | OpenAI SDKネイティブサポート使用、検証エラーの詳細ログ |
 
+## 軽量ディスカバリー最新調査（2025年12月26日）
+
+### OpenAI Structured Outputs 2025最新情報
+
+- **調査ソース**:
+  - [Structured model outputs - OpenAI API](https://platform.openai.com/docs/guides/structured-outputs)
+  - [Introducing Structured Outputs in the API - OpenAI](https://openai.com/index/introducing-structured-outputs-in-the-api/)
+  - [Using JSON Schema for Structured Output in Python - Semantic Kernel](https://devblogs.microsoft.com/semantic-kernel/using-json-schema-for-structured-output-in-python-for-openai-models/)
+
+- **最新ベストプラクティス（2025年）**:
+  - **Pydanticネイティブサポート**: `client.beta.chat.completions.parse`メソッドを使用し、PydanticモデルでSDKが自動的にスキーマ変換とJSONデシリアライゼーションを処理
+  - **モデル拒否ハンドリング**: 新しい`refusal`文字列値をAPIレスポンスに含み、モデルがスキーマに一致する出力の代わりに拒否を生成したかをプログラム的に検出可能
+  - **スキーマ要件**: 全フィールド・関数パラメータは必須として含める、最大100個のオブジェクトプロパティで最大5レベルのネスト、`additionalProperties`をfalseに設定
+  - **CI/CD統合**: JSON Schemaまたは基礎データオブジェクトの編集時にフラグを立てるCIルールを追加、または型定義からJSON Schemaを自動生成するCIステップを追加
+  - **エラーハンドリング**: 入力が完全に無関係な場合は幻覚を生成する可能性があるため、プロンプトに空のパラメータまたは特定の文を返す言語を含める
+
+- **アーキテクチャへの影響**:
+  - `AIService`でPydantic Response Modelを使用し、`parse()`メソッドで構造化出力を生成
+  - スキーマ制約（最大100プロパティ、5レベルネスト）を設計時に考慮
+  - モデル拒否検出ロジックを実装し、拒否時のフォールバック処理を提供
+
+### python-statemachine FastAPI統合 2025情報
+
+- **調査ソース**:
+  - [Python StateMachine 2.5.0 Documentation](https://python-statemachine.readthedocs.io/en/latest/readme.html)
+  - [Building State-Aware Applications with FSM and FastAPI (March 2025)](https://medium.com/@tech-adventurer/building-state-aware-applications-with-finite-state-machines-and-fastapi-11d9b2894f3a)
+  - [python-statemachine PyPI](https://pypi.org/project/python-statemachine/)
+
+- **最新の発見事項（2025年）**:
+  - **完全な非同期サポート**: asyncioを使用したネイティブコルーチンサポート、ライブラリの公開APIに変更なしで非同期コードベースで動作
+  - **FastAPI統合例**: 2025年3月の最新記事でFastAPI APIにFSMを統合し、スケーラブルな状態認識アプリケーションを構築する方法を解説、リポジトリに実例あり
+  - **Webフレームワーク統合**: Django統合が自動的にステートマシンを検出、同様のパターンでFastAPIにも統合可能
+  - **Graphviz統合**: `pydot`とGraphvizを使用してステートマシンから図を生成可能（ドキュメント化に有用）
+
+- **アーキテクチャへの影響**:
+  - `WorkflowService`でasync/awaitパターンを使用し、FastAPIの非同期エンドポイントとシームレスに統合
+  - ステートマシングラフをMermaidで文書化し、開発者とステークホルダーの理解を促進
+  - 依存性注入パターンでステートマシンをFastAPIエンドポイントに組み込む
+
+### React Hook Form + Zod 2025ベストプラクティス
+
+- **調査ソース**:
+  - [Using Zod with React hook form using typescript - DEV Community](https://dev.to/majiedo/using-zod-with-react-hook-form-using-typescript-1mgk)
+  - [Learn Zod validation with React Hook Form - Contentful](https://www.contentful.com/blog/react-hook-form-validation-zod/)
+  - [React Hook Form with Zod Validation: A Complete Guide - Medium](https://medium.com/@toukir.ahamed.pigeon/react-hook-form-with-zod-validation-a-complete-guide-with-typescript-aacbcb370a8b)
+
+- **最新ベストプラクティス（2025年）**:
+  - **TypeScript Strict Mode**: tsconfig.jsonでstrict modeを有効化（全TypeScriptプロジェクトのベストプラクティス）
+  - **Zodスキーマ優先**: Zodはスキーマからランタイムバリデーションを実行し、TypeScript型を自動的に推論、型定義の明示的作成を不要に
+  - **型推論活用**: `z.infer<typeof schema>`でZodスキーマからTypeScript型を静的に推論、型の重複定義を回避
+  - **zodResolver統合**: `@hookform/resolvers`の`zodResolver`を使用し、Zodスキーマバリデーションをフォーム検証プロセスに統合
+  - **包括的バリデーション**: 必須フィールド、データ型、値範囲、データ有効性（URL、メール、電話番号）、長さ制約、クロスフィールドバリデーションをサポート
+  - **パフォーマンス**: React Hook Formは最小限の再レンダリングでフォーム状態、検証、パフォーマンスを処理、繰り返しバリデーションロジックとボイラープレートコードを削減
+  - **両面バリデーション**: フロントエンドとバックエンドの両方でバリデーションを実施し、セキュリティとユーザー体験を最適化
+
+- **アーキテクチャへの影響**:
+  - 既存の`InquiryForm`パターン（React Hook Form + Zod）を踏襲し、一貫性を維持
+  - ストーリー編集フォームでもZodスキーマを定義し、型安全性を確保
+  - クロスフィールドバリデーション（例：依存関係の循環チェック）をZodカスタムバリデータで実装
+
 ## 参考文献
 
 ### OpenAI関連
@@ -255,6 +315,9 @@
 - [OpenAI Rate Limits Guide](https://platform.openai.com/docs/guides/rate-limits)
 - [How to handle rate limits - OpenAI Cookbook](https://cookbook.openai.com/examples/how_to_handle_rate_limits)
 - [Structured Outputs - OpenAI API](https://platform.openai.com/docs/guides/structured-outputs)
+- [Structured model outputs - OpenAI API](https://platform.openai.com/docs/guides/structured-outputs)
+- [Introducing Structured Outputs in the API - OpenAI](https://openai.com/index/introducing-structured-outputs-in-the-api/)
+- [Using JSON Schema for Structured Output in Python - Semantic Kernel](https://devblogs.microsoft.com/semantic-kernel/using-json-schema-for-structured-output-in-python-for-openai-models/)
 
 ### Pydantic & Python
 - [Pydantic validation with OpenAI](https://pydantic.dev/articles/llm-intro)
@@ -266,9 +329,15 @@
 - [python-statemachine PyPI](https://pypi.org/project/python-statemachine/)
 - [Building State-Aware Applications with FSM and FastAPI](https://medium.com/@tech-adventurer/building-state-aware-applications-with-finite-state-machines-and-fastapi-11d9b2894f3a)
 - [Approval Workflow with FastAPI](https://medium.com/@asc686f61/building-an-approval-workflow-with-slack-fastapi-redis-and-ngrok-895d4d9319f2)
+- [Building State-Aware Applications with FSM and FastAPI (March 2025)](https://medium.com/@tech-adventurer/building-state-aware-applications-with-finite-state-machines-and-fastapi-11d9b2894f3a)
 
 ### React & TanStack Query
 - [TanStack Query Infinite Queries Guide](https://tanstack.com/query/latest/docs/framework/react/guides/infinite-queries)
 - [Infinite Scroll with React 19](https://makersden.io/blog/infinite-scroll-streaming-data-tanstack-query-react19)
 - [Caching, Pagination, and Infinite Scrolling with TanStack Query](https://medium.com/@lakshaykapoor08/%EF%B8%8F-caching-pagination-and-infinite-scrolling-with-tanstack-query-4212b24d3806)
 - [TanStack Query Load More Example](https://tanstack.com/query/latest/docs/framework/react/examples/load-more-infinite-scroll)
+
+### React Hook Form & Zod
+- [Using Zod with React hook form using typescript - DEV Community](https://dev.to/majiedo/using-zod-with-react-hook-form-using-typescript-1mgk)
+- [Learn Zod validation with React Hook Form - Contentful](https://www.contentful.com/blog/react-hook-form-validation-zod/)
+- [React Hook Form with Zod Validation: A Complete Guide - Medium](https://medium.com/@toukir.ahamed.pigeon/react-hook-form-with-zod-validation-a-complete-guide-with-typescript-aacbcb370a8b)
