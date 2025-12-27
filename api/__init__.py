@@ -1,0 +1,1 @@
+"""Ghost Squad API package."""
