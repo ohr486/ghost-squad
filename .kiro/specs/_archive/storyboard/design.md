@@ -309,9 +309,8 @@ erDiagram
         text acceptance_criteria
         enum category
         enum priority
-        float estimated_effort
         timestamp deadline
-        string assignee
+        string assignee_id
         enum status
         timestamp created_at
         timestamp updated_at
@@ -337,8 +336,6 @@ erDiagram
   - `inquiry_id`は有効なInquiryを参照する
   - `title`は500文字以内
   - `description`と`acceptance_criteria`は空文字列を許可しない
-  - `estimated_effort`は正の数値
-  - `dependencies`内のIDは有効なStoryを参照する
 
 #### 列挙型定義
 
@@ -401,7 +398,7 @@ CREATE INDEX ix_inquiries_composite ON inquiries(status, created_at DESC);
 CREATE INDEX ix_stories_inquiry_id ON stories(inquiry_id);
 CREATE INDEX ix_stories_status ON stories(status);
 CREATE INDEX ix_stories_priority ON stories(priority);
-CREATE INDEX ix_stories_assignee ON stories(assignee);
+CREATE INDEX ix_stories_assignee_id ON stories(assignee_id);
 CREATE INDEX ix_stories_deadline ON stories(deadline);
 CREATE INDEX ix_stories_composite ON stories(status, priority, created_at DESC);
 
@@ -428,10 +425,6 @@ ALTER TABLE inquiries
 ALTER TABLE stories
   ADD CONSTRAINT chk_stories_title_length
   CHECK (length(title) <= 500);
-
-ALTER TABLE stories
-  ADD CONSTRAINT chk_stories_effort_positive
-  CHECK (estimated_effort > 0);
 ```
 
 ### データ契約・統合
@@ -464,9 +457,8 @@ interface StoryResponse {
   acceptance_criteria: string;
   category: StoryCategory;
   priority: Priority;
-  estimated_effort: number;
   deadline: string | null;  // ISO 8601形式
-  assignee: string | null;
+  assignee_id: string | null;
   status: StoryStatus;
   created_at: string;  // ISO 8601形式
   updated_at: string;  // ISO 8601形式
@@ -527,9 +519,8 @@ interface UpdateStoryRequest {
   acceptance_criteria?: string;
   category?: StoryCategory;
   priority?: Priority;
-  estimated_effort?: number;
   deadline?: string | null;
-  assignee?: string | null;
+  assignee_id?: string | null;
 }
 ```
 
@@ -659,9 +650,8 @@ interface CreateStoryData {
   acceptance_criteria: string;
   category: StoryCategory;
   priority: Priority;
-  estimated_effort: number;
   deadline?: Date | null;
-  assignee?: string | null;
+  assignee_id?: string | null;
   status: StoryStatus;
 }
 
@@ -671,16 +661,15 @@ interface UpdateStoryData {
   acceptance_criteria?: string;
   category?: StoryCategory;
   priority?: Priority;
-  estimated_effort?: number;
   deadline?: Date | null;
-  assignee?: string | null;
+  assignee_id?: string | null;
 }
 
 interface StoryFilter {
   status?: StoryStatus | StoryStatus[];
   priority?: Priority | Priority[];
   category?: StoryCategory | StoryCategory[];
-  assignee?: string;
+  assignee_id?: string;
   deadline_before?: Date;
   deadline_after?: Date;
 }
@@ -693,9 +682,8 @@ interface StoryEntity {
   acceptance_criteria: string;
   category: StoryCategory;
   priority: Priority;
-  estimated_effort: number;
   deadline: Date | null;
-  assignee: string | null;
+  assignee_id: string | null;
   status: StoryStatus;
   created_at: Date;
   updated_at: Date;
@@ -704,15 +692,12 @@ interface StoryEntity {
 
 **実装ノート**
 
-- 依存関係の循環参照チェックは`update`時に実行する
 - `findByInquiryId`は関連ストーリーの一括取得に使用する
 - デフォルトソートは`priority DESC, created_at DESC`
-- `dependencies`配列内のIDは存在検証を行う
 
 **エラーハンドリング**
 
 - `EntityNotFoundError`: 指定されたIDのエンティティが存在しない
-- `CircularDependencyError`: 依存関係に循環が検出された
 - `DatabaseError`: データベース操作失敗
 - `ValidationError`: データ検証失敗
 
@@ -797,7 +782,6 @@ interface GeneratedStory {
   acceptance_criteria: string;
   category: StoryCategory;
   priority: Priority;
-  estimated_effort: number;
 }
 ```
 
@@ -823,8 +807,7 @@ interface GeneratedStory {
   "description": "As a [ユーザー], I want [機能] so that [価値]",
   "acceptance_criteria": "- 具体的な基準1\n- 具体的な基準2\n- 具体的な基準3",
   "category": "development|testing|documentation|research|maintenance|custom",
-  "priority": "low|medium|high|urgent",
-  "estimated_effort": 数値（ストーリーポイント）
+  "priority": "low|medium|high|urgent"
 }
 
 制約：
@@ -833,7 +816,6 @@ interface GeneratedStory {
 - 受入基準は3-5項目
 - カテゴリは6種類から選択
 - 優先度は4段階から選択
-- 推定工数は0.5-13の範囲（フィボナッチ数列）
 ```
 
 **実装ノート**
@@ -1166,9 +1148,9 @@ interface StoryBoardProps {
 **実装ノート（要件6.6-6.7）**
 
 - カンバンボード形式でストーリーをステータス別に表示
-- 各カードにタイトル、優先度、推定工数、担当者を表示（要件5.2）
+- 各カードにタイトル、優先度、担当者IDを表示（要件5.2）
 - ドラッグ&ドロップでステータス変更（将来機能）
-- フィルタリング機能（ステータス、優先度、カテゴリ、担当者）
+- フィルタリング機能（ステータス、優先度、カテゴリ、担当者ID）
 - ソート機能（優先度、期限、作成日時）
 
 #### StoryDetail
@@ -1190,12 +1172,11 @@ interface StoryDetailProps {
 
 **実装ノート（要件5.3-5.5）**
 
-- 全フィールドの詳細表示（タイトル、説明、受入基準、メタデータ）
+- 全フィールドの詳細表示（タイトル、説明、受入基準、カテゴリ、優先度、期限）
 - 編集モードでインライン編集をサポート
 - 承認/拒否ボタンを提供
 - 元の問い合わせへのリンクを表示
-- 依存関係の視覚化（依存先ストーリーへのリンク）
-- 担当者・期限の設定UI（要件5.7）
+- 担当者ID・期限の設定UI（要件5.7）
 
 ## エラーハンドリング
 
@@ -1328,8 +1309,7 @@ async def test_generate_story_success(client, db_session, mock_openai):
         "description": "As a user, I want to log in...",
         "acceptance_criteria": "- ユーザー名とパスワードで認証できる",
         "category": "development",
-        "priority": "high",
-        "estimated_effort": 5
+        "priority": "high"
     }
 
     # Act
@@ -1395,151 +1375,13 @@ def test_inquiry_creation_properties(content, user_id):
     assert inquiry.status == InquiryStatus.RECEIVED
 ```
 
-## セキュリティ
-
-### 認証・認可
-
-**Phase 1（現在）**
-- 認証なし（開発環境のみ）
-- CORS設定で`http://localhost:3000`のみ許可
-
-**Phase 2（将来）**
-- JWT認証導入
-- ユーザーロール（reporter, user, admin）
-- 問い合わせの所有者検証
-
-### 入力値検証
-
-- すべての入力値をPydanticスキーマで検証
-- SQLインジェクション対策（SQLAlchemy ORM使用）
-- XSS対策（React標準のエスケープ機能）
-- CSRF対策（将来実装）
-
-### データ保護
-
-- データベース接続文字列は環境変数で管理
-- OpenAI APIキーは環境変数で管理、ログに出力しない
-- 個人情報の最小化（`user_id`のみ、名前・メールアドレスは保存しない）
-- データ暗号化（本番環境でのみ、PostgreSQL透過的暗号化）
-
-### 外部API連携
-
-- OpenAI APIキーをSecretとして管理
-- API呼び出し時のタイムアウト設定（30秒）
-- レート制限の監視とアラート
-- APIレスポンスの検証（信頼できないデータとして扱う）
-
-## パフォーマンス
-
-### 目標値
-
-| メトリクス | 目標 | 計測方法 |
-|----------|------|---------|
-| 問い合わせ作成 | < 500ms | API P95応答時間 |
-| 問い合わせ一覧表示 | < 1秒 | API P95応答時間 |
-| AI生成処理 | < 30秒 | API最大応答時間 |
-| ストーリー更新 | < 500ms | API P95応答時間 |
-| UI初期表示 | < 2秒 | Lighthouse FCP |
-
-### 最適化戦略
-
-**データベース**
-- 適切なインデックス設計（ステータス、作成日時の複合インデックス）
-- クエリ結果のページネーション（最大100件）
-- 接続プール設定（最小5、最大20接続）
-- N+1問題の回避（eager loading）
-
-**API層**
-- レスポンスのgzip圧縮
-- キャッシュヘッダー設定（静的リソース）
-- 非同期処理（FastAPI標準）
-
-**フロントエンド**
-- TanStack Queryによるキャッシング（staleTime: 30秒）
-- 仮想スクロール（react-window、将来）
-- コード分割（React.lazy、将来）
-- 画像最適化（WebP形式、将来）
-
-**AI処理**
-- タイムアウト設定（30秒）
-- リトライ戦略（指数バックオフ）
-- 生成結果のキャッシング（同一問い合わせの再生成時、将来）
-
-### スケーラビリティ
-
-**初期目標**
-- 同時ユーザー数: 100人
-- 問い合わせ数: 10,000件
-- ストーリー数: 30,000件
-- AI生成: 1,000回/日
-
-**スケーリング戦略**
-- データベース: インデックス最適化、パーティショニング（将来）
-- APIサーバー: 水平スケーリング（複数インスタンス）
-- AI処理: 非同期タスクキュー（Celery、将来）
-- キャッシュ: Redis導入（将来）
-
-## 移行戦略
-
-### データベーススキーマ
-
-**マイグレーション手順**
-
-1. Alembicマイグレーションスクリプト生成
-   ```bash
-   make db-revision
-   ```
-
-2. マイグレーション実行
-   ```bash
-   make db-migrate
-   ```
-
-3. データ整合性検証
-   ```bash
-   make db-status
-   make db-tables
-   ```
-
-**ロールバック計画**
-
-- 各マイグレーションに`downgrade()`関数を実装
-- 本番適用前にステージング環境でテスト
-- データバックアップ取得後に実行
-
-### 既存システムとの統合
-
-現在は新規機能であり、既存システムとの統合は不要。将来的には以下の統合を検討：
-
-- 外部タスク管理システム（Trello、Jira）へのエクスポート
-- 認証システムとの統合
-- 通知システムとの統合
-
-### デプロイメント戦略
-
-**Phase 1: 開発環境**
-- Docker Composeによるローカル開発環境
-- ホットリロード有効化
-- デバッグログ出力
-
-**Phase 2: ステージング環境（将来）**
-- 本番同等の環境
-- CI/CD自動デプロイ
-- E2Eテスト実行
-
-**Phase 3: 本番環境（将来）**
-- ブルーグリーンデプロイメント
-- ヘルスチェック監視
-- ロールバック機能
-
 ## 未解決事項
 
 ### 技術的課題
 
 1. **AI生成品質の評価**: 生成されたストーリーの品質をどのように評価するか（将来検討）
 2. **長時間処理の対応**: AI生成が30秒を超える場合の非同期処理化（Phase 2で検討）
-3. **大量データの性能**: 問い合わせ数が10万件を超えた場合のパフォーマンス最適化
-4. **全文検索**: PostgreSQLの全文検索機能 vs Elasticsearch導入の判断
+3. **全文検索**: PostgreSQLの全文検索機能 vs Elasticsearch導入の判断
 
 ### ビジネス要件
 
@@ -1550,10 +1392,9 @@ def test_inquiry_creation_properties(content, user_id):
 
 ### オープンな設計判断
 
-1. **ストーリー依存関係の可視化**: どのようなUI/UXで表示するか（グラフ、リストなど）
-2. **バッチエクスポート**: 複数ストーリーの一括エクスポート機能の詳細仕様
-3. **リアルタイム更新**: WebSocketによるリアルタイム状態同期の必要性
-4. **国際化の範囲**: 日本語以外の言語サポートの優先順位
+1. **バッチエクスポート**: 複数ストーリーの一括エクスポート機能の詳細仕様
+2. **リアルタイム更新**: WebSocketによるリアルタイム状態同期の必要性
+3. **国際化の範囲**: 日本語以外の言語サポートの優先順位
 
 ## 付録
 
@@ -1578,4 +1419,8 @@ def test_inquiry_creation_properties(content, user_id):
 
 | 日付 | バージョン | 変更内容 | 承認者 |
 |------|----------|---------|-------|
+| 2025-12-27 | 1.4 | セキュリティ、パフォーマンス、移行戦略セクション削除（開発フェーズに集中） | - |
+| 2025-12-27 | 1.3 | Storyモデル簡素化（dependencies、estimated_effort削除、assignee→assignee_idリネーム） | - |
+| 2025-12-27 | 1.2 | タグ機能削除（ユーザーフィードバック対応） | - |
+| 2025-12-27 | 1.1 | 設計レビュー対応（dependencies復元、既存実装との統合戦略追加） | - |
 | 2025-12-27 | 1.0 | 初版作成（ゼロベース再生成） | - |
