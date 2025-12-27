@@ -148,17 +148,17 @@ class TestInquiryModel:
             db_session.add(inquiry)
             db_session.commit()
 
-    @pytest.mark.skipif(
-        "True",  # SQLiteを使用するテスト環境ではスキップ
-        reason="SQLite doesn't fully support CHECK constraints",
-    )
-    def test_inquiry_content_not_empty_check(self, db_session):
+    def test_inquiry_content_not_empty_check(self, db_session, db_engine):
         """contentが空文字列の場合エラーになる.
         
         Note: このテストはSQLiteではスキップされます。
         SQLiteはCHECK制約を完全にサポートしていないため、
         PostgreSQLなどのデータベースでのみ有効です。
         """
+        # SQLiteの場合はスキップ
+        if db_engine.dialect.name == "sqlite":
+            pytest.skip("SQLite doesn't fully support CHECK constraints")
+        
         # Arrange
         inquiry = InquiryModel(
             user_id="test_user",
