@@ -151,21 +151,31 @@ sequenceDiagram
 stateDiagram-v2
     [*] --> received: 問い合わせ作成
 
+    received --> task_working: 承認
+    received --> rejected: 却下
     received --> processing: 処理開始（story specで実装）
     received --> needs_clarification: 明確化要求
 
     needs_clarification --> received: 明確化完了
-    needs_clarification --> [*]: 却下
+    needs_clarification --> rejected: 却下
 
     processing --> task_working: 処理成功
     processing --> failed: 処理失敗
 
     task_working --> completed: タスク完了
+
+    rejected --> [*]: 終了
     failed --> [*]: 終了
+    completed --> [*]: 終了
 
     note right of received
         編集可能
         承認・却下可能
+    end note
+
+    note right of rejected
+        読み取り専用
+        却下理由を記録
     end note
 
     note right of processing
@@ -202,6 +212,7 @@ erDiagram
         string source_system
         timestamp timestamp
         enum status
+        json inquiry_metadata
         timestamp created_at
         timestamp updated_at
     }
@@ -218,6 +229,30 @@ erDiagram
   - `status`はInquiryStatusの有効な値のみ
   - `source_system`は送信元システムを識別する文字列（例: "manual", "email", "chat"）
 
+**inquiry_metadata構造**:
+```typescript
+interface InquiryMetadata {
+  // 却下情報（要件3.6-3.7）
+  rejection?: {
+    reason?: string;        // 却下理由
+    rejected_at: string;    // 却下日時（ISO 8601）
+    rejected_by?: string;   // 却下者（将来実装）
+  };
+
+  // ステータス変更履歴（要件3.12）
+  status_history?: Array<{
+    from_status: InquiryStatus;
+    to_status: InquiryStatus;
+    changed_at: string;     // ISO 8601形式
+    changed_by?: string;    // 変更者（将来実装）
+  }>;
+
+  // その他のメタデータ
+  source?: string;          // 送信元詳細情報
+  tags?: string[];          // タグ（将来実装）
+}
+```
+
 #### 列挙型定義
 
 **InquiryStatus**
@@ -229,6 +264,7 @@ type InquiryStatus =
   | 'needs_clarification'   // 明確化要求
   | 'task_working'          // タスク作業中（story specで設定）
   | 'completed'             // 完了
+  | 'rejected'              // 却下済み
   | 'failed';               // 失敗（story specで設定）
 ```
 
@@ -508,24 +544,43 @@ interface PaginatedInquiries {
 
 ```typescript
 interface InquiryWorkflowService {
-  // 問い合わせワークフロー（要件3.1-3.5）
+  // 問い合わせ承認（要件3.1-3.3）
   approveInquiry(inquiryId: number): Promise<InquiryEntity>;
-  rejectInquiry(inquiryId: number): Promise<InquiryEntity>;
+
+  // 問い合わせ却下（要件3.4-3.9）
+  rejectInquiry(inquiryId: number, reason?: string): Promise<InquiryEntity>;
+
+  // ステータス遷移検証（要件3.10-3.12）
+  canTransitionTo(currentStatus: InquiryStatus, newStatus: InquiryStatus): boolean;
+}
+
+interface RejectionMetadata {
+  reason?: string;           // 却下理由（任意）
+  rejected_at: string;       // 却下日時（ISO 8601形式）
+  rejected_by?: string;      // 却下者（将来実装）
 }
 ```
 
 **ワークフロールール**
 
 問い合わせステータス遷移:
+- `received` → `task_working`: 承認時（要件3.1）
+- `received` → `rejected`: 却下時（要件3.4）
 - `received` → `processing`: ストーリー生成開始時（story specで実装）
 - `processing` → `task_working`: ストーリー生成成功時（story specで実装）
 - `processing` → `failed`: ストーリー生成失敗時（story specで実装）
 - `task_working` → `completed`: すべてのストーリーが完了時（story specで実装）
 
+**ステータス遷移制約（要件3.10-3.11）**:
+- `received`ステータスの問い合わせのみ承認・却下可能
+- `task_working`, `completed`, `rejected`ステータスからの再承認・再却下は禁止
+- 無効な遷移は`InvalidStateTransitionError`を発生させる
+
 **実装ノート**
 
-- すべてのステータス変更で`updated_at`タイムスタンプを更新する（要件3.3）
-- 無効なステータス遷移は`InvalidStateTransitionError`を発生させる
+- すべてのステータス変更で`updated_at`タイムスタンプを更新する（要件3.2, 3.7）
+- 却下時は`inquiry_metadata`に`RejectionMetadata`を保存する（要件3.6）
+- ステータス変更履歴を`inquiry_metadata.status_history`配列に記録する（要件3.12）
 - ワークフロー実行はトランザクション内で行う
 
 **エラーハンドリング**
@@ -566,15 +621,20 @@ Request: UpdateInquiryRequest
 Response: 200 OK, InquiryResponse
 Errors: 400 Bad Request, 404 Not Found, 500 Internal Server Error
 
-// 問い合わせ承認（要件3.1）
+// 問い合わせ承認（要件3.1-3.3）
 POST /api/inquiries/{id}/approve
 Response: 200 OK, InquiryResponse
-Errors: 404 Not Found, 409 Conflict, 500 Internal Server Error
+Errors: 404 Not Found, 409 Conflict (無効なステータス遷移), 500 Internal Server Error
 
-// 問い合わせ却下（要件3.2）
+// 問い合わせ却下（要件3.4-3.9）
 POST /api/inquiries/{id}/reject
+Request: RejectInquiryRequest (optional)
 Response: 200 OK, InquiryResponse
-Errors: 404 Not Found, 409 Conflict, 500 Internal Server Error
+Errors: 404 Not Found, 409 Conflict (無効なステータス遷移), 500 Internal Server Error
+
+interface RejectInquiryRequest {
+  reason?: string;  // 却下理由（任意、要件3.5）
+}
 ```
 
 **実装ノート**
@@ -700,7 +760,10 @@ GS-002: 問い合わせ内容が長すぎます（最大10,000文字）
 GS-003: ユーザーIDが不正です
 GS-004: 送信元システムが不正です
 GS-005: 指定された問い合わせが見つかりません
+GS-006: 却下理由が長すぎます（最大1,000文字）
 GS-007: 不正なステータス遷移です
+GS-008: この問い合わせは既に承認済みです
+GS-009: この問い合わせは既に却下済みです
 GS-010: データベース操作に失敗しました
 GS-011: ページネーションパラメータが不正です
 ```
@@ -851,11 +914,14 @@ test('displays validation error for empty content', async () => {
 
 - **問い合わせ（Inquiry）**: 報告者からの自然言語による要求
 - **ワークフロー（Workflow）**: ステータス遷移の制御ロジック
-- **承認（Approve）**: 問い合わせを次のプロセスに進める操作
-- **却下（Reject）**: 問い合わせを終了する操作
+- **承認（Approve）**: 問い合わせを受理し、次のプロセス（タスク作業）に進める操作
+- **却下（Reject）**: 問い合わせを不適切または対応不要と判断し、処理を終了する操作
+- **却下理由（Rejection Reason）**: 却下時にユーザーが入力する理由（任意、最大1,000文字）
+- **メタデータ（Metadata）**: 問い合わせに関連する補助情報（却下情報、ステータス変更履歴など）
 
 ### 変更履歴
 
 | 日付 | バージョン | 変更内容 | 承認者 |
 |------|----------|---------|-------|
 | 2025-12-27 | 1.0 | storyboard specから分割して初版作成 | - |
+| 2025-12-27 | 1.1 | REJECTEDステータス追加、却下機能の詳細設計、メタデータ構造定義 | - |

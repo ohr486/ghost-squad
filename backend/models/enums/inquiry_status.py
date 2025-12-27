@@ -10,4 +10,5 @@ class InquiryStatus(str, Enum):
     NEEDS_CLARIFICATION = "needs_clarification"
     TASK_WORKING = "task_working"
     COMPLETED = "completed"
+    REJECTED = "rejected"
     FAILED = "failed"
