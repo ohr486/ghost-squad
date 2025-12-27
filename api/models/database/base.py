@@ -1,6 +1,7 @@
 """ベースモデルクラス."""
 from datetime import datetime
-from sqlalchemy import Integer, DateTime
+
+from sqlalchemy import DateTime, Integer
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
 

@@ -1,12 +1,13 @@
 """問い合わせモデルのテスト."""
-import pytest
-from datetime import datetime, UTC
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import IntegrityError
+from datetime import UTC, datetime
 
-from models.database.inquiry import InquiryModel
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import sessionmaker
+
 from models.database.base import Base
+from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
 
 
@@ -121,11 +122,11 @@ class TestInquiryModel:
             source_system=None,  # source_systemをNoneに設定
             timestamp=datetime.now(UTC),
         )
-    
+
         with pytest.raises(IntegrityError):
             db_session.add(inquiry)
             db_session.commit()
-            
+
     def test_inquiry_requires_timestamp(self, db_session):
         """timestampフィールドは必須である."""
         # Arrange
@@ -266,7 +267,9 @@ class TestInquiryModel:
 
         # Assert
         assert len(inquiry.inquiry_metadata["status_history"]) == 2
-        assert inquiry.inquiry_metadata["status_history"][0]["from_status"] == "received"
+        assert (
+            inquiry.inquiry_metadata["status_history"][0]["from_status"] == "received"
+        )
 
     def test_inquiry_timestamps_auto_populated(self, db_session):
         """created_atとupdated_atが自動設定される."""
