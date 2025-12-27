@@ -112,6 +112,21 @@ class TestInquiryModel:
             db_session.add(inquiry)
             db_session.commit()
 
+    def test_inquiry_requires_source_system(self, db_session):
+        """source_systemフィールドは必須である."""
+        # Arrange
+        inquiry = InquiryModel(
+            user_id="test_user",
+            content="テスト問い合わせ",
+            source_system=None,  # source_systemをNoneに設定
+            timestamp=datetime.now(UTC),
+        )
+
+        # Act & Assert
+        with pytest.raises(IntegrityError):
+            db_session.add(inquiry)
+            db_session.commit()
+
     def test_inquiry_content_not_empty_check(self, db_session):
         """contentが空文字列の場合エラーになる."""
         # Arrange
