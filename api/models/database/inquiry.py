@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from sqlalchemy import JSON, CheckConstraint, DateTime, Enum, String, Text
+from sqlalchemy import JSON, CheckConstraint, DateTime, Enum, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.database.base import BaseModel
@@ -31,7 +31,8 @@ class InquiryModel(BaseModel):
     inquiry_metadata: Mapped[Dict[str, Any]] = mapped_column(
         JSON,
         nullable=False,
-        default=dict,
+        default=lambda: {},
+        server_default=text("'{}'"),
     )
 
     __table_args__ = (
