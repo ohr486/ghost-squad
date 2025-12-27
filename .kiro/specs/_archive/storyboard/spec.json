@@ -1,0 +1,21 @@
+{
+  "feature": "storyboard",
+  "language": "ja",
+  "phase": "design-generated",
+  "created_at": "2025-12-26T00:00:00Z",
+  "updated_at": "2025-12-27T03:23:17Z",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": false
+    },
+    "tasks": {
+      "generated": false,
+      "approved": false
+    }
+  }
+}
