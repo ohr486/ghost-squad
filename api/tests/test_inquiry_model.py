@@ -113,6 +113,21 @@ class TestInquiryModel:
             db_session.add(inquiry)
             db_session.commit()
 
+    def test_inquiry_requires_timestamp(self, db_session):
+        """timestampフィールドは必須である."""
+        # Arrange
+        inquiry = InquiryModel(
+            user_id="test_user",
+            content="テスト問い合わせ",
+            source_system="manual",
+            timestamp=None,  # timestampをNoneに設定
+        )
+
+        # Act & Assert
+        with pytest.raises(IntegrityError):
+            db_session.add(inquiry)
+            db_session.commit()
+
     def test_inquiry_content_not_empty_check(self, db_session):
         """contentが空文字列の場合エラーになる."""
         # Arrange
