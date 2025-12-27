@@ -1,214 +1,277 @@
-# 実装タスク
+# 問い合わせ管理機能 実装タスク
 
 ## タスク概要
 
-問い合わせ管理機能の実装タスクです。Option A（簡略化アプローチ）に基づき、以下の方針で実装します:
-- Pydantic スキーマバリデーションを使用（InquiryValidator は不要）
-- API ルートが直接 Repository に接続（InquiryQueryService は不要）
-- InquiryWorkflowService のみ実装
+本ドキュメントは、問い合わせ管理機能の実装タスクを定義します。すべてのタスクは要件ドキュメントおよび技術設計書に基づいており、TDD（テスト駆動開発）アプローチで実装されます。
 
 ## 実装タスク
 
-- [ ] 1. データベース・モデル層の実装
-- [ ] 1.1 (P) InquiryStatus 列挙型に REJECTED ステータスを追加
-  - api/models/enums/inquiry_status.py に REJECTED = "rejected" を追加
-  - web/src/types/enums/inquiry-status.ts に REJECTED を追加
-  - 両方の列挙型定義が完全に一致することを確認
-  - _Requirements: 3.4_
+### 1. データモデルとデータベース基盤の構築
 
-- [ ] 1.2 (P) inquiry_metadata フィールドのスキーマ定義を実装
-  - RejectionMetadata 型の定義（却下理由、却下日時、却下者）
-  - StatusHistoryEntry 型の定義（ステータス変更履歴）
-  - InquiryMetadata 型の定義（rejection, status_history, source, tags）
-  - JSON スキーマバリデーションの実装
-  - _Requirements: 3.6, 3.7, 3.12_
+- [ ] 1.1 (P) 問い合わせエンティティのデータベースモデルを実装する
+  - InquiryModelクラスをSQLAlchemyで定義し、すべてのカラム（id, user_id, content, source_system, timestamp, status, inquiry_metadata, created_at, updated_at）を含める
+  - InquiryStatus列挙型を実装し、すべてのステータス値（received, processing, needs_clarification, task_working, completed, rejected, failed）を定義する
+  - inquiry_metadataフィールドをJSON型として定義し、却下情報とステータス変更履歴を格納できる構造にする
+  - データ整合性制約（content非空チェック、statusバリデーション）を追加する
+  - _Requirements: 1.1, 1.2, 1.6, 3.6, 3.7, 3.12_
 
-- [ ] 1.3 データベーススキーマに source_system と updated_at フィールドを追加
-  - Alembic マイグレーションファイルの作成
-  - source_system カラムの追加（String型、必須、デフォルト値なし）
-  - updated_at カラムの追加（DateTime型、自動更新トリガー設定）
-  - 既存データへの影響を最小化するマイグレーション戦略
-  - マイグレーションのロールバック手順の確認
-  - _Requirements: 1.2, 2.9_
+- [ ] 1.2 問い合わせテーブルのマイグレーションを作成する
+  - Alembicマイグレーションファイルを生成し、inquiriesテーブルを作成する
+  - インデックス戦略を実装する（status, user_id, created_at, 複合インデックス）
+  - チェック制約（content非空）を追加する
+  - マイグレーションの適用と巻き戻しをテストする
+  - _Requirements: 1.1, 1.2_
 
-- [ ] 2. バックエンド API 層の実装
-- [ ] 2.1 (P) Pydantic スキーマの実装
-  - CreateInquiryRequest スキーマ（user_id, content, source_system のバリデーション）
-  - UpdateInquiryRequest スキーマ（content, source_system のオプショナルバリデーション）
-  - InquiryResponse スキーマ（全フィールドのシリアライゼーション）
-  - RejectInquiryRequest スキーマ（reason のオプショナルバリデーション、最大1000文字）
-  - エラーメッセージを日本語で定義
-  - _Requirements: 1.4, 2.8, 3.5_
+### 2. バリデーション層の実装
 
-- [ ] 2.2 InquiryRepository の実装
-  - create メソッド（問い合わせ作成、初期ステータスは received）
-  - findById メソッド（ID による問い合わせ取得）
-  - findMany メソッド（フィルタリング、ソート、ページネーション対応）
-  - count メソッド（フィルタ条件に一致する問い合わせ数）
-  - update メソッド（問い合わせ内容の更新、updated_at 自動更新）
-  - updateStatus メソッド（ステータス更新、metadata 更新）
-  - SQLAlchemy セッション管理と依存性注入
-  - _Requirements: 1.1, 1.2, 2.3, 2.5, 2.8, 3.1, 3.4_
+- [ ] 2.1 (P) 入力バリデーション機能を実装する
+  - InquiryValidatorクラスを作成し、validateCreate、validateUpdate、validateContentメソッドを実装する
+  - contentバリデーションルール（必須、最大10,000文字、空文字禁止）を実装する
+  - user_idバリデーションルール（必須、英数字とアンダースコア、最大50文字）を実装する
+  - source_systemバリデーションルール（必須、最大50文字）を実装する
+  - エラーメッセージを日本語で定義し、エラーコード体系（GS-001〜GS-011）を実装する
+  - _Requirements: 1.4, 2.8_
 
-- [ ] 2.3 PUT /api/inquiries/{id} エンドポイントの実装
-  - UpdateInquiryRequest スキーマによる入力バリデーション
-  - 問い合わせの存在確認（404 エラー処理）
-  - Repository の update メソッド呼び出し
-  - updated_at タイムスタンプの自動更新
-  - InquiryResponse でレスポンス返却
-  - _Requirements: 2.8, 2.9_
+- [ ] 2.2 (P) Pydanticスキーマを定義する
+  - CreateInquiryRequest、UpdateInquiryRequest、InquiryResponseスキーマを実装する
+  - バリデーションルールをPydanticバリデーターとして定義する
+  - タイムスタンプのシリアライゼーション（ISO 8601形式）を設定する
+  - エラーレスポンススキーマ（ErrorResponse）を定義する
+  - _Requirements: 1.4, 2.8_
 
-- [ ] 2.4 (P) エラーハンドリングとバリデーションの実装
-  - ValidationError のハンドリング（400 Bad Request）
-  - EntityNotFoundError のハンドリング（404 Not Found）
-  - InvalidStateTransitionError のハンドリング（409 Conflict）
-  - DatabaseError のハンドリング（500 Internal Server Error）
-  - エラーコード体系の実装（GS-001 から GS-011）
-  - 日本語エラーメッセージの定義
-  - _Requirements: 1.3, 2.6_
+### 3. データアクセス層の実装
 
-- [ ] 3. ワークフロー機能の実装
-- [ ] 3.1 InquiryWorkflowService の実装
-  - approveInquiry メソッド（ステータスを task_working に変更）
-  - rejectInquiry メソッド（ステータスを rejected に変更、却下理由を metadata に保存）
-  - canTransitionTo メソッド（ステータス遷移検証ロジック）
-  - ステータス変更履歴の metadata への記録
-  - トランザクション境界の管理
+- [ ] 3.1 InquiryRepositoryを実装する
+  - create、findById、findMany、count、update、updateStatusメソッドを実装する
+  - FindManyOptionsインターフェースを実装し、フィルタリング、ソート、ページネーションをサポートする
+  - デフォルトソート順（created_at DESC）を設定する
+  - ページネーションのlimit範囲（1-100）を検証する
+  - タイムスタンプの自動更新機能を実装する
+  - _Requirements: 1.1, 1.2, 2.1, 2.3, 2.5, 2.8, 3.1_
+
+- [ ] 3.2 InquiryRepositoryのユニットテストを作成する
+  - 問い合わせ作成の正常系・異常系テストを実装する
+  - ページネーション機能のテスト（境界値、範囲外）を実装する
+  - フィルタリング・ソート機能のテストを実装する
+  - エンティティ取得（存在する/しない）のテストを実装する
+  - 更新操作のテストを実装する
+  - _Requirements: 1.1, 1.2, 2.1, 2.3, 2.5, 2.8_
+
+### 4. ワークフロー管理サービスの実装
+
+- [ ] 4.1 InquiryWorkflowServiceを実装する
+  - approveInquiry、rejectInquiry、canTransitionToメソッドを実装する
+  - ステータス遷移ロジック（received → task_working、received → rejected）を実装する
+  - ステータス遷移制約（received状態のみ承認・却下可能）を実装する
+  - 再承認・再却下の禁止ロジックを実装する
+  - inquiry_metadataへの却下情報（reason, rejected_at）保存を実装する
+  - ステータス変更履歴の記録機能を実装する
   - _Requirements: 3.1, 3.2, 3.4, 3.5, 3.6, 3.7, 3.10, 3.11, 3.12_
 
-- [ ] 3.2 POST /api/inquiries/{id}/approve エンドポイントの実装
-  - InquiryWorkflowService の approveInquiry メソッド呼び出し
-  - 問い合わせの存在確認（404 エラー処理）
-  - ステータス遷移の妥当性検証（409 エラー処理）
-  - InquiryResponse でレスポンス返却
-  - _Requirements: 3.1, 3.2, 3.3_
+- [ ] 4.2 InquiryWorkflowServiceのユニットテストを作成する
+  - 承認フローの正常系テスト（received → task_working）を実装する
+  - 却下フローの正常系テスト（received → rejected、却下理由あり/なし）を実装する
+  - 無効なステータス遷移のテスト（task_working/rejected/completedからの承認・却下）を実装する
+  - メタデータ記録のテスト（却下情報、ステータス変更履歴）を実装する
+  - タイムスタンプ更新のテストを実装する
+  - _Requirements: 3.1, 3.2, 3.4, 3.5, 3.6, 3.7, 3.10, 3.11, 3.12_
 
-- [ ] 3.3 POST /api/inquiries/{id}/reject エンドポイントの実装
-  - RejectInquiryRequest スキーマによる入力バリデーション
-  - InquiryWorkflowService の rejectInquiry メソッド呼び出し
-  - 問い合わせの存在確認（404 エラー処理）
-  - ステータス遷移の妥当性検証（409 エラー処理）
-  - 却下理由の metadata への保存
-  - 却下日時の記録
-  - InquiryResponse でレスポンス返却
-  - _Requirements: 3.4, 3.5, 3.6, 3.7, 3.8_
+### 5. クエリサービスの実装
 
-- [ ] 3.4 (P) ステータス遷移ロジックのテスト
-  - received → task_working 遷移のテスト
-  - received → rejected 遷移のテスト
-  - 無効な遷移のテスト（task_working → rejected など）
-  - 再承認・再却下の禁止ルールのテスト
-  - ステータス変更履歴の記録テスト
-  - _Requirements: 3.10, 3.11, 3.12_
+- [ ] 5.1 (P) InquiryQueryServiceを実装する
+  - listInquiriesメソッドを実装し、ListInquiriesRequestを受け取る
+  - ページネーション処理（page、limit、has_next計算）を実装する
+  - ステータスフィルタリング（単一/複数ステータス）を実装する
+  - user_idフィルタリングを実装する
+  - ソート機能（created_at、updated_at、昇順/降順）を実装する
+  - getInquiryメソッドを実装し、存在しないIDの場合はInquiryNotFoundErrorをスローする
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
-- [ ] 4. フロントエンド基盤の実装
-- [ ] 4.1 (P) TypeScript 型定義の更新
-  - InquiryStatus 型に REJECTED を追加
-  - RejectionMetadata インターフェースの定義
-  - StatusHistoryEntry インターフェースの定義
-  - InquiryMetadata インターフェースの定義
-  - UpdateInquiryRequest インターフェースの定義
-  - RejectInquiryRequest インターフェースの定義
-  - _Requirements: 3.4, 3.6, 3.7, 3.12_
+- [ ] 5.2 (P) InquiryQueryServiceのユニットテストを作成する
+  - ページネーション機能のテスト（デフォルト値、範囲検証）を実装する
+  - フィルタリング機能のテスト（status、user_id）を実装する
+  - ソート機能のテスト（created_at DESC、その他）を実装する
+  - has_next計算のテストを実装する
+  - 問い合わせ詳細取得のテスト（存在する/しない）を実装する
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
-- [ ] 4.2 (P) API クライアントサービスの拡張
-  - updateInquiry メソッドの実装（PUT /api/inquiries/{id}）
-  - approveInquiry メソッドの実装（POST /api/inquiries/{id}/approve）
-  - rejectInquiry メソッドの実装（POST /api/inquiries/{id}/reject）
-  - エラーハンドリングの実装
-  - TypeScript 型定義との統合
-  - _Requirements: 2.8, 3.1, 3.4_
+### 6. API層の実装
 
-- [ ] 4.3 (P) React Hook の実装
-  - useUpdateInquiry フック（TanStack Query の useMutation）
-  - useApproveInquiry フック（TanStack Query の useMutation）
-  - useRejectInquiry フック（TanStack Query の useMutation）
-  - キャッシュ無効化とリフレッシュ処理
-  - 楽観的更新の実装
-  - _Requirements: 2.8, 3.1, 3.4_
+- [ ] 6.1 問い合わせCRUDエンドポイントを実装する
+  - POST /api/inquiries（問い合わせ作成）エンドポイントを実装し、201 Createdを返す
+  - GET /api/inquiries（問い合わせ一覧）エンドポイントを実装し、クエリパラメータ（page、limit、status、sort_by、sort_order）をサポートする
+  - GET /api/inquiries/{id}（問い合わせ詳細）エンドポイントを実装し、404 Not Foundをサポートする
+  - PUT /api/inquiries/{id}（問い合わせ更新）エンドポイントを実装する
+  - すべてのエンドポイントでバリデーションエラー時に400 Bad Requestと日本語エラーメッセージを返す
+  - _Requirements: 1.1, 1.3, 2.1, 2.3, 2.4, 2.5, 2.6, 2.8, 2.9_
 
-- [ ] 5. 問い合わせ管理 UI の実装
-- [ ] 5.1 問い合わせ一覧コンポーネントの実装
-  - InquiryList コンポーネントの作成
-  - TanStack Query によるページネーションの実装
-  - 問い合わせの表示（ID、内容、ステータス、タイムスタンプ）
-  - ステータスフィルタードロップダウンの実装
-  - ページネーションコントロール（前へ/次へ/ページ番号）
-  - 行クリックで詳細ページへ遷移
-  - _Requirements: 2.1, 2.2, 2.3, 2.4, 4.4_
+- [ ] 6.2 問い合わせワークフローエンドポイントを実装する
+  - POST /api/inquiries/{id}/approve（問い合わせ承認）エンドポイントを実装する
+  - POST /api/inquiries/{id}/reject（問い合わせ却下）エンドポイントを実装し、オプショナルな却下理由を受け取る
+  - 無効なステータス遷移時に409 Conflictを返す
+  - エラーレスポンス形式（ErrorResponse）を統一する
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.8_
 
-- [ ] 5.2 問い合わせ詳細・編集コンポーネントの実装
-  - InquiryDetail コンポーネントの作成
-  - 読み取りモードと編集モードの切り替え
-  - インライン編集機能の実装
-  - React Hook Form と Zod によるバリデーション
-  - 更新履歴の時系列表示
-  - エラーメッセージの表示
-  - _Requirements: 2.5, 2.8, 2.9, 4.5_
+- [ ] 6.3 APIエンドポイントの統合テストを作成する
+  - 問い合わせ作成APIのテスト（正常系、バリデーションエラー）を実装する
+  - 問い合わせ一覧APIのテスト（ページネーション、フィルタリング、ソート）を実装する
+  - 問い合わせ詳細APIのテスト（存在する/しない）を実装する
+  - 問い合わせ更新APIのテスト（正常系、バリデーションエラー）を実装する
+  - 承認APIのテスト（正常系、無効なステータス遷移）を実装する
+  - 却下APIのテスト（正常系、却下理由あり/なし、無効なステータス遷移）を実装する
+  - _Requirements: 1.1, 1.3, 2.1, 2.3, 2.4, 2.5, 2.6, 2.8, 2.9, 3.1, 3.2, 3.3, 3.4, 3.5, 3.8_
 
-- [ ] 5.3 承認・却下 UI の実装
-  - 承認ボタンの実装（received ステータスの問い合わせのみ表示）
-  - 却下ボタンと却下理由入力ダイアログの実装
-  - 却下理由のバリデーション（最大1000文字）
-  - ステータスに応じたボタンの表示制御
-  - 承認・却下アクションの確認ダイアログ
-  - 成功・エラーメッセージの表示（react-hot-toast）
-  - _Requirements: 3.3, 3.8, 3.9, 3.10, 3.11_
+### 7. フロントエンド基盤の構築
 
-- [ ] 5.4 (P) バリデーションとエラー表示の実装
-  - フォームバリデーションルールの定義
-  - バリデーションエラーメッセージの日本語化
-  - フィールド単位のエラー表示
-  - サーバーエラーのエラーバナー表示
-  - ローディング状態の表示
+- [ ] 7.1 (P) TypeScript型定義を作成する
+  - InquiryStatus、Priority、StoryCategoryの列挙型を定義する
+  - InquiryResponse、CreateInquiryRequest、UpdateInquiryRequest、PaginatedResponseインターフェースを定義する
+  - ErrorResponseインターフェースを定義する
+  - InquiryMetadata構造（rejection、status_history）を定義する
+  - バックエンドスキーマと完全に一致させる
+  - _Requirements: 1.1, 1.2, 1.6, 2.4, 3.6, 3.7, 3.12_
+
+- [ ] 7.2 (P) APIクライアントサービスを実装する
+  - Axiosインスタンスを設定し、ベースURL（http://localhost:8000）とCORS設定を行う
+  - createInquiry、listInquiries、getInquiry、updateInquiry、approveInquiry、rejectInquiry関数を実装する
+  - エラーハンドリングとエラーレスポンスの型付けを実装する
+  - タイムスタンプのシリアライゼーション・デシリアライゼーションを実装する
+  - _Requirements: 1.1, 2.1, 2.3, 2.5, 2.8, 3.1, 3.4_
+
+### 8. 問い合わせ入力フォームの実装
+
+- [ ] 8.1 InquiryFormコンポーネントを実装する
+  - React Hook Formでフォーム状態管理を実装する
+  - Zodスキーマでクライアント側バリデーションを実装する（content必須・最大10,000文字、user_id必須・英数字とアンダースコア・最大50文字）
+  - フォーム送信時にcreateInquiry APIを呼び出す
+  - バリデーションエラーをフィールド直下に日本語で表示する
+  - 送信中はボタンを無効化し、ローディング状態を表示する
+  - 成功時はreact-hot-toastで成功メッセージを表示する
+  - サーバーエラーはフォーム上部にエラーバナーで表示する
+  - _Requirements: 1.1, 1.3, 1.4, 4.1, 4.2, 4.3_
+
+- [ ]* 8.2 InquiryFormコンポーネントのテストを作成する
+  - 空のcontentでバリデーションエラーが表示されることをテストする
+  - contentが10,000文字を超える場合のバリデーションエラーをテストする
+  - 正常なフォーム送信のテストを実装する
+  - サーバーエラー時のエラー表示をテストする
+  - ローディング状態の表示をテストする
   - _Requirements: 4.2, 4.3_
 
-- [ ] 6. 統合テスト
-- [ ] 6.1 (P) バックエンド統合テストの実装
-  - 問い合わせ作成 API のテスト
-  - 問い合わせ一覧取得 API のテスト（ページネーション、フィルタリング）
-  - 問い合わせ更新 API のテスト
-  - 承認・却下ワークフローのテスト
-  - エラーケースのテスト
-  - pytest カバレッジ 80% 以上を目標
-  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8, 2.9, 3.1, 3.2, 3.4, 3.5, 3.6, 3.7, 3.10, 3.11, 3.12_
+### 9. 問い合わせ一覧表示の実装
 
-- [ ] 6.2 (P) フロントエンド統合テストの実装
-  - InquiryForm コンポーネントのテスト
-  - InquiryList コンポーネントのテスト
-  - InquiryDetail コンポーネントのテスト
-  - 承認・却下 UI のテスト
-  - バリデーションのテスト
-  - Jest + React Testing Library カバレッジ 70% 以上を目標
-  - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
+- [ ] 9.1 InquiryListコンポーネントを実装する
+  - TanStack Queryでページネーションとキャッシュを管理する
+  - listInquiries APIを呼び出し、デフォルトページサイズ20件で一覧を取得する
+  - 各行に問い合わせID、内容（省略表示）、ステータス、タイムスタンプを表示する
+  - ステータスフィルタードロップダウンを実装する
+  - ページネーションコントロール（前へ/次へ/ページ番号）を実装する
+  - 行クリックで詳細ページへ遷移する
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 4.4_
 
-- [ ] 6.3 E2E テストの実装
-  - 問い合わせ作成から承認までのフローテスト
-  - 問い合わせ作成から却下までのフローテスト
-  - 問い合わせ編集フローのテスト
-  - エラーケースのテスト
-  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.8, 2.9, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12, 4.1, 4.2, 4.3, 4.4, 4.5_
+- [ ]* 9.2 InquiryListコンポーネントのテストを作成する
+  - 問い合わせ一覧の表示をテストする
+  - ページネーション操作のテストを実装する
+  - ステータスフィルタリングのテストを実装する
+  - 行クリック時の遷移をテストする
+  - _Requirements: 4.4_
 
-## タスク進行の注意事項
+### 10. 問い合わせ詳細・編集の実装
 
-### 並列実行可能なタスク
-- `(P)` マークの付いたタスクは並列実行可能です
-- ただし、同じフェーズ内での並列実行を推奨します
-- データベースマイグレーション（1.3）は他のタスクより先に完了させる必要があります
+- [ ] 10.1 InquiryDetailコンポーネントを実装する
+  - getInquiry APIを呼び出し、問い合わせ詳細を取得する
+  - 読み取りモードと編集モードを切り替え可能にする
+  - 編集モードではインライン編集をサポートし、updateInquiry APIを呼び出す
+  - 承認ボタンを実装し、approveInquiry APIを呼び出す
+  - 却下ボタンと却下理由入力欄を実装し、rejectInquiry APIを呼び出す
+  - ステータスがreceivedの場合のみ承認・却下ボタンを表示する
+  - 却下理由を表示する機能を実装する
+  - 更新履歴を時系列で表示する（updated_atタイムスタンプ）
+  - _Requirements: 2.5, 2.6, 2.8, 2.9, 3.1, 3.2, 3.3, 3.4, 3.5, 3.8, 3.9, 4.5_
 
-### 依存関係
-- フェーズ 1（データベース・モデル層）→ フェーズ 2（バックエンド API 層）
-- フェーズ 2（バックエンド API 層）→ フェーズ 3（ワークフロー機能）
-- フェーズ 2（バックエンド API 層）→ フェーズ 4（フロントエンド基盤）
-- フェーズ 4（フロントエンド基盤）→ フェーズ 5（問い合わせ管理 UI）
-- すべてのフェーズ → フェーズ 6（統合テスト）
+- [ ]* 10.2 InquiryDetailコンポーネントのテストを作成する
+  - 問い合わせ詳細の表示をテストする
+  - 編集モードの切り替えをテストする
+  - インライン編集と保存をテストする
+  - 承認操作のテストを実装する
+  - 却下操作（却下理由あり/なし）のテストを実装する
+  - receivedステータス以外での承認・却下ボタン非表示をテストする
+  - _Requirements: 4.5_
 
-### テスト要件
-- すべての実装タスクには対応するテストが必要です
-- バックエンド: pytest カバレッジ 80% 以上
-- フロントエンド: Jest + RTL カバレッジ 70% 以上
+### 11. システム統合とエンドツーエンドテスト
 
-### コード品質
-- バックエンド: black, flake8, mypy, bandit
-- フロントエンド: prettier, ESLint, TypeScript strict mode
-- コミット前に `make lint` と `make test` を実行
+- [ ] 11.1 バックエンドとフロントエンドの統合を検証する
+  - Docker Composeで全サービスを起動し、動作を確認する
+  - CORS設定が正しく動作することを確認する
+  - APIエンドポイントがフロントエンドから正しく呼び出せることを確認する
+  - エラーハンドリングが適切に動作することを確認する
+  - _Requirements: 1.1, 2.1, 3.1, 4.1_
+
+- [ ] 11.2 主要ユーザーフローのエンドツーエンドテストを作成する
+  - 問い合わせ作成 → 一覧表示 → 詳細表示のフローをテストする
+  - 問い合わせ編集 → 保存 → 確認のフローをテストする
+  - 問い合わせ承認フロー（received → task_working）をテストする
+  - 問い合わせ却下フロー（received → rejected、却下理由記録）をテストする
+  - バリデーションエラーのエンドツーエンドテストを実装する
+  - _Requirements: 1.1, 1.3, 1.4, 2.1, 2.5, 2.8, 3.1, 3.4, 3.6, 3.7_
+
+## タスク実行ガイドライン
+
+### 実装順序
+1. データモデル・バリデーション層（並列実行可能）
+2. データアクセス層
+3. サービス層（ワークフロー、クエリサービスは並列実行可能）
+4. API層
+5. フロントエンド基盤（型定義、APIクライアントは並列実行可能）
+6. UIコンポーネント（各コンポーネントは並列実行可能）
+7. システム統合
+
+### テスト駆動開発（TDD）
+- すべてのタスクでテストファーストアプローチを採用する
+- ユニットテスト → 実装 → リファクタリングのサイクルを繰り返す
+- テストカバレッジ目標：バックエンド80%以上、フロントエンド50%以上
+
+### 品質基準
+- すべてのコードはblack（Python）、prettier（TypeScript）でフォーマットする
+- リントエラー（flake8、mypy、ESLint）をゼロにする
+- セキュリティチェック（bandit）に合格する
+- すべてのテストが成功することを確認する
+
+## 要件カバレッジマトリクス
+
+| 要件ID | タスク番号 | カバレッジ |
+|--------|-----------|-----------|
+| 1.1 | 1.1, 1.2, 3.1, 6.1, 6.3, 7.1, 7.2, 8.1, 11.1, 11.2 | ✅ |
+| 1.2 | 1.1, 1.2, 3.1, 3.2, 7.1 | ✅ |
+| 1.3 | 6.1, 6.3, 8.1, 11.2 | ✅ |
+| 1.4 | 2.1, 2.2, 8.1, 11.2 | ✅ |
+| 1.5 | 1.1 | ✅ |
+| 1.6 | 1.1, 7.1 | ✅ |
+| 2.1 | 3.1, 3.2, 5.1, 5.2, 6.1, 6.3, 7.2, 9.1, 11.1, 11.2 | ✅ |
+| 2.2 | 5.1, 5.2, 9.1 | ✅ |
+| 2.3 | 3.1, 3.2, 5.1, 5.2, 6.1, 6.3, 7.2, 9.1 | ✅ |
+| 2.4 | 5.1, 5.2, 6.1, 6.3, 7.1, 9.1 | ✅ |
+| 2.5 | 3.1, 3.2, 5.1, 5.2, 6.1, 6.3, 7.2, 10.1, 11.2 | ✅ |
+| 2.6 | 5.1, 5.2, 6.1, 6.3, 10.1 | ✅ |
+| 2.7 | 4.4 | 将来実装（story specで対応） |
+| 2.8 | 2.1, 2.2, 3.1, 3.2, 6.1, 6.3, 7.2, 10.1, 11.2 | ✅ |
+| 2.9 | 6.1, 6.3, 10.1 | ✅ |
+| 3.1 | 3.1, 4.1, 4.2, 6.2, 6.3, 7.2, 10.1, 11.1, 11.2 | ✅ |
+| 3.2 | 4.1, 4.2, 6.2, 6.3, 10.1 | ✅ |
+| 3.3 | 6.2, 6.3, 10.1 | ✅ |
+| 3.4 | 4.1, 4.2, 6.2, 6.3, 7.2, 10.1, 11.2 | ✅ |
+| 3.5 | 4.1, 4.2, 6.2, 6.3, 10.1 | ✅ |
+| 3.6 | 1.1, 4.1, 4.2, 7.1, 11.2 | ✅ |
+| 3.7 | 1.1, 4.1, 4.2, 7.1, 11.2 | ✅ |
+| 3.8 | 6.2, 6.3, 10.1 | ✅ |
+| 3.9 | 10.1 | ✅ |
+| 3.10 | 4.1, 4.2 | ✅ |
+| 3.11 | 4.1, 4.2 | ✅ |
+| 3.12 | 1.1, 4.1, 4.2, 7.1 | ✅ |
+| 4.1 | 8.1, 11.1 | ✅ |
+| 4.2 | 8.1, 8.2 | ✅ |
+| 4.3 | 8.1, 8.2 | ✅ |
+| 4.4 | 9.1, 9.2 | ✅ |
+| 4.5 | 10.1, 10.2 | ✅ |
+
+**注**: 要件2.7（Web UI から問い合わせ一覧を表示・検索する機能）は、story specで実装予定の高度な検索機能を含むため、現在のinquiry specでは基本的な一覧表示のみを実装します。
