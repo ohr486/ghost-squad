@@ -150,7 +150,7 @@ class TestInquiryModel:
 
     def test_inquiry_content_not_empty_check(self, db_session, db_engine):
         """contentが空文字列の場合エラーになる.
-        
+
         注意: このテストはSQLiteではスキップされます。
         SQLiteはCHECK制約を完全にサポートしていないため、
         PostgreSQLなどのデータベースでのみ有効です。
@@ -158,7 +158,7 @@ class TestInquiryModel:
         # SQLiteの場合はスキップ
         if db_engine.dialect.name == "sqlite":
             pytest.skip("SQLiteはCHECK制約を完全にサポートしていません")
-        
+
         # Arrange
         inquiry = InquiryModel(
             user_id="test_user",
