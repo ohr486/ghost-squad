@@ -113,6 +113,19 @@ class TestInquiryModel:
             db_session.add(inquiry)
             db_session.commit()
 
+    def test_inquiry_requires_source_system(self, db_session):
+        """source_systemフィールドは必須である."""
+        inquiry = InquiryModel(
+            user_id="test_user",
+            content="テスト問い合わせ",
+            source_system=None,  # source_systemをNoneに設定
+            timestamp=datetime.now(UTC),
+        )
+    
+        with pytest.raises(IntegrityError):
+            db_session.add(inquiry)
+            db_session.commit()
+            
     def test_inquiry_requires_timestamp(self, db_session):
         """timestampフィールドは必須である."""
         # Arrange
