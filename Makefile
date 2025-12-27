@@ -113,7 +113,7 @@ test: test-api test-web
 test-api:
 	@echo "🧪 Running api tests..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api python -m pytest tests/ -v --cov=models --cov-report=term-missing --cov-report=html; \
+		docker-compose run --rm api python -m pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-config=.coveragerc; \
 	else \
 		echo "ℹ️ No tests directory found. Create api/tests/ directory and add test files."; \
 	fi
