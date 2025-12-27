@@ -168,7 +168,7 @@ class TestInquiryModel:
         )
 
         # Act & Assert
-        # PostgreSQLではCHECK制約によりIntegrityErrorが発生する
+        # CHECK制約をサポートするデータベースではIntegrityErrorが発生する
         with pytest.raises(IntegrityError):
             db_session.add(inquiry)
             db_session.commit()
