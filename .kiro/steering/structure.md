@@ -10,8 +10,8 @@ Ghost Squadプロジェクトの構造と組織化に関するガイドライン
 
 ```
 ghost-squad/
-├── backend/                 # Python FastAPIバックエンド
-├── frontend/                # React TypeScriptフロントエンド
+├── api/                 # Python FastAPIバックエンド
+├── web/                # React TypeScriptフロントエンド
 ├── docs/                    # プロジェクトドキュメント
 ├── bin/                     # ユーティリティスクリプト
 ├── .kiro/                   # Kiro設定・仕様
@@ -21,7 +21,7 @@ ghost-squad/
 └── README.md                # プロジェクト概要
 ```
 
-## バックエンド構造 (`backend/`)
+## バックエンド構造 (`api/`)
 
 **コアアプリケーションファイル**
 - `main.py` - FastAPIアプリケーションエントリーポイント（CORS・ライフサイクル管理）
@@ -60,7 +60,7 @@ models/
 - `test_*.py` - テストファイル（テスト対象と同じ構造）
 - `property_tests/` - プロパティベーステスト専用ディレクトリ
 
-## フロントエンド構造 (`frontend/`)
+## フロントエンド構造 (`web/`)
 
 **推奨ディレクトリ構造**
 ```

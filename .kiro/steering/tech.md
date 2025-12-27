@@ -138,23 +138,23 @@ DEBUG=true
 **Python品質チェック**
 ```bash
 # フォーマット
-black backend/ --line-length 88
-isort backend/ --profile black
+black api/ --line-length 88
+isort api/ --profile black
 
 # リント
-flake8 backend/ --max-line-length 88
-mypy backend/ --strict
-bandit -r backend/ -x tests/
+flake8 api/ --max-line-length 88
+mypy api/ --strict
+bandit -r api/ -x tests/
 
 # テスト
-pytest backend/tests/ --cov=backend --cov-report=html
+pytest api/tests/ --cov=backend --cov-report=html
 ```
 
 **TypeScript品質チェック**
 ```bash
 # フォーマット
-prettier frontend/src/ --write
-eslint frontend/src/ --fix
+prettier web/src/ --write
+eslint web/src/ --fix
 
 # 型チェック
 tsc --noEmit
