@@ -1,7 +1,7 @@
 """問い合わせモデルのテスト."""
 import pytest
 from datetime import datetime, UTC
-from sqlalchemy import create_engine, CheckConstraint
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 
@@ -19,6 +19,7 @@ def db_session():
     session = Session()
     yield session
     session.close()
+    engine.dispose()
 
 
 class TestInquiryModel:
@@ -114,12 +115,25 @@ class TestInquiryModel:
 
     def test_inquiry_requires_source_system(self, db_session):
         """source_systemフィールドは必須である."""
-        # Arrange
         inquiry = InquiryModel(
             user_id="test_user",
             content="テスト問い合わせ",
             source_system=None,  # source_systemをNoneに設定
             timestamp=datetime.now(UTC),
+        )
+    
+        with pytest.raises(IntegrityError):
+            db_session.add(inquiry)
+            db_session.commit()
+            
+    def test_inquiry_requires_timestamp(self, db_session):
+        """timestampフィールドは必須である."""
+        # Arrange
+        inquiry = InquiryModel(
+            user_id="test_user",
+            content="テスト問い合わせ",
+            source_system="manual",
+            timestamp=None,  # timestampをNoneに設定
         )
 
         # Act & Assert

@@ -24,6 +24,7 @@ class InquiryModel(BaseModel):
         Enum(InquiryStatus),
         nullable=False,
         default=InquiryStatus.RECEIVED,
+        server_default=InquiryStatus.RECEIVED.value,
         index=True,
     )
     inquiry_metadata: Mapped[Dict[str, Any]] = mapped_column(
