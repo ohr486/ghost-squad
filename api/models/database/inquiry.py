@@ -1,7 +1,7 @@
 """問い合わせモデル."""
 from datetime import datetime
 from typing import Dict, Any
-from sqlalchemy import String, Text, DateTime, Enum, JSON, CheckConstraint
+from sqlalchemy import String, Text, DateTime, Enum, JSON, CheckConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.database.base import BaseModel
@@ -30,7 +30,7 @@ class InquiryModel(BaseModel):
     inquiry_metadata: Mapped[Dict[str, Any]] = mapped_column(
         JSON,
         nullable=False,
-        server_default="{}",
+        server_default=text("'{}'::jsonb"),
     )
 
     __table_args__ = (
