@@ -5,7 +5,7 @@
 export PIP_ROOT_USER_ACTION=ignore
 PIP_ENV_VARS = -e PIP_ROOT_USER_ACTION=ignore
 
-.PHONY: help setup dev stop restart test test-backend test-frontend lint lint-backend lint-frontend format format-backend format-frontend db-migrate db-init db-revision db-status db-seed db-reset db-reset-migrations db-connect db-tables db-data clean clean-deep logs logs-backend logs-frontend logs-db status disk-usage docker-cleanup volume-list volume-cleanup volume-cleanup-force
+.PHONY: help setup dev stop restart test test-api test-web lint lint-api lint-web format format-api format-web db-migrate db-init db-revision db-status db-seed db-reset db-reset-migrations db-connect db-tables db-data clean clean-deep logs logs-api logs-web logs-db status disk-usage docker-cleanup volume-list volume-cleanup volume-cleanup-force
 
 # Default target
 help:
@@ -23,18 +23,18 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test           - 全テスト実行 (Run all tests)"
-	@echo "  make test-backend   - バックエンドテスト (Run backend tests)"
-	@echo "  make test-frontend  - フロントエンドテスト (Run frontend tests)"
+	@echo "  make test-api   - バックエンドテスト (Run api tests)"
+	@echo "  make test-web  - フロントエンドテスト (Run web tests)"
 	@echo ""
 	@echo "Code Quality:"
 	@echo "  make lint           - コード品質チェック (Run all linting)"
-	@echo "  make lint-backend   - バックエンドコード品質チェック (Run backend linting)"
-	@echo "  make lint-frontend  - フロントエンドコード品質チェック (Run frontend linting)"
+	@echo "  make lint-api   - バックエンドコード品質チェック (Run api linting)"
+	@echo "  make lint-web  - フロントエンドコード品質チェック (Run web linting)"
 	@echo ""
 	@echo "Code Formatting:"
 	@echo "  make format         - コードフォーマット (Format all code)"
-	@echo "  make format-backend - バックエンドコードフォーマット (Format backend code)"
-	@echo "  make format-frontend- フロントエンドコードフォーマット (Format frontend code)"
+	@echo "  make format-api - バックエンドコードフォーマット (Format api code)"
+	@echo "  make format-web- フロントエンドコードフォーマット (Format web code)"
 	@echo ""
 	@echo "Database:"
 	@echo "  make db-migrate     - データベースマイグレーション (Run database migrations)"
@@ -56,8 +56,8 @@ help:
 	@echo "  make volume-cleanup - 未使用ボリューム削除 (Remove unused volumes)"
 	@echo "  make volume-cleanup-force - 強制ボリューム削除 (Force remove volumes)"
 	@echo "  make logs           - 全サービスログ表示 (Show logs for all services)"
-	@echo "  make logs-backend   - バックエンドログ表示 (Show backend logs)"
-	@echo "  make logs-frontend  - フロントエンドログ表示 (Show frontend logs)"
+	@echo "  make logs-api   - バックエンドログ表示 (Show api logs)"
+	@echo "  make logs-web  - フロントエンドログ表示 (Show web logs)"
 	@echo "  make logs-db        - データベースログ表示 (Show database logs)"
 
 # 初期環境構築 (Initial environment setup)
@@ -71,10 +71,10 @@ setup:
 	@if [ ! -f .env ]; then cp .env.example .env && echo "✅ .env file created from template"; else echo "ℹ️ .env file already exists"; fi
 	@echo "🐳 Building Docker containers..."
 	docker-compose build
-	@echo "📦 Installing backend dependencies..."
-	docker-compose run --rm $(PIP_ENV_VARS) backend pip install -r requirements.txt
-	@echo "📦 Installing frontend dependencies..."
-	docker-compose run --rm frontend npm install
+	@echo "📦 Installing api dependencies..."
+	docker-compose run --rm $(PIP_ENV_VARS) api pip install -r requirements.txt
+	@echo "📦 Installing web dependencies..."
+	docker-compose run --rm web npm install
 	@echo "🗄️ Setting up database..."
 	$(MAKE) db-migrate
 	@echo "🌱 Seeding initial data..."
@@ -106,76 +106,76 @@ restart:
 	@echo "✅ All services restarted"
 
 # 全テスト実行 (Run all tests)
-test: test-backend test-frontend
+test: test-api test-web
 	@echo "✅ All tests completed"
 
-# バックエンドテスト (Run backend tests)
-test-backend:
-	@echo "🧪 Running backend tests..."
-	@if [ -d "backend/tests" ]; then \
-		docker-compose run --rm backend python -m pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-config=.coveragerc; \
+# バックエンドテスト (Run api tests)
+test-api:
+	@echo "🧪 Running api tests..."
+	@if [ -d "api/tests" ]; then \
+		docker-compose run --rm api python -m pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-config=.coveragerc; \
 	else \
-		echo "ℹ️ No tests directory found. Create backend/tests/ directory and add test files."; \
+		echo "ℹ️ No tests directory found. Create api/tests/ directory and add test files."; \
 	fi
 
-# フロントエンドテスト (Run frontend tests)
-test-frontend:
-	@echo "🧪 Running frontend tests..."
-	docker-compose run --rm frontend npm test -- --coverage --watchAll=false --passWithNoTests
+# フロントエンドテスト (Run web tests)
+test-web:
+	@echo "🧪 Running web tests..."
+	docker-compose run --rm web npm test -- --coverage --watchAll=false --passWithNoTests
 
 # コード品質チェック (Run all linting)
-lint: lint-backend lint-frontend
+lint: lint-api lint-web
 	@echo "✅ All linting completed"
 
-# バックエンドコード品質チェック (Run backend linting)
-lint-backend:
-	@echo "🔍 Running backend linting..."
+# バックエンドコード品質チェック (Run api linting)
+lint-api:
+	@echo "🔍 Running api linting..."
 	@echo "📝 Running flake8..."
-	@if [ -d "backend/tests" ]; then \
-		docker-compose run --rm backend flake8 api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
+	@if [ -d "api/tests" ]; then \
+		docker-compose run --rm api flake8 api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
 	else \
-		docker-compose run --rm backend flake8 api/ models/ main.py database.py manage_db.py seed_data.py; \
+		docker-compose run --rm api flake8 api/ models/ main.py database.py manage_db.py seed_data.py; \
 	fi
 	@echo "🔍 Running mypy type checking..."
-	docker-compose run --rm backend mypy api/ models/ main.py database.py manage_db.py seed_data.py
+	docker-compose run --rm api mypy api/ models/ main.py database.py manage_db.py seed_data.py
 	@echo "🛡️ Running bandit security check..."
-	docker-compose run --rm backend bandit -r api/ models/ -f json
+	docker-compose run --rm api bandit -r api/ models/ -f json
 
-# フロントエンドコード品質チェック (Run frontend linting)
-lint-frontend:
-	@echo "🔍 Running frontend linting..."
+# フロントエンドコード品質チェック (Run web linting)
+lint-web:
+	@echo "🔍 Running web linting..."
 	@echo "📝 Running ESLint..."
-	docker-compose run --rm frontend npm run lint
+	docker-compose run --rm web npm run lint
 	@echo "🔍 Running TypeScript type checking..."
-	docker-compose run --rm frontend npm run type-check
+	docker-compose run --rm web npm run type-check
 
 # コードフォーマット (Format all code)
-format: format-backend format-frontend
+format: format-api format-web
 	@echo "✅ All code formatting completed"
 
-# バックエンドコードフォーマット (Format backend code)
-format-backend:
-	@echo "🎨 Formatting backend code..."
+# バックエンドコードフォーマット (Format api code)
+format-api:
+	@echo "🎨 Formatting api code..."
 	@echo "📝 Running black formatter..."
-	@if [ -d "backend/tests" ]; then \
-		docker-compose run --rm backend black api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
+	@if [ -d "api/tests" ]; then \
+		docker-compose run --rm api black api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
 	else \
-		docker-compose run --rm backend black api/ models/ main.py database.py manage_db.py seed_data.py; \
+		docker-compose run --rm api black api/ models/ main.py database.py manage_db.py seed_data.py; \
 	fi
 	@echo "📦 Running isort import sorter..."
-	@if [ -d "backend/tests" ]; then \
-		docker-compose run --rm backend isort api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
+	@if [ -d "api/tests" ]; then \
+		docker-compose run --rm api isort api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
 	else \
-		docker-compose run --rm backend isort api/ models/ main.py database.py manage_db.py seed_data.py; \
+		docker-compose run --rm api isort api/ models/ main.py database.py manage_db.py seed_data.py; \
 	fi
 
-# フロントエンドコードフォーマット (Format frontend code)
-format-frontend:
-	@echo "🎨 Formatting frontend code..."
+# フロントエンドコードフォーマット (Format web code)
+format-web:
+	@echo "🎨 Formatting web code..."
 	@echo "📝 Running prettier..."
-	docker-compose run --rm frontend npx prettier --write "src/**/*.{ts,tsx,js,jsx,json,css,md}"
+	docker-compose run --rm web npx prettier --write "src/**/*.{ts,tsx,js,jsx,json,css,md}"
 	@echo "📝 Running ESLint with --fix..."
-	docker-compose run --rm frontend npm run lint:fix
+	docker-compose run --rm web npm run lint:fix
 
 # データベースマイグレーション (Run database migrations)
 db-migrate:
@@ -187,7 +187,7 @@ db-migrate:
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -201,23 +201,23 @@ db-migrate:
 		exit 1; \
 	fi
 	@echo "🔍 Checking if Alembic is initialized..."
-	@if [ ! -f backend/alembic.ini ] || [ ! -d backend/alembic ]; then \
+	@if [ ! -f api/alembic.ini ] || [ ! -d api/alembic ]; then \
 		echo "📋 Initializing Alembic for the first time..."; \
-		docker-compose run --rm backend alembic init alembic; \
+		docker-compose run --rm api alembic init alembic; \
 		echo "⚙️  Configuring Alembic database URL..."; \
-		docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini; \
+		docker-compose run --rm api sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini; \
 		echo "ℹ️ Alembic initialized. Creating initial migration..."; \
-		docker-compose run --rm backend alembic revision --autogenerate -m "Initial migration"; \
+		docker-compose run --rm api alembic revision --autogenerate -m "Initial migration"; \
 	else \
 		echo "✅ Alembic already initialized"; \
 	fi
 	@echo "📊 Running Alembic migrations..."
-	@if docker-compose run --rm backend alembic current >/dev/null 2>&1; then \
-		docker-compose run --rm backend alembic upgrade head; \
+	@if docker-compose run --rm api alembic current >/dev/null 2>&1; then \
+		docker-compose run --rm api alembic upgrade head; \
 	else \
 		echo "ℹ️ No migrations found. Creating initial migration..."; \
-		docker-compose run --rm backend alembic revision --autogenerate -m "Initial migration"; \
-		docker-compose run --rm backend alembic upgrade head; \
+		docker-compose run --rm api alembic revision --autogenerate -m "Initial migration"; \
+		docker-compose run --rm api alembic upgrade head; \
 	fi
 	@echo "✅ Database migrations completed"
 
@@ -231,7 +231,7 @@ db-seed:
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -245,7 +245,7 @@ db-seed:
 		exit 1; \
 	fi
 	@echo "📊 Running seed script..."
-	docker-compose run --rm backend python manage_db.py seed
+	docker-compose run --rm api python manage_db.py seed
 	@echo "✅ Test data seeding completed"
 
 # データベースリセット (Reset database)
@@ -264,7 +264,7 @@ db-reset:
 	@max_attempts=15; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -293,7 +293,7 @@ db-reset-migrations:
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $attempt -le $max_attempts ]; do \
-		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -306,9 +306,9 @@ db-reset-migrations:
 		exit 1; \
 	fi
 	@echo "🗑️ Dropping existing tables..."
-	docker-compose run --rm backend python -c "from database import engine; from models.database.base import Base; Base.metadata.drop_all(engine); print('Tables dropped')"
+	docker-compose run --rm api python -c "from database import engine; from models.database.base import Base; Base.metadata.drop_all(engine); print('Tables dropped')"
 	@echo "📊 Running unified migration..."
-	docker-compose run --rm backend alembic upgrade head
+	docker-compose run --rm api alembic upgrade head
 	@echo "✅ Migration history reset completed"
 
 # Alembic初期化 (Initialize Alembic)
@@ -319,15 +319,15 @@ db-init:
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 5
 	@echo "🔍 Checking existing Alembic setup..."
-	@if [ -f backend/alembic.ini ] || [ -d backend/alembic ]; then \
+	@if [ -f api/alembic.ini ] || [ -d api/alembic ]; then \
 		echo "⚠️ Alembic already exists. Cleaning up first..."; \
-		rm -rf backend/alembic backend/alembic.ini; \
+		rm -rf api/alembic api/alembic.ini; \
 		echo "🧹 Cleaned up existing Alembic files"; \
 	fi
 	@echo "📋 Initializing fresh Alembic setup..."
-	docker-compose run --rm backend alembic init alembic
+	docker-compose run --rm api alembic init alembic
 	@echo "⚙️  Configuring Alembic database URL..."
-	docker-compose run --rm backend sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini
+	docker-compose run --rm api sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini
 	@echo "✅ Alembic initialization completed"
 	@echo "ℹ️ Next step: Create your first migration with 'make db-revision'"
 
@@ -338,12 +338,12 @@ db-revision:
 	docker-compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 5
-	@if [ ! -f backend/alembic.ini ]; then \
+	@if [ ! -f api/alembic.ini ]; then \
 		echo "❌ Alembic not initialized. Run 'make db-init' first."; \
 		exit 1; \
 	fi
 	@read -p "Enter migration message: " message; \
-	docker-compose run --rm backend alembic revision --autogenerate -m "$$message"
+	docker-compose run --rm api alembic revision --autogenerate -m "$$message"
 	@echo "✅ Migration created successfully"
 
 # Alembicステータス確認 (Check Alembic status)
@@ -356,7 +356,7 @@ db-status:
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -371,23 +371,23 @@ db-status:
 	fi
 	@echo ""
 	@echo "📋 Alembic Configuration:"
-	@if [ -f backend/alembic.ini ]; then \
+	@if [ -f api/alembic.ini ]; then \
 		echo "  ✅ alembic.ini exists"; \
 	else \
 		echo "  ❌ alembic.ini missing"; \
 	fi
-	@if [ -d backend/alembic ]; then \
+	@if [ -d api/alembic ]; then \
 		echo "  ✅ alembic directory exists"; \
 	else \
 		echo "  ❌ alembic directory missing"; \
 	fi
 	@echo ""
 	@echo "📊 Migration Status:"
-	@if [ -f backend/alembic.ini ] && [ -d backend/alembic ]; then \
-		docker-compose run --rm backend alembic current 2>/dev/null || echo "  ℹ️ No migrations applied yet"; \
+	@if [ -f api/alembic.ini ] && [ -d api/alembic ]; then \
+		docker-compose run --rm api alembic current 2>/dev/null || echo "  ℹ️ No migrations applied yet"; \
 		echo ""; \
 		echo "📋 Available migrations:"; \
-		docker-compose run --rm backend alembic history 2>/dev/null || echo "  ℹ️ No migrations created yet"; \
+		docker-compose run --rm api alembic history 2>/dev/null || echo "  ℹ️ No migrations created yet"; \
 	else \
 		echo "  ❌ Alembic not initialized"; \
 	fi
@@ -405,21 +405,21 @@ clean:
 	docker volume prune -f
 	@echo "🧹 Removing unused Docker networks..."
 	docker network prune -f
-	@echo "🧹 Cleaning backend cache and build artifacts..."
-	@find backend -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	@find backend -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
-	@find backend -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
-	@find backend -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-	@if [ -f "backend/.coverage" ]; then rm -f backend/.coverage; fi
-	@if [ -d "backend/htmlcov" ]; then rm -rf backend/htmlcov; fi
-	@if [ -d "backend/.bandit" ]; then rm -rf backend/.bandit; fi
+	@echo "🧹 Cleaning api cache and build artifacts..."
+	@find api -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@find api -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find api -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find api -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	@if [ -f "api/.coverage" ]; then rm -f api/.coverage; fi
+	@if [ -d "api/htmlcov" ]; then rm -rf api/htmlcov; fi
+	@if [ -d "api/.bandit" ]; then rm -rf api/.bandit; fi
 	@if [ -d ".pytest_cache" ]; then rm -rf .pytest_cache; fi
-	@echo "🧹 Cleaning frontend cache and build artifacts..."
-	@if [ -d "frontend/node_modules/.cache" ]; then rm -rf frontend/node_modules/.cache; fi
-	@if [ -d "frontend/build" ]; then rm -rf frontend/build; fi
-	@if [ -d "frontend/dist" ]; then rm -rf frontend/dist; fi
-	@if [ -d "frontend/coverage" ]; then rm -rf frontend/coverage; fi
-	@if [ -f "frontend/.eslintcache" ]; then rm -f frontend/.eslintcache; fi
+	@echo "🧹 Cleaning web cache and build artifacts..."
+	@if [ -d "web/node_modules/.cache" ]; then rm -rf web/node_modules/.cache; fi
+	@if [ -d "web/build" ]; then rm -rf web/build; fi
+	@if [ -d "web/dist" ]; then rm -rf web/dist; fi
+	@if [ -d "web/coverage" ]; then rm -rf web/coverage; fi
+	@if [ -f "web/.eslintcache" ]; then rm -f web/.eslintcache; fi
 	@echo "🧹 Cleaning system files..."
 	@find . -type f -name ".DS_Store" -delete 2>/dev/null || true
 	@echo "✅ Cleanup completed"
@@ -433,30 +433,30 @@ clean-deep:
 	@echo "🔄 Running standard cleanup first..."
 	$(MAKE) clean
 	@echo "🧹 Removing node_modules..."
-	@if [ -d "frontend/node_modules" ]; then \
-		echo "📦 Removing frontend/node_modules (this may take a moment)..."; \
-		rm -rf frontend/node_modules; \
+	@if [ -d "web/node_modules" ]; then \
+		echo "📦 Removing web/node_modules (this may take a moment)..."; \
+		rm -rf web/node_modules; \
 		echo "✅ node_modules removed"; \
 	else \
 		echo "ℹ️  node_modules not found, skipping"; \
 	fi
 	@echo "🧹 Removing package-lock files..."
-	@if [ -f "frontend/package-lock.json" ]; then rm -f frontend/package-lock.json; fi
+	@if [ -f "web/package-lock.json" ]; then rm -f web/package-lock.json; fi
 	@echo "✅ Deep cleanup completed"
-	@echo "💡 Run 'make setup' or 'npm install' in frontend/ to reinstall dependencies"
+	@echo "💡 Run 'make setup' or 'npm install' in web/ to reinstall dependencies"
 
 # Development utilities
 logs:
 	@echo "📋 Showing logs for all services..."
 	docker-compose logs -f
 
-logs-backend:
-	@echo "📋 Showing backend logs..."
-	docker-compose logs -f backend
+logs-api:
+	@echo "📋 Showing api logs..."
+	docker-compose logs -f api
 
-logs-frontend:
-	@echo "📋 Showing frontend logs..."
-	docker-compose logs -f frontend
+logs-web:
+	@echo "📋 Showing web logs..."
+	docker-compose logs -f web
 
 logs-db:
 	@echo "📋 Showing database logs..."
@@ -677,13 +677,13 @@ volume-cleanup-force:
 # Install pre-commit hooks
 install-hooks:
 	@echo "🪝 Installing pre-commit hooks..."
-	docker-compose run --rm backend pre-commit install
+	docker-compose run --rm api pre-commit install
 	@echo "✅ Pre-commit hooks installed"
 
 # Run pre-commit on all files
 pre-commit:
 	@echo "🪝 Running pre-commit on all files..."
-	docker-compose run --rm backend pre-commit run --all-files
+	docker-compose run --rm api pre-commit run --all-files
 
 # データベース直接接続 (Connect to database directly)
 db-connect:
@@ -695,7 +695,7 @@ db-connect:
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -722,7 +722,7 @@ db-tables:
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -755,7 +755,7 @@ db-data:
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm backend python manage_db.py check >/dev/null 2>&1; then \
+		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \

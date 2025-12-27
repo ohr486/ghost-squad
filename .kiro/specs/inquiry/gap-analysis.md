@@ -3,7 +3,7 @@
 ## 分析サマリー
 
 - **スコープ**: 問い合わせ管理機能の要件を既存コードベースに対して分析し、実装アプローチを評価
-- **現状**: backend/ と frontend/ ディレクトリが存在せず、実装はゼロからの状態（2025年12月27日にリセット済み）
+- **現状**: api/ と web/ ディレクトリが存在せず、実装はゼロからの状態（2025年12月27日にリセット済み）
 - **主要な課題**:
   - プロジェクト全体の基盤構築から開始する必要がある
   - 依存関係管理ファイル（requirements.txt、package.json）が不在
@@ -38,7 +38,7 @@
 
 #### ❌ 存在しないもの（実装が必要）
 
-**バックエンド（backend/）**
+**バックエンド（api/）**
 - Python依存関係定義（requirements.txt）
 - FastAPIアプリケーション（main.py、database.py）
 - モデル層（models/database/, models/schemas/, models/enums/）
@@ -48,7 +48,7 @@
 - Alembicマイグレーションファイル（alembic/versions/）
 - テストコード（tests/）
 
-**フロントエンド（frontend/）**
+**フロントエンド（web/）**
 - Node.js依存関係定義（package.json、package-lock.json）
 - React アプリケーション（src/）
 - TypeScript型定義（src/types/）
@@ -188,9 +188,9 @@ API層 (FastAPI routes)
 
 #### ディレクトリ構造（structure.md より）
 
-**バックエンド（backend/）**
+**バックエンド（api/）**
 ```
-backend/
+api/
 ├── main.py                      # FastAPIエントリーポイント
 ├── database.py                  # データベース接続・セッション管理
 ├── manage_db.py                 # データベース管理ユーティリティ
@@ -216,9 +216,9 @@ backend/
     └── test_*.py
 ```
 
-**フロントエンド（frontend/）**
+**フロントエンド（web/）**
 ```
-frontend/
+web/
 ├── package.json                 # Node.js依存関係
 ├── tsconfig.json                # TypeScript設定
 ├── tailwind.config.js           # Tailwind設定
@@ -376,8 +376,8 @@ frontend/
 
 **実装戦略**
 1. **Phase 1**: プロジェクト基盤
-   - `backend/requirements.txt` 作成
-   - `frontend/package.json` 作成
+   - `api/requirements.txt` 作成
+   - `web/package.json` 作成
    - Docker イメージビルド確認
 2. **Phase 2**: データベース層
    - SQLAlchemy モデル実装
@@ -486,7 +486,7 @@ frontend/
 - **S（1-3日）**: 既存パターン拡張、最小限の依存関係、単純な統合 - **該当しない**
 - **M（3-7日）**: 新しいパターン導入、中程度の複雑性 - **該当しない**
 - **L（1-2週間）**: 重要な機能、複数の統合、ワークフロー - **該当する**
-  - プロジェクト基盤の構築（backend/、frontend/）
+  - プロジェクト基盤の構築（api/、web/）
   - データベーススキーマとマイグレーション
   - バックエンドAPI層（Repository、Service、API）
   - フロントエンドUI層（コンポーネント、フック、サービス）
@@ -641,7 +641,7 @@ frontend/
 
 ### 6.1 現状のギャップ
 
-- **プロジェクト基盤**: Docker Compose、Makefile は存在するが、backend/ と frontend/ の実装はゼロ
+- **プロジェクト基盤**: Docker Compose、Makefile は存在するが、api/ と web/ の実装はゼロ
 - **依存関係**: requirements.txt、package.json が不在
 - **データベース**: スキーマ定義とマイグレーション機構が不在
 - **バックエンド**: FastAPI アプリケーション、モデル、API、サービス層が全て未実装

@@ -11,8 +11,8 @@
 
 - [ ] 1. データベース・モデル層の実装
 - [ ] 1.1 (P) InquiryStatus 列挙型に REJECTED ステータスを追加
-  - backend/models/enums/inquiry_status.py に REJECTED = "rejected" を追加
-  - frontend/src/types/enums/inquiry-status.ts に REJECTED を追加
+  - api/models/enums/inquiry_status.py に REJECTED = "rejected" を追加
+  - web/src/types/enums/inquiry-status.ts に REJECTED を追加
   - 両方の列挙型定義が完全に一致することを確認
   - _Requirements: 3.4_
 

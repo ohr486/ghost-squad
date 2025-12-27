@@ -10,7 +10,7 @@ inclusion: always
 
 ### 🔄 実装リセット通知
 
-**重要**: 2025年12月27日に `backend/` と `frontend/` ディレクトリ内の実装を全て削除しました。
+**重要**: 2025年12月27日に `api/` と `web/` ディレクトリ内の実装を全て削除しました。
 - 現在は**設計と仕様のみ**が存在し、**コード実装はゼロ**からの状態です
 - プロジェクト基盤（Docker設定、Makefile、ドキュメント）は維持されています
 - `.kiro/specs/` の仕様定義は保持されており、これに基づいて再実装を行います
@@ -44,7 +44,7 @@ inclusion: always
 
 ### ❌ 現在存在しないもの（削除済み）
 
-**バックエンド実装（`backend/`）**
+**バックエンド実装（`api/`）**
 - FastAPI アプリケーション
 - データベースモデル（SQLAlchemy ORM）
 - API エンドポイント
@@ -53,7 +53,7 @@ inclusion: always
 - 依存関係定義（`requirements.txt`）
 - 全ての Python ソースファイル
 
-**フロントエンド実装（`frontend/`）**
+**フロントエンド実装（`web/`）**
 - React アプリケーション
 - TypeScript 型定義
 - コンポーネント
@@ -68,8 +68,8 @@ inclusion: always
 ### 実装の優先順位
 
 **Phase 1: 基盤の再構築**
-1. `backend/requirements.txt` の作成
-2. `frontend/package.json` の作成
+1. `api/requirements.txt` の作成
+2. `web/package.json` の作成
 3. Docker イメージのビルド確認
 4. 開発環境の動作確認
 
@@ -137,8 +137,8 @@ inclusion: always
 
 ### 短期目標（1週間）
 - [ ] 開発環境の再構築
-- [ ] `backend/requirements.txt` 作成
-- [ ] `frontend/package.json` 作成
+- [ ] `api/requirements.txt` 作成
+- [ ] `web/package.json` 作成
 - [ ] Docker環境の動作確認
 - [ ] Inquiry仕様のタスク承認
 
@@ -175,4 +175,4 @@ inclusion: always
 ---
 
 **最終更新**: 2025年12月27日
-**更新理由**: backend/ と frontend/ の実装を全削除、設計のみの状態に更新
+**更新理由**: api/ と web/ の実装を全削除、設計のみの状態に更新
