@@ -36,6 +36,7 @@ Ghost Squadは以下の技術スタックで構築されています：
 - **データベース**: PostgreSQL + Alembicマイグレーション
 - **AI統合**: OpenAI APIによるストーリー生成
 - **コンテナ化**: Docker Composeによる開発環境
+- **開発手法**: Kiro-style Spec-Driven Development (AI-DLC)
 
 ## 開発環境セットアップ
 
@@ -110,208 +111,75 @@ SMTP_PASSWORD=your_app_password
 
 ## 開発コマンド
 
-### 基本操作
+Ghost SquadはMakefileを使用して開発タスクを自動化しています。
+
+### よく使うコマンド
 
 ```bash
-# 開発環境の初期セットアップ
-make setup
+# 環境セットアップ
+make setup          # 初期環境構築
+make dev           # 開発サーバー起動
+make stop          # サーバー停止
+make status        # 状態確認
 
-# 開発サーバー起動（バックグラウンド）
-make dev
+# テスト・品質チェック
+make test          # 全テスト実行
+make lint          # コード品質チェック
+make format        # コードフォーマット
 
-# 開発サーバー停止
-make stop
+# データベース
+make db-migrate    # マイグレーション実行
+make db-seed       # テストデータ投入
+make db-status     # データベース状態確認
 
-# 開発サーバー再起動
-make restart
-
-# 環境のクリーンアップ
-make clean
-
-# 開発環境の状態確認
-make status
+# ログ確認
+make logs          # 全サービスのログ
+make logs-backend  # バックエンドログ
 ```
 
-### テスト実行
-
-```bash
-# 全テスト実行
-make test
-
-# バックエンドテストのみ
-make test-backend
-
-# フロントエンドテストのみ
-make test-frontend
-```
-
-### コード品質
-
-```bash
-# コード品質チェック（全体）
-make lint
-
-# コードフォーマット（全体）
-make format
-
-# バックエンドのみ
-make lint-backend
-make format-backend
-
-# フロントエンドのみ
-make lint-frontend
-make format-frontend
-```
-
-### データベース管理
-
-```bash
-# データベースマイグレーション実行
-make db-migrate
-
-# 新しいマイグレーション作成
-make db-revision
-
-# データベース状態確認
-make db-status
-
-# テストデータ投入
-make db-seed
-
-# データベースリセット（注意：全データ削除）
-make db-reset
-
-# データベースに直接接続
-make db-connect
-
-# データベーステーブル一覧表示
-make db-tables
-
-# データベース内のデータ表示
-make db-data
-```
-
-### ログ確認
-
-```bash
-# 全サービスのログ表示
-make logs
-
-# 個別サービスのログ
-make logs-backend
-make logs-frontend
-make logs-db
-```
+**📖 詳細**: [開発コマンドリファレンス](docs/COMMAND.md) - 全コマンドの詳細説明とワークフロー例
 
 ## プロジェクト構造
 
 ```
 ghost-squad/
-├── backend/                 # Python FastAPIバックエンド
-│   ├── main.py             # FastAPIアプリケーション
-│   ├── database.py         # データベース接続管理
-│   ├── manage_db.py        # データベース管理スクリプト
-│   ├── seed_data.py        # テストデータシーディング
-│   ├── models/             # データモデル
-│   │   ├── database/       # SQLAlchemyモデル
-│   │   ├── enums/          # 列挙型定義
-│   │   └── schemas/        # Pydanticスキーマ
-│   ├── alembic/            # データベースマイグレーション
-│   ├── tests/              # バックエンドテスト
-│   └── requirements.txt    # Python依存関係
-├── frontend/               # React TypeScriptフロントエンド
-│   ├── src/                # ソースコード
-│   ├── public/             # 静的ファイル
-│   ├── package.json        # Node.js依存関係
-│   └── tsconfig.json       # TypeScript設定
-├── docs/                   # プロジェクトドキュメント
-│   └── DATABASE.md         # データベース管理ガイド
-├── .kiro/                  # Kiro仕様ファイル
-│   └── specs/              # 機能仕様
-│       └── storyboard/     # ストーリーボード機能仕様
-├── docker-compose.yml      # Docker Compose設定
-├── Makefile               # 開発タスク自動化
-├── .env.example           # 環境変数テンプレート
-└── README.md              # このファイル
+├── api/                    # Python FastAPIバックエンド
+│   ├── main.py            # FastAPIアプリケーション
+│   ├── database.py        # データベース接続管理
+│   ├── models/            # データモデル
+│   ├── alembic/           # データベースマイグレーション
+│   └── tests/             # バックエンドテスト
+├── web/                   # React TypeScriptフロントエンド
+│   ├── src/               # ソースコード
+│   ├── public/            # 静的ファイル
+│   └── package.json       # Node.js依存関係
+├── docs/                  # プロジェクトドキュメント
+│   ├── API.md            # API仕様
+│   ├── DATABASE.md       # データベース管理ガイド
+│   └── SDD.md            # Spec-Driven Development
+├── .kiro/                 # Kiro仕様ファイル
+│   ├── steering/         # プロジェクト全体のガイドライン
+│   └── specs/            # 機能仕様
+├── docker-compose.yml     # Docker Compose設定
+├── Makefile              # 開発タスク自動化
+├── .env.example          # 環境変数テンプレート
+├── CLAUDE.md             # AI開発アシスタント向けガイド
+└── README.md             # このファイル
 ```
-
-## データベース管理
-
-Ghost Squadは PostgreSQL データベースを使用し、SQLAlchemy ORM と Alembic によるマイグレーション管理を行います。
-
-### データベースの初期化
-
-```bash
-# 初回セットアップ時（make setupに含まれます）
-make db-migrate
-make db-seed
-```
-
-### 日常的なデータベース操作
-
-```bash
-# データベースの状態確認
-make db-status
-
-# データの確認
-make db-data
-
-# テーブル構造の確認
-make db-tables
-
-# インタラクティブなデータベース接続
-make db-connect
-```
-
-### 開発時のデータベース操作
-
-```bash
-# モデル変更後の新しいマイグレーション作成
-make db-revision
-
-# マイグレーションの適用
-make db-migrate
-
-# 開発用データの再投入
-make db-seed
-```
-
-詳細なデータベース管理については、[データベース管理ガイド](docs/DATABASE.md) を参照してください。
-
-## API仕様
-
-### 現在実装済みのエンドポイント
-
-**問い合わせ管理API**
-- `POST /api/inquiries` - 問い合わせ作成
-- `GET /api/inquiries` - 問い合わせ一覧取得（ページネーション・フィルタリング対応）
-- `GET /api/inquiries/{id}` - 特定の問い合わせ取得
-
-**システム情報API**
-- `GET /api/info` - API情報取得
-- `GET /api/db-test` - データベース接続テスト
-- `GET /health` - ヘルスチェック
-
-### 開発中のエンドポイント
-
-**ストーリー管理API**
-- `POST /api/inquiries/{id}/generate-stories` - ストーリー生成
-- `GET /api/stories` - ストーリー一覧取得
-- `PUT /api/stories/{id}` - ストーリー更新
-- `POST /api/stories/{id}/approve` - ストーリー承認
-
-詳細なAPI仕様は http://localhost:8000/docs で確認できます。
-
-### 将来のAPI拡張
-Ghost Squadの機能拡張に伴い、以下のAPIエンドポイントが追加予定です：
-- ストーリー生成・管理API
-- タスク自動優先度付けAPI
-- プロジェクト進捗予測API
-- チーム生産性分析API
 
 ## 開発ワークフロー
 
-### 1. 現在実装済みの機能
+Ghost Squadは **Kiro-style Spec-Driven Development** を採用しています。
+
+### 基本的な開発フロー
+
+1. **仕様策定**: 要件定義 → 設計 → タスク分解
+2. **実装**: TDD（テスト駆動開発）で実装
+3. **検証**: テスト・レビュー・承認
+
+詳細は [Spec-Driven Development ガイド](docs/SDD.md) を参照してください。
+
+### 現在実装済みの機能
 
 **問い合わせ管理**
 1. WebUIまたはAPIで問い合わせを入力
@@ -323,7 +191,7 @@ Ghost Squadの機能拡張に伴い、以下のAPIエンドポイントが追加
 - Alembic によるマイグレーション管理
 - テストデータのシーディング機能
 
-### 2. 開発中の機能
+### 開発中の機能
 
 **ストーリー生成ワークフロー**
 1. 問い合わせからAIを使用してストーリーを生成
@@ -336,110 +204,74 @@ Ghost Squadの機能拡張に伴い、以下のAPIエンドポイントが追加
 - 一括操作（承認・拒否）
 - 変更履歴の確認
 
-### 3. 将来実装予定の機能
+## ドキュメント
 
-**外部システム統合**
-- Trello、Jira、GitHub Projectsとの連携
-- カスタムフォーマットでのエクスポート
-- 同期状態の追跡
+Ghost Squadの詳細なドキュメントは `docs/` ディレクトリに整理されています：
+
+### 📚 主要ドキュメント
+
+- **[開発コマンドリファレンス](docs/COMMAND.md)** - Makefileコマンドの詳細説明、ワークフロー例
+- **[トラブルシューティングガイド](docs/DEBUG.md)** - 問題解決方法、デバッグテクニック、環境リセット手順
+- **[API仕様](docs/API.md)** - RESTful APIエンドポイント、リクエスト/レスポンス形式、エラーハンドリング
+- **[データベース管理ガイド](docs/DATABASE.md)** - データベースのセットアップ、マイグレーション、トラブルシューティング
+- **[Spec-Driven Development](docs/SDD.md)** - Kiro-style開発手法、仕様策定から実装までのフロー
+
+### 🔧 開発者向けリソース
+
+- **[CLAUDE.md](CLAUDE.md)** - AI開発アシスタント（Claude Code）向けガイド
+- **機能仕様**: `.kiro/specs/` - 各機能の要件、設計、実装計画
+- **プロジェクトガイドライン**: `.kiro/steering/` - プロダクト、技術、構造のガイドライン
 
 ## トラブルシューティング
 
+開発中に問題が発生した場合：
+
+### クイック診断
+```bash
+make status        # 環境の状態確認
+make logs          # エラーログ確認
+make disk-usage    # ディスク容量確認
+```
+
 ### よくある問題
 
-#### 1. Docker関連
-
-**問題**: `make dev`でコンテナが起動しない
+**コンテナが起動しない**:
 ```bash
-# 解決方法
-make clean
-make setup
-make dev
+make clean && make setup && make dev
 ```
 
-**問題**: ポートが既に使用されている
+**ポート競合**:
 ```bash
-# 使用中のポートを確認
-lsof -i :3000  # フロントエンド
-lsof -i :8000  # バックエンド
-lsof -i :5432  # PostgreSQL
-
-# プロセスを停止してから再実行
-make stop
-make dev
+lsof -i :3000  # または :8000, :5432
+make stop && make dev
 ```
 
-#### 2. データベース関連
-
-**問題**: マイグレーションエラー
+**データベースエラー**:
 ```bash
-# データベース状態確認
-make db-status
-
-# データベースリセット（注意：データが削除されます）
-make db-reset
-make db-migrate
+make db-status  # 状態確認
+make db-reset   # リセット（データ削除）
 ```
 
-**問題**: 接続エラー
+**API/環境変数エラー**:
 ```bash
-# データベースコンテナの状態確認
-make status
-make logs-db
-
-# データベース接続テスト
-make db-connect
+cat .env        # 設定確認
+make restart    # 再起動
 ```
 
-**問題**: データが表示されない
-```bash
-# データベース内のデータ確認
-make db-data
-
-# テーブル構造確認
-make db-tables
-
-# テストデータの再投入
-make db-seed
-```
-
-#### 3. API関連
-
-**問題**: OpenAI APIエラー
-- `.env`ファイルの`OPENAI_API_KEY`が正しく設定されているか確認
-- APIキーの使用制限・残高を確認
-
-**問題**: CORS エラー
-- `.env`ファイルの`CORS_ORIGINS`設定を確認
-- フロントエンドのURLが含まれているか確認
-
-### ログの確認方法
+### 環境のリセット
 
 ```bash
-# 全体のログ
-make logs
+# レベル1: 再起動
+make restart
 
-# 特定のサービス
-make logs-backend
-make logs-frontend
-make logs-db
+# レベル2: クリーンアップ
+make clean && make setup
 
-# リアルタイムでログを監視
-docker-compose logs -f backend
+# レベル3: 完全リセット
+make clean-deep && make setup
 ```
 
-### 開発環境のリセット
-
-完全に環境をリセットしたい場合：
-
-```bash
-# 全コンテナ・ボリューム・ネットワークを削除
-make clean
-
-# 再セットアップ
-make setup
-make dev
-```
+**📖 詳細**: [トラブルシューティングガイド](docs/DEBUG.md) - 詳細な問題解決方法とデバッグテクニック
 
 ## 貢献
 
@@ -455,18 +287,15 @@ make dev
 
 ## サポート
 
-Ghost Squadに関する問題や質問がある場合は、以下の方法でサポートを受けられます：
+Ghost Squadに関する問題や質問がある場合は、以下のリソースを参照してください：
 
+### 📖 ドキュメント
+- [API仕様](docs/API.md) - APIエンドポイントとレスポンス形式
+- [データベース管理](docs/DATABASE.md) - データベースのセットアップとトラブルシューティング
+- [Spec-Driven Development](docs/SDD.md) - Kiro開発手法とワークフロー
+
+### 🐛 問題報告
 - GitHub Issues: [リンク]
-- ドキュメント: 
-  - [データベース管理ガイド](docs/DATABASE.md)
-  - ストーリーボード機能の開発者ガイド: `.kiro/specs/storyboard/`
-
-### 開発者向けリソース
-
-- **データベース管理**: `docs/DATABASE.md` - データベースのセットアップ、マイグレーション、トラブルシューティング
-- **機能仕様**: `.kiro/specs/storyboard/` - ストーリーボード機能の要件、設計、実装計画
-- **API仕様**: http://localhost:8000/docs - 開発サーバー起動時に利用可能
 
 ---
 
