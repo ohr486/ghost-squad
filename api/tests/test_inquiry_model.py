@@ -1,7 +1,7 @@
 """問い合わせモデルのテスト."""
 import pytest
 from datetime import datetime, UTC
-from sqlalchemy import create_engine, CheckConstraint
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 
@@ -19,6 +19,7 @@ def db_session():
     session = Session()
     yield session
     session.close()
+    engine.dispose()
 
 
 class TestInquiryModel:

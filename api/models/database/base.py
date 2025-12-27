@@ -1,5 +1,5 @@
 """ベースモデルクラス."""
-from datetime import datetime, UTC
+from datetime import datetime
 from sqlalchemy import Integer, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.sql import func
