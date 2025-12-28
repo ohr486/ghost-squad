@@ -216,7 +216,7 @@ class TestInquiryModel:
             db_session.add(inquiry)
             db_session.commit()
             assert inquiry.status == status
-            db_session.rollback()
+            db_session.expunge_all()
 
     def test_inquiry_metadata_stores_rejection_info(self, db_session):
         """inquiry_metadataに却下情報を保存できる."""
