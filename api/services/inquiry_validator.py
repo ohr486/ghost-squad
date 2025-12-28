@@ -168,7 +168,7 @@ class InquiryValidator:
             return ValidationResult(valid=False, errors=errors)
 
         # 空文字チェック
-        if not source_system:
+        if not source_system or not source_system.strip():
             errors.append(
                 ValidationError(
                     field="source_system",
