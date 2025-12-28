@@ -6,81 +6,115 @@ inclusion: always
 
 このファイルは、Ghost Squadプロジェクトの現在の実装状況と開発優先度を明確にします。新しい機能を実装する際は、この状況を考慮してください。
 
-## 🎯 現在の実装状況（2025年12月27日時点）
+## 🎯 現在の実装状況（2025年12月28日時点）
 
-### 🔄 実装リセット通知
-
-**重要**: 2025年12月27日に `api/` と `web/` ディレクトリ内の実装を全て削除しました。
-- 現在は**設計と仕様のみ**が存在し、**コード実装はゼロ**からの状態です
-- プロジェクト基盤（Docker設定、Makefile、ドキュメント）は維持されています
-- `.kiro/specs/` の仕様定義は保持されており、これに基づいて再実装を行います
-
-### ✅ 現在存在するもの
+### ✅ 実装済み機能
 
 **1. プロジェクト基盤**
-- Docker Compose設定（`docker-compose.yml`）
+- Docker Compose設定（`docker-compose.yml`）- 3サービス構成（db、api、web）
 - Makefile（46+の開発コマンド定義）
-- 環境変数テンプレート（`.env.example`）
+- 環境変数テンプレート（`.env.example`）- CORS、データベース、OpenAI、外部統合設定
 - Git設定（`.gitignore`、`.dockerignore`）
 - プロジェクトドキュメント（`README.md`、`docs/`）
 
-**2. 設計・仕様ドキュメント**
+**2. バックエンド実装（`api/`）**
+- FastAPI アプリケーション（`main.py`）
+  - CORS設定済み
+  - ヘルスチェックエンドポイント（`/health`）
+  - ルートエンドポイント（`/`）
+- データベースモデル（SQLAlchemy ORM）
+  - `InquiryModel` - 問い合わせエンティティ（`models/database/inquiry.py`）
+  - `BaseModel` - 共通ベースモデル（`models/database/base.py`）
+  - `InquiryStatus` - 問い合わせステータス列挙型（`models/enums/inquiry_status.py`）
+- テストコード（`tests/`）
+  - pytest設定済み（`conftest.py`、`pytest.ini`）
+  - Inquiryモデルテスト（`test_inquiry_model.py`）
+  - カバレッジレポート設定（`.coveragerc`）
+- 依存関係定義（`requirements.txt`）- FastAPI、SQLAlchemy、Alembic、pytest等
+- コード品質設定（`.flake8`、`mypy.ini`）
+
+**3. フロントエンド実装（`web/`）**
+- React アプリケーション（基本構成）
+  - `package.json` - React 18、Testing Library設定
+  - `App.js` - メインアプリケーションコンポーネント
+  - `index.js` - エントリーポイント
+  - `App.test.js` - アプリケーションテスト
+- 依存関係定義（`package.json`、`package-lock.json`）
+- テスト設定（`setupTests.js`）
+
+**4. 設計・仕様ドキュメント**
 - `.kiro/specs/inquiry/` - 問い合わせ機能仕様
   - Phase: tasks-generated
   - Requirements（生成済み・承認済み）
   - Design（生成済み・承認済み）
-  - Tasks（生成済み・未承認）
+  - Tasks（生成済み）
+  - Gap Analysis（生成済み）
   - Dependencies: なし
 - `.kiro/specs/story/` - ストーリー機能仕様
-  - Phase: init
+  - Phase: requirements-generated
+  - Requirements（生成済み）
   - Dependencies: inquiry
-  - まだ要件生成前の段階
 
-**3. ステアリングドキュメント（`.kiro/steering/`）**
+**5. ステアリングドキュメント（`.kiro/steering/`）**
 - `product.md` - プロダクト開発ガイドライン
 - `tech.md` - 技術スタック・開発環境ガイドライン
 - `structure.md` - プロジェクト構造・組織化ガイドライン
 - `implementation-status.md` - このファイル
 
-### ❌ 現在存在しないもの（削除済み）
+### 🚧 部分実装・未実装機能
 
-**バックエンド実装（`api/`）**
-- FastAPI アプリケーション
-- データベースモデル（SQLAlchemy ORM）
-- API エンドポイント
-- Alembic マイグレーションファイル
-- テストコード
-- 依存関係定義（`requirements.txt`）
-- 全ての Python ソースファイル
+**バックエンド（`api/`）**
+- ✅ Alembic マイグレーションファイル（作成済み）
+- ✅ データベース接続設定（`database.py` 作成済み）
+- ❌ Pydanticスキーマ（`models/schemas/` 未作成）
+- ❌ APIエンドポイント（問い合わせCRUD未実装）
+- ❌ サービス層（`services/` 未作成）
+- ❌ ストーリーモデル（`story.py` 未作成）
 
-**フロントエンド実装（`web/`）**
-- React アプリケーション
-- TypeScript 型定義
-- コンポーネント
-- ページ
-- サービス層
-- 依存関係定義（`package.json`、`package-lock.json`）
-- 設定ファイル（`tsconfig.json`、`tailwind.config.js` など）
-- 全ての TypeScript/JavaScript ソースファイル
+**フロントエンド（`web/`）**
+- ❌ TypeScript設定（JavaScript実装のみ）
+- ❌ Tailwind CSS設定（未設定）
+- ❌ React Router設定（未設定）
+- ❌ TanStack React Query設定（未設定）
+- ❌ Axios設定（未設定）
+- ❌ コンポーネント（UIコンポーネント未作成）
+- ❌ ページ（ページコンポーネント未作成）
+- ❌ サービス層（API呼び出し未実装）
+- ❌ 型定義（TypeScript型定義未作成）
 
 ## 📋 次のステップ
 
 ### 実装の優先順位
 
-**Phase 1: 基盤の再構築**
-1. `api/requirements.txt` の作成
-2. `web/package.json` の作成
-3. Docker イメージのビルド確認
-4. 開発環境の動作確認
+**Phase 1: バックエンド基盤の完成（優先度：高）**
+1. ✅ ~~`api/requirements.txt` の作成~~ （完了）
+2. ✅ ~~データベース接続設定（`database.py`）~~ （完了）
+3. ✅ ~~Alembic初期化とマイグレーション~~ （完了）
+4. ❌ Pydanticスキーマ作成（`models/schemas/`）
+5. ❌ 開発環境の動作確認（`make dev`、`make db-migrate`）
 
-**Phase 2: Inquiry機能の実装**
+**Phase 2: Inquiry機能の完全実装（優先度：高）**
 - `.kiro/specs/inquiry/` の仕様に従って実装
-- Tasks が生成済みなので、承認後に実装開始可能
-- バックエンド → フロントエンドの順で実装推奨
+- Tasks が生成済み、Gap Analysisも完了
+- バックエンドCRUD API → フロントエンド画面の順で実装推奨
+- 必須実装項目:
+  - ❌ 問い合わせCRUD APIエンドポイント
+  - ❌ 問い合わせ一覧・詳細画面（React）
+  - ❌ 問い合わせ登録フォーム（React + Validation）
+  - ❌ 統合テスト
 
-**Phase 3: Story機能の実装**
-- `.kiro/specs/story/` の要件生成から開始
+**Phase 3: フロントエンド基盤の完成（優先度：中）**
+1. ✅ ~~`web/package.json` の作成~~ （完了）
+2. ❌ TypeScriptへの移行（`.tsx`、`tsconfig.json`）
+3. ❌ Tailwind CSS設定
+4. ❌ React Router設定
+5. ❌ TanStack React Query設定
+6. ❌ Axios設定（API通信）
+
+**Phase 4: Story機能の実装（優先度：中）**
+- `.kiro/specs/story/` の設計・タスク生成から開始
 - Inquiry機能への依存があるため、Phase 2完了後に着手
+- Requirements生成済み、次は Design生成が必要
 
 ## 🔧 技術的な考慮事項
 
@@ -157,22 +191,26 @@ inclusion: always
 
 ## 📈 開発進捗追跡
 
-### 完了済み（10%）
+### 完了済み（25%）
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
-- ✅ 仕様定義（Inquiry: tasks-generated、Story: init）
+- ✅ 仕様定義（Inquiry: tasks-generated、Story: requirements-generated）
 - ✅ ステアリングドキュメント
+- ✅ バックエンド基本構成（FastAPI、モデル、テスト設定）
+- ✅ フロントエンド基本構成（React、テスト設定）
+- ✅ 依存関係定義（requirements.txt、package.json）
 
-### 次のステップ（5%）
-- 🔄 開発環境の再構築
+### 進行中（15%）
+- 🔄 バックエンドAPI実装（データベース接続、マイグレーション、CRUD）
+- 🔄 フロントエンド基盤（TypeScript、Tailwind、Router、Query）
 
-### 未着手（85%）
-- ❌ バックエンド実装
-- ❌ フロントエンド実装
-- ❌ AI統合
-- ❌ 外部システム統合
-- ❌ テスト実装
+### 未着手（60%）
+- ❌ Inquiry機能の完全実装（API + UI）
+- ❌ Story機能の設計・実装
+- ❌ AI統合（OpenAI API）
+- ❌ 外部システム統合（Trello、Jira、GitHub Projects）
+- ❌ 統合テスト・E2Eテスト
 
 ---
 
-**最終更新**: 2025年12月27日
-**更新理由**: api/ と web/ の実装を全削除、設計のみの状態に更新
+**最終更新**: 2025年12月28日
+**更新理由**: 実装状況の正確な反映（api/とweb/の基本実装が存在することを確認）
