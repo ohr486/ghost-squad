@@ -215,6 +215,16 @@ class TestInquiryValidatorSourceSystem:
         assert result.errors[0].field == "source_system"
         assert result.errors[0].code == "GS-004"
 
+    def test_validate_source_system_whitespace_only(self):
+        """空白のみの送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_source_system("   ")
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
+        assert result.errors[0].code == "GS-004"
+
     def test_validate_source_system_exceeds_max_length(self):
         """最大文字数超過の送信元システムのバリデーション失敗."""
         validator = InquiryValidator()
