@@ -8,7 +8,7 @@
 
 ### 1. データモデルとデータベース基盤の構築
 
-- [ ] 1.1 (P) 問い合わせエンティティのデータベースモデルを実装する
+- [x] 1.1 (P) 問い合わせエンティティのデータベースモデルを実装する
   - InquiryModelクラスをSQLAlchemyで定義し、すべてのカラム（id, user_id, content, source_system, timestamp, status, inquiry_metadata, created_at, updated_at）を含める
   - InquiryStatus列挙型を実装し、すべてのステータス値（received, processing, needs_clarification, task_working, completed, rejected, failed）を定義する
   - inquiry_metadataフィールドをJSON型として定義し、却下情報とステータス変更履歴を格納できる構造にする

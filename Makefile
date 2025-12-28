@@ -132,14 +132,14 @@ lint-api:
 	@echo "🔍 Running api linting..."
 	@echo "📝 Running flake8..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api flake8 api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
+		docker-compose run --rm api flake8 models/ tests/ main.py; \
 	else \
-		docker-compose run --rm api flake8 api/ models/ main.py database.py manage_db.py seed_data.py; \
+		docker-compose run --rm api flake8 models/ main.py; \
 	fi
 	@echo "🔍 Running mypy type checking..."
-	docker-compose run --rm api mypy api/ models/ main.py database.py manage_db.py seed_data.py
+	docker-compose run --rm api mypy --explicit-package-bases models/ main.py
 	@echo "🛡️ Running bandit security check..."
-	docker-compose run --rm api bandit -r api/ models/ -f json
+	docker-compose run --rm api bandit -r models/ -f json
 
 # フロントエンドコード品質チェック (Run web linting)
 lint-web:
@@ -158,15 +158,15 @@ format-api:
 	@echo "🎨 Formatting api code..."
 	@echo "📝 Running black formatter..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api black api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
+		docker-compose run --rm api black models/ tests/ main.py; \
 	else \
-		docker-compose run --rm api black api/ models/ main.py database.py manage_db.py seed_data.py; \
+		docker-compose run --rm api black models/ main.py; \
 	fi
 	@echo "📦 Running isort import sorter..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api isort api/ models/ tests/ main.py database.py manage_db.py seed_data.py; \
+		docker-compose run --rm api isort models/ tests/ main.py; \
 	else \
-		docker-compose run --rm api isort api/ models/ main.py database.py manage_db.py seed_data.py; \
+		docker-compose run --rm api isort models/ main.py; \
 	fi
 
 # フロントエンドコードフォーマット (Format web code)
