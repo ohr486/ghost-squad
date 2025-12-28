@@ -69,8 +69,9 @@ class TestGetDb:
         db_generator = get_db()
         db = next(db_generator)
 
-        # セッションが開いていることを確認
-        assert not db.is_active or db.is_active
+        # セッションインスタンスが取得できることを確認
+        assert db is not None
+        assert isinstance(db, Session)
 
         # ジェネレーターを完了させる
         try:
