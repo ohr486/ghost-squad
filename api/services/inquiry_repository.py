@@ -113,7 +113,7 @@ class PaginationOption:
             page: ページ番号（1-indexed）
             limit: 1ページあたりの件数（1-100）
         """
-        self.page = page
+        self.page = max(page, 1)  # ページ番号は最低1
         self.limit = min(max(limit, 1), 100)  # 1-100の範囲に制限
 
 
@@ -223,7 +223,10 @@ class InquiryRepository:
 
         # ソート適用（要件2.3: デフォルトはcreated_at DESC）
         for sort_option in options.sort:
-            field = getattr(InquiryModel, sort_option.field)
+            try:
+                field = getattr(InquiryModel, sort_option.field)
+            except AttributeError as exc:
+                raise ValueError(f"Invalid sort field: {sort_option.field}") from exc
             if sort_option.direction == "asc":
                 query = query.order_by(asc(field))
             else:
@@ -278,6 +281,9 @@ class InquiryRepository:
 
         Raises:
             ValueError: 問い合わせが存在しない場合
+
+        Note:
+            両方のフィールドがNoneの場合でも、updated_atは更新される。
         """
         inquiry = self.find_by_id(inquiry_id)
         if inquiry is None:

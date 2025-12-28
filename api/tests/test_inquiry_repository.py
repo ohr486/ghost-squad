@@ -236,6 +236,35 @@ class TestInquiryRepositoryFindMany:
         # Assert - Should be clamped to 100 (but we only have 5 items)
         assert len(inquiries) == 5
 
+    def test_find_many_invalid_sort_field(self, repository: InquiryRepository) -> None:
+        """Test that invalid sort field raises ValueError."""
+        # Act & Assert
+        options = FindManyOptions(sort=[SortOption(field="invalid_field")])
+        with pytest.raises(ValueError, match="Invalid sort field: invalid_field"):
+            repository.find_many(options)
+
+    def test_find_many_pagination_invalid_page_zero(
+        self, repository: InquiryRepository
+    ) -> None:
+        """Test that page=0 is clamped to page=1."""
+        # Act
+        options = FindManyOptions(pagination=PaginationOption(page=0, limit=2))
+        inquiries = repository.find_many(options)
+
+        # Assert - Should behave like page=1
+        assert len(inquiries) == 2
+
+    def test_find_many_pagination_invalid_page_negative(
+        self, repository: InquiryRepository
+    ) -> None:
+        """Test that negative page is clamped to page=1."""
+        # Act
+        options = FindManyOptions(pagination=PaginationOption(page=-1, limit=2))
+        inquiries = repository.find_many(options)
+
+        # Assert - Should behave like page=1
+        assert len(inquiries) == 2
+
 
 class TestInquiryRepositoryCount:
     """Tests for count operation."""
@@ -345,6 +374,39 @@ class TestInquiryRepositoryUpdate:
         assert updated.content == "新しい内容"
         assert updated.source_system == "chat"
 
+    def test_update_inquiry_not_found(self, repository: InquiryRepository) -> None:
+        """Test that updating non-existent inquiry raises ValueError."""
+        # Arrange
+        update_data = UpdateInquiryData(content="新しい内容")
+
+        # Act & Assert
+        with pytest.raises(ValueError, match="Inquiry with id 99999 not found"):
+            repository.update(99999, update_data)
+
+    def test_update_inquiry_no_fields(self, repository: InquiryRepository) -> None:
+        """Test updating with no fields (both None) still updates updated_at."""
+        # Arrange
+        data = CreateInquiryData(
+            user_id="test_user",
+            content="元の内容",
+            source_system="manual",
+            timestamp=datetime.now(timezone.utc),
+            status=InquiryStatus.RECEIVED,
+        )
+        inquiry = repository.create(data)
+        original_updated_at = inquiry.updated_at
+        original_content = inquiry.content
+        original_source = inquiry.source_system
+
+        # Act
+        update_data = UpdateInquiryData()  # Both fields are None
+        updated = repository.update(inquiry.id, update_data)
+
+        # Assert
+        assert updated.content == original_content  # Unchanged
+        assert updated.source_system == original_source  # Unchanged
+        assert updated.updated_at > original_updated_at  # updated_at is still updated
+
 
 class TestInquiryRepositoryUpdateStatus:
     """Tests for updateStatus operation (要件3.1, 3.2)."""
@@ -368,3 +430,9 @@ class TestInquiryRepositoryUpdateStatus:
         # Assert
         assert updated.status == InquiryStatus.TASK_WORKING
         assert updated.updated_at > original_updated_at  # 要件3.2
+
+    def test_update_status_not_found(self, repository: InquiryRepository) -> None:
+        """Test that updating status of non-existent inquiry raises ValueError."""
+        # Act & Assert
+        with pytest.raises(ValueError, match="Inquiry with id 99999 not found"):
+            repository.update_status(99999, InquiryStatus.TASK_WORKING)
