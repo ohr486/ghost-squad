@@ -41,7 +41,7 @@
 
 ### 3. データアクセス層の実装
 
-- [ ] 3.1 InquiryRepositoryを実装する
+- [x] 3.1 InquiryRepositoryを実装する
   - create、findById、findMany、count、update、updateStatusメソッドを実装する
   - FindManyOptionsインターフェースを実装し、フィルタリング、ソート、ページネーションをサポートする
   - デフォルトソート順（created_at DESC）を設定する
@@ -49,7 +49,7 @@
   - タイムスタンプの自動更新機能を実装する
   - _Requirements: 1.1, 1.2, 2.1, 2.3, 2.5, 2.8, 3.1_
 
-- [ ] 3.2 InquiryRepositoryのユニットテストを作成する
+- [x] 3.2 InquiryRepositoryのユニットテストを作成する
   - 問い合わせ作成の正常系・異常系テストを実装する
   - ページネーション機能のテスト（境界値、範囲外）を実装する
   - フィルタリング・ソート機能のテストを実装する
