@@ -1,4 +1,5 @@
 """問い合わせバリデーションサービス."""
+
 import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
@@ -139,9 +140,8 @@ class InquiryValidator:
                     code="GS-004",
                 )
             )
-
         # 最大文字数チェック
-        if len(source_system) > self.SOURCE_SYSTEM_MAX_LENGTH:
+        elif len(source_system) > self.SOURCE_SYSTEM_MAX_LENGTH:
             errors.append(
                 ValidationError(
                     field="source_system",
