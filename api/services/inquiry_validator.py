@@ -58,6 +58,9 @@ class InquiryValidator:
         "GS-009": "この問い合わせは既に却下済みです",
         "GS-010": "データベース操作に失敗しました",
         "GS-011": "ページネーションパラメータが不正です",
+        "GS-012": "問い合わせ内容は文字列である必要があります",
+        "GS-013": "ユーザーIDは文字列である必要があります",
+        "GS-014": "送信元システムは文字列である必要があります",
     }
 
     def validate_content(self, content: str) -> ValidationResult:
@@ -70,6 +73,17 @@ class InquiryValidator:
             ValidationResult: バリデーション結果
         """
         errors: List[ValidationError] = []
+
+        # 型チェック
+        if not isinstance(content, str):
+            errors.append(
+                ValidationError(
+                    field="content",
+                    message=self.ERROR_MESSAGES["GS-012"],
+                    code="GS-012",
+                )
+            )
+            return ValidationResult(valid=False, errors=errors)
 
         # 空文字チェック
         if not content or not content.strip():
@@ -103,6 +117,17 @@ class InquiryValidator:
             ValidationResult: バリデーション結果
         """
         errors: List[ValidationError] = []
+
+        # 型チェック
+        if not isinstance(user_id, str):
+            errors.append(
+                ValidationError(
+                    field="user_id",
+                    message=self.ERROR_MESSAGES["GS-013"],
+                    code="GS-013",
+                )
+            )
+            return ValidationResult(valid=False, errors=errors)
 
         # 空文字チェック、文字種チェック、最大文字数チェック
         if (
