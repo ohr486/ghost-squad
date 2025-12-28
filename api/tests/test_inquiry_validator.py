@@ -1,4 +1,5 @@
 """問い合わせバリデーター テスト."""
+
 from services.inquiry_validator import (
     InquiryValidator,
     ValidationError,
@@ -17,6 +18,46 @@ class TestInquiryValidatorContent:
         assert result.valid is True
         assert len(result.errors) == 0
 
+    def test_validate_content_none(self):
+        """Noneのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator.validate_content(None)
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-001"
+
+    def test_validate_content_integer(self):
+        """整数のバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator.validate_content(123)
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-001"
+
+    def test_validate_content_list(self):
+        """リストのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator.validate_content(["test", "content"])
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-001"
+
+    def test_validate_content_dict(self):
+        """辞書のバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator.validate_content({"key": "value"})
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-001"
+
     def test_validate_content_empty_string(self):
         """空文字列のバリデーション失敗."""
         validator = InquiryValidator()
@@ -34,6 +75,18 @@ class TestInquiryValidatorContent:
         result = validator.validate_content("   \n\t  ")
 
         assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-001"
+
+    def test_validate_content_whitespace_exceeds_max_length(self):
+        """10,001文字の空白文字列は単一エラーのみを返す."""
+        validator = InquiryValidator()
+        # 10,001文字の空白文字列（空白として扱われ、長さチェックはスキップされる）
+        result = validator.validate_content(" " * 10001)
+
+        assert result.valid is False
+        # 空白のみなので、GS-001エラーのみが返され、GS-002は返されない
         assert len(result.errors) == 1
         assert result.errors[0].field == "content"
         assert result.errors[0].code == "GS-001"
@@ -60,26 +113,46 @@ class TestInquiryValidatorContent:
         assert "長すぎます" in result.errors[0].message
         assert "10,000" in result.errors[0].message
 
-    def test_validate_content_non_string_types(self):
-        """非文字列型のコンテンツのバリデーション失敗."""
+    def test_validate_content_none_type(self):
+        """Noneが渡された場合のバリデーション失敗."""
         validator = InquiryValidator()
-
-        # None
         result = validator.validate_content(None)
+
         assert result.valid is False
         assert len(result.errors) == 1
         assert result.errors[0].field == "content"
-        assert result.errors[0].code == "GS-001"
+        assert result.errors[0].code == "GS-012"
+        assert "文字列である必要があります" in result.errors[0].message
 
-        # 整数
+    def test_validate_content_int_type(self):
+        """整数が渡された場合のバリデーション失敗."""
+        validator = InquiryValidator()
         result = validator.validate_content(123)
-        assert result.valid is False
-        assert result.errors[0].code == "GS-001"
 
-        # リスト
-        result = validator.validate_content(["content"])
         assert result.valid is False
-        assert result.errors[0].code == "GS-001"
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-012"
+
+    def test_validate_content_list_type(self):
+        """リストが渡された場合のバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator.validate_content(["test", "content"])
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-012"
+
+    def test_validate_content_dict_type(self):
+        """辞書が渡された場合のバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator.validate_content({"key": "value"})
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-012"
 
 
 class TestInquiryValidatorUserId:
@@ -96,6 +169,46 @@ class TestInquiryValidatorUserId:
         # 最大長50文字
         assert validator._validate_user_id("a" * 50).valid is True
 
+    def test_validate_user_id_none(self):
+        """NoneのユーザーIDのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_user_id(None)
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "user_id"
+        assert result.errors[0].code == "GS-003"
+
+    def test_validate_user_id_integer(self):
+        """整数のユーザーIDのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_user_id(123)
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "user_id"
+        assert result.errors[0].code == "GS-003"
+
+    def test_validate_user_id_list(self):
+        """リストのユーザーIDのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_user_id(["user_id"])
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "user_id"
+        assert result.errors[0].code == "GS-003"
+
+    def test_validate_user_id_dict(self):
+        """辞書のユーザーIDのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_user_id({"user_id": "value"})
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "user_id"
+        assert result.errors[0].code == "GS-003"
+
     def test_validate_user_id_empty(self):
         """空のユーザーIDのバリデーション失敗."""
         validator = InquiryValidator()
@@ -104,6 +217,22 @@ class TestInquiryValidatorUserId:
         assert result.valid is False
         assert len(result.errors) == 1
         assert result.errors[0].field == "user_id"
+        assert result.errors[0].code == "GS-003"
+
+    def test_validate_user_id_whitespace_only(self):
+        """空白のみのユーザーIDのバリデーション失敗."""
+        validator = InquiryValidator()
+
+        # スペースのみ
+        result = validator._validate_user_id("   ")
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "user_id"
+        assert result.errors[0].code == "GS-003"
+
+        # タブとスペースと改行
+        result = validator._validate_user_id("  \t\n  ")
+        assert result.valid is False
         assert result.errors[0].code == "GS-003"
 
     def test_validate_user_id_invalid_characters(self):
@@ -134,31 +263,26 @@ class TestInquiryValidatorUserId:
         assert result.errors[0].code == "GS-003"
         assert "50" in result.errors[0].message
 
-    def test_validate_user_id_non_string_types(self):
-        """非文字列型のユーザーIDのバリデーション失敗."""
+    def test_validate_user_id_none_type(self):
+        """Noneが渡された場合のバリデーション失敗."""
         validator = InquiryValidator()
-
-        # None
         result = validator._validate_user_id(None)
+
         assert result.valid is False
         assert len(result.errors) == 1
         assert result.errors[0].field == "user_id"
-        assert result.errors[0].code == "GS-003"
+        assert result.errors[0].code == "GS-013"
+        assert "文字列である必要があります" in result.errors[0].message
 
-        # 整数
+    def test_validate_user_id_int_type(self):
+        """整数が渡された場合のバリデーション失敗."""
+        validator = InquiryValidator()
         result = validator._validate_user_id(123)
-        assert result.valid is False
-        assert result.errors[0].code == "GS-003"
 
-        # リスト
-        result = validator._validate_user_id(["user123"])
         assert result.valid is False
-        assert result.errors[0].code == "GS-003"
-
-        # 辞書
-        result = validator._validate_user_id({"id": "user123"})
-        assert result.valid is False
-        assert result.errors[0].code == "GS-003"
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "user_id"
+        assert result.errors[0].code == "GS-013"
 
 
 class TestInquiryValidatorSourceSystem:
@@ -173,10 +297,60 @@ class TestInquiryValidatorSourceSystem:
         assert validator._validate_source_system("chat").valid is True
         assert validator._validate_source_system("a" * 50).valid is True
 
+    def test_validate_source_system_none(self):
+        """Noneの送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_source_system(None)
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
+        assert result.errors[0].code == "GS-004"
+
+    def test_validate_source_system_integer(self):
+        """整数の送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_source_system(123)
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
+        assert result.errors[0].code == "GS-004"
+
+    def test_validate_source_system_list(self):
+        """リストの送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_source_system(["manual"])
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
+        assert result.errors[0].code == "GS-004"
+
+    def test_validate_source_system_dict(self):
+        """辞書の送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_source_system({"system": "manual"})
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
+        assert result.errors[0].code == "GS-004"
+
     def test_validate_source_system_empty(self):
         """空の送信元システムのバリデーション失敗."""
         validator = InquiryValidator()
         result = validator._validate_source_system("")
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
+        assert result.errors[0].code == "GS-004"
+
+    def test_validate_source_system_whitespace_only(self):
+        """空白のみの送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_source_system("   ")
 
         assert result.valid is False
         assert len(result.errors) == 1
@@ -194,25 +368,44 @@ class TestInquiryValidatorSourceSystem:
         assert result.errors[0].code == "GS-004"
         assert "50" in result.errors[0].message
 
-    def test_validate_source_system_non_string_types(self):
-        """非文字列型の送信元システムのバリデーション失敗."""
+    def test_validate_source_system_none_type(self):
+        """None型の送信元システムのバリデーション失敗."""
         validator = InquiryValidator()
-
-        # None
         result = validator._validate_source_system(None)
+
         assert result.valid is False
         assert len(result.errors) == 1
         assert result.errors[0].field == "source_system"
         assert result.errors[0].code == "GS-004"
 
-        # 整数
+    def test_validate_source_system_int_type(self):
+        """整数型の送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
         result = validator._validate_source_system(123)
+
         assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
         assert result.errors[0].code == "GS-004"
 
-        # リスト
-        result = validator._validate_source_system(["manual"])
+    def test_validate_source_system_list_type(self):
+        """リスト型の送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_source_system(["manual", "email"])
+
         assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
+        assert result.errors[0].code == "GS-004"
+
+    def test_validate_source_system_dict_type(self):
+        """辞書型の送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_source_system({"system": "manual"})
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
         assert result.errors[0].code == "GS-004"
 
 
@@ -353,7 +546,9 @@ class TestValidationResult:
 
     def test_validation_result_creation(self):
         """ValidationResultの生成."""
-        error = ValidationError(field="test_field", message="テストエラー", code="GS-999")
+        error = ValidationError(
+            field="test_field", message="テストエラー", code="GS-999"
+        )
         result = ValidationResult(valid=False, errors=[error])
 
         assert result.valid is False
@@ -368,7 +563,9 @@ class TestValidationError:
 
     def test_validation_error_creation(self):
         """ValidationErrorの生成."""
-        error = ValidationError(field="content", message="問い合わせ内容が空です", code="GS-001")
+        error = ValidationError(
+            field="content", message="問い合わせ内容が空です", code="GS-001"
+        )
 
         assert error.field == "content"
         assert error.message == "問い合わせ内容が空です"
