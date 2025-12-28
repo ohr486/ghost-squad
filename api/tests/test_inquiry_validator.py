@@ -39,6 +39,18 @@ class TestInquiryValidatorContent:
         assert result.errors[0].field == "content"
         assert result.errors[0].code == "GS-001"
 
+    def test_validate_content_whitespace_exceeds_max_length(self):
+        """10,001文字の空白文字列は単一エラーのみを返す."""
+        validator = InquiryValidator()
+        # 10,001文字の空白文字列（空白として扱われ、長さチェックはスキップされる）
+        result = validator.validate_content(" " * 10001)
+
+        assert result.valid is False
+        # 空白のみなので、GS-001エラーのみが返され、GS-002は返されない
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-001"
+
     def test_validate_content_max_length(self):
         """最大文字数（10,000文字）のバリデーション成功."""
         validator = InquiryValidator()
