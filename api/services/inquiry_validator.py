@@ -58,6 +58,9 @@ class InquiryValidator:
         "GS-009": "この問い合わせは既に却下済みです",
         "GS-010": "データベース操作に失敗しました",
         "GS-011": "ページネーションパラメータが不正です",
+        "GS-012": "問い合わせ内容は文字列である必要があります",
+        "GS-013": "ユーザーIDは文字列である必要があります",
+        "GS-014": "送信元システムは文字列である必要があります",
     }
 
     def validate_content(self, content: str) -> ValidationResult:
@@ -71,13 +74,13 @@ class InquiryValidator:
         """
         errors: List[ValidationError] = []
 
-        # 型チェック（文字列以外は空文字扱い）
+        # 型チェック
         if not isinstance(content, str):
             errors.append(
                 ValidationError(
                     field="content",
-                    message=self.ERROR_MESSAGES["GS-001"],
-                    code="GS-001",
+                    message=self.ERROR_MESSAGES["GS-012"],
+                    code="GS-012",
                 )
             )
             return ValidationResult(valid=False, errors=errors)
@@ -91,9 +94,8 @@ class InquiryValidator:
                     code="GS-001",
                 )
             )
-
-        # 最大文字数チェック
-        if len(content) > self.CONTENT_MAX_LENGTH:
+        # 最大文字数チェック（空でない場合のみ）
+        elif len(content) > self.CONTENT_MAX_LENGTH:
             errors.append(
                 ValidationError(
                     field="content",
@@ -115,7 +117,18 @@ class InquiryValidator:
         """
         errors: List[ValidationError] = []
 
-        # 型チェック、空文字チェック、文字種チェック、最大文字数チェック
+        # 型チェック
+        if not isinstance(user_id, str):
+            errors.append(
+                ValidationError(
+                    field="user_id",
+                    message=self.ERROR_MESSAGES["GS-013"],
+                    code="GS-013",
+                )
+            )
+            return ValidationResult(valid=False, errors=errors)
+
+        # 空文字チェック、文字種チェック、最大文字数チェック
         if (
             not isinstance(user_id, str)
             or not user_id
@@ -132,18 +145,18 @@ class InquiryValidator:
 
         return ValidationResult(valid=len(errors) == 0, errors=errors)
 
-    def _validate_source_system(self, source_system: str) -> ValidationResult:
+    def _validate_source_system(self, source_system: Any) -> ValidationResult:
         """送信元システムのバリデーション.
 
         Args:
-            source_system: 送信元システム
+            source_system: 送信元システム（任意の型を受け取るが、文字列であることを検証）
 
         Returns:
             ValidationResult: バリデーション結果
         """
         errors: List[ValidationError] = []
 
-        # 型チェック（文字列以外はエラー）
+        # 型チェック - 文字列以外の場合はエラー
         if not isinstance(source_system, str):
             errors.append(
                 ValidationError(
@@ -163,9 +176,8 @@ class InquiryValidator:
                     code="GS-004",
                 )
             )
-
         # 最大文字数チェック
-        if len(source_system) > self.SOURCE_SYSTEM_MAX_LENGTH:
+        elif len(source_system) > self.SOURCE_SYSTEM_MAX_LENGTH:
             errors.append(
                 ValidationError(
                     field="source_system",
