@@ -11,8 +11,8 @@ from alembic import context
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 # Import all models for autogenerate support
-from models.database.base import Base
-from models.database.inquiry import InquiryModel  # noqa: F401
+from models.database.base import Base  # noqa: E402
+from models.database.inquiry import InquiryModel  # noqa: F401,E402
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -83,7 +83,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
         )
 
         with context.begin_transaction():

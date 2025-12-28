@@ -64,8 +64,8 @@ inclusion: always
 ### 🚧 部分実装・未実装機能
 
 **バックエンド（`api/`）**
-- ❌ Alembic マイグレーションファイル（未作成）
-- ❌ データベース接続設定（`database.py` 未作成）
+- ✅ Alembic マイグレーションファイル（作成済み）
+- ✅ データベース接続設定（`database.py` 作成済み）
 - ❌ Pydanticスキーマ（`models/schemas/` 未作成）
 - ❌ APIエンドポイント（問い合わせCRUD未実装）
 - ❌ サービス層（`services/` 未作成）
@@ -88,8 +88,8 @@ inclusion: always
 
 **Phase 1: バックエンド基盤の完成（優先度：高）**
 1. ✅ ~~`api/requirements.txt` の作成~~ （完了）
-2. ❌ データベース接続設定（`database.py`）
-3. ❌ Alembic初期化とマイグレーション
+2. ✅ ~~データベース接続設定（`database.py`）~~ （完了）
+3. ✅ ~~Alembic初期化とマイグレーション~~ （完了）
 4. ❌ Pydanticスキーマ作成（`models/schemas/`）
 5. ❌ 開発環境の動作確認（`make dev`、`make db-migrate`）
 
