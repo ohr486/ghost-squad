@@ -1,6 +1,10 @@
 """問い合わせバリデーター テスト."""
-from services.inquiry_validator import (InquiryValidator, ValidationError,
-                                        ValidationResult)
+
+from services.inquiry_validator import (
+    InquiryValidator,
+    ValidationError,
+    ValidationResult,
+)
 
 
 class TestInquiryValidatorContent:
@@ -31,6 +35,18 @@ class TestInquiryValidatorContent:
         result = validator.validate_content("   \n\t  ")
 
         assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-001"
+
+    def test_validate_content_whitespace_exceeds_max_length(self):
+        """10,001文字の空白文字列は単一エラーのみを返す."""
+        validator = InquiryValidator()
+        # 10,001文字の空白文字列（空白として扱われ、長さチェックはスキップされる）
+        result = validator.validate_content(" " * 10001)
+
+        assert result.valid is False
+        # 空白のみなので、GS-001エラーのみが返され、GS-002は返されない
         assert len(result.errors) == 1
         assert result.errors[0].field == "content"
         assert result.errors[0].code == "GS-001"
@@ -246,7 +262,9 @@ class TestValidationResult:
 
     def test_validation_result_creation(self):
         """ValidationResultの生成."""
-        error = ValidationError(field="test_field", message="テストエラー", code="GS-999")
+        error = ValidationError(
+            field="test_field", message="テストエラー", code="GS-999"
+        )
         result = ValidationResult(valid=False, errors=[error])
 
         assert result.valid is False
@@ -261,7 +279,9 @@ class TestValidationError:
 
     def test_validation_error_creation(self):
         """ValidationErrorの生成."""
-        error = ValidationError(field="content", message="問い合わせ内容が空です", code="GS-001")
+        error = ValidationError(
+            field="content", message="問い合わせ内容が空です", code="GS-001"
+        )
 
         assert error.field == "content"
         assert error.message == "問い合わせ内容が空です"
