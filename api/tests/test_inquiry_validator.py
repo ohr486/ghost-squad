@@ -1,6 +1,9 @@
 """問い合わせバリデーター テスト."""
-from services.inquiry_validator import (InquiryValidator, ValidationError,
-                                        ValidationResult)
+from services.inquiry_validator import (
+    InquiryValidator,
+    ValidationError,
+    ValidationResult,
+)
 
 
 class TestInquiryValidatorContent:
@@ -57,6 +60,27 @@ class TestInquiryValidatorContent:
         assert "長すぎます" in result.errors[0].message
         assert "10,000" in result.errors[0].message
 
+    def test_validate_content_non_string_types(self):
+        """非文字列型のコンテンツのバリデーション失敗."""
+        validator = InquiryValidator()
+
+        # None
+        result = validator.validate_content(None)
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "content"
+        assert result.errors[0].code == "GS-001"
+
+        # 整数
+        result = validator.validate_content(123)
+        assert result.valid is False
+        assert result.errors[0].code == "GS-001"
+
+        # リスト
+        result = validator.validate_content(["content"])
+        assert result.valid is False
+        assert result.errors[0].code == "GS-001"
+
 
 class TestInquiryValidatorUserId:
     """user_id フィールドのバリデーションテスト."""
@@ -110,6 +134,32 @@ class TestInquiryValidatorUserId:
         assert result.errors[0].code == "GS-003"
         assert "50" in result.errors[0].message
 
+    def test_validate_user_id_non_string_types(self):
+        """非文字列型のユーザーIDのバリデーション失敗."""
+        validator = InquiryValidator()
+
+        # None
+        result = validator._validate_user_id(None)
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "user_id"
+        assert result.errors[0].code == "GS-003"
+
+        # 整数
+        result = validator._validate_user_id(123)
+        assert result.valid is False
+        assert result.errors[0].code == "GS-003"
+
+        # リスト
+        result = validator._validate_user_id(["user123"])
+        assert result.valid is False
+        assert result.errors[0].code == "GS-003"
+
+        # 辞書
+        result = validator._validate_user_id({"id": "user123"})
+        assert result.valid is False
+        assert result.errors[0].code == "GS-003"
+
 
 class TestInquiryValidatorSourceSystem:
     """source_system フィールドのバリデーションテスト."""
@@ -143,6 +193,27 @@ class TestInquiryValidatorSourceSystem:
         assert result.errors[0].field == "source_system"
         assert result.errors[0].code == "GS-004"
         assert "50" in result.errors[0].message
+
+    def test_validate_source_system_non_string_types(self):
+        """非文字列型の送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+
+        # None
+        result = validator._validate_source_system(None)
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
+        assert result.errors[0].code == "GS-004"
+
+        # 整数
+        result = validator._validate_source_system(123)
+        assert result.valid is False
+        assert result.errors[0].code == "GS-004"
+
+        # リスト
+        result = validator._validate_source_system(["manual"])
+        assert result.valid is False
+        assert result.errors[0].code == "GS-004"
 
 
 class TestInquiryValidatorCreate:
@@ -191,6 +262,42 @@ class TestInquiryValidatorCreate:
 
         assert result.valid is False
         assert any(e.field == "content" for e in result.errors)
+
+    def test_validate_create_non_string_types(self):
+        """非文字列型のフィールドのバリデーション失敗."""
+        validator = InquiryValidator()
+
+        # user_idが整数
+        data = {
+            "user_id": 123,
+            "content": "有効なコンテンツ",
+            "source_system": "manual",
+        }
+        result = validator.validate_create(data)
+        assert result.valid is False
+        assert any(e.field == "user_id" and e.code == "GS-003" for e in result.errors)
+
+        # contentがNone
+        data = {
+            "user_id": "test_user",
+            "content": None,
+            "source_system": "manual",
+        }
+        result = validator.validate_create(data)
+        assert result.valid is False
+        assert any(e.field == "content" and e.code == "GS-001" for e in result.errors)
+
+        # source_systemがリスト
+        data = {
+            "user_id": "test_user",
+            "content": "有効なコンテンツ",
+            "source_system": ["manual"],
+        }
+        result = validator.validate_create(data)
+        assert result.valid is False
+        assert any(
+            e.field == "source_system" and e.code == "GS-004" for e in result.errors
+        )
 
 
 class TestInquiryValidatorUpdate:
