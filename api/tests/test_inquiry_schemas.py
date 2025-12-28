@@ -1,6 +1,6 @@
 """Pydanticスキーマのテスト."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -53,7 +53,8 @@ class TestCreateInquiryRequest:
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
-        assert "content" in str(errors[0]["loc"])
+        assert errors[0]["loc"] == ("content",)
+        assert errors[0]["type"] == "string_too_short"
 
     def test_content_whitespace_only(self) -> None:
         """空白のみのcontentは拒否される."""
@@ -67,6 +68,8 @@ class TestCreateInquiryRequest:
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
+        assert errors[0]["loc"] == ("content",)
+        assert str(errors[0]["type"]).startswith("value_error")
 
     def test_content_max_length(self) -> None:
         """content最大文字数チェック."""
@@ -80,7 +83,8 @@ class TestCreateInquiryRequest:
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
-        assert "content" in str(errors[0]["loc"])
+        assert errors[0]["loc"] == ("content",)
+        assert errors[0]["type"] == "string_too_long"
 
     def test_user_id_required(self) -> None:
         """user_id必須チェック."""
@@ -117,7 +121,7 @@ class TestCreateInquiryRequest:
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
-        assert "user_id" in str(errors[0]["loc"])
+        assert errors[0]["loc"] == ("user_id",)
 
     def test_user_id_max_length(self) -> None:
         """user_id最大50文字チェック."""
@@ -131,7 +135,7 @@ class TestCreateInquiryRequest:
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
-        assert "user_id" in str(errors[0]["loc"])
+        assert errors[0]["loc"] == ("user_id",)
 
     def test_source_system_required(self) -> None:
         """source_system必須チェック."""
@@ -158,7 +162,7 @@ class TestCreateInquiryRequest:
 
         errors = exc_info.value.errors()
         assert len(errors) == 1
-        assert "source_system" in str(errors[0]["loc"])
+        assert errors[0]["loc"] == ("source_system",)
 
 
 class TestUpdateInquiryRequest:
@@ -219,7 +223,7 @@ class TestInquiryResponse:
 
     def test_valid_response(self) -> None:
         """正常なレスポンスデータの検証."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         data = {
             "id": 1,
             "user_id": "test_user",
@@ -243,7 +247,7 @@ class TestInquiryResponse:
 
     def test_timestamp_serialization(self) -> None:
         """タイムスタンプのISO 8601シリアライゼーション."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         data = {
             "id": 1,
             "user_id": "test_user",
@@ -275,7 +279,7 @@ class TestErrorResponse:
 
     def test_single_error(self) -> None:
         """単一エラーのレスポンス."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         error = ValidationErrorDetail(
             code="GS-001", message="問い合わせ内容が空です", field="content"
         )
@@ -289,7 +293,7 @@ class TestErrorResponse:
 
     def test_multiple_errors(self) -> None:
         """複数エラーのレスポンス."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         errors = [
             ValidationErrorDetail(
                 code="GS-001", message="問い合わせ内容が空です", field="content"
@@ -306,7 +310,7 @@ class TestErrorResponse:
 
     def test_error_without_field(self) -> None:
         """フィールド指定なしのエラー（システムエラーなど）."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         error = ValidationErrorDetail(code="GS-010", message="データベース操作に失敗しました")
         response = ErrorResponse(errors=[error], timestamp=now)
 
