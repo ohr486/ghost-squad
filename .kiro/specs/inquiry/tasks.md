@@ -32,7 +32,7 @@
   - エラーメッセージを日本語で定義し、エラーコード体系（GS-001〜GS-011）を実装する
   - _Requirements: 1.4, 2.8_
 
-- [ ] 2.2 (P) Pydanticスキーマを定義する
+- [x] 2.2 (P) Pydanticスキーマを定義する
   - CreateInquiryRequest、UpdateInquiryRequest、InquiryResponseスキーマを実装する
   - バリデーションルールをPydanticバリデーターとして定義する
   - タイムスタンプのシリアライゼーション（ISO 8601形式）を設定する
