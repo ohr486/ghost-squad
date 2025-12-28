@@ -1,4 +1,5 @@
 """問い合わせバリデーションサービス."""
+
 import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
@@ -129,6 +130,17 @@ class InquiryValidator:
             ValidationResult: バリデーション結果
         """
         errors: List[ValidationError] = []
+
+        # 型チェック - 文字列以外の場合はエラー
+        if not isinstance(source_system, str):
+            errors.append(
+                ValidationError(
+                    field="source_system",
+                    message=self.ERROR_MESSAGES["GS-004"],
+                    code="GS-004",
+                )
+            )
+            return ValidationResult(valid=False, errors=errors)
 
         # 空文字チェック
         if not source_system:
