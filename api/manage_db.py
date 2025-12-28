@@ -32,7 +32,7 @@ def seed_data() -> bool:
     try:
         print("🌱 Seeding test data...")
         # TODO: Implement test data seeding logic
-        print("✅ Test data seeded successfully")
+        print("⚠️ Test data seeding is not yet implemented; no changes were made.")
         return True
     except Exception as e:
         print(f"❌ Test data seeding failed: {e}", file=sys.stderr)
