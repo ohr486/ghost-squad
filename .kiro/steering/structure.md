@@ -35,11 +35,13 @@ ghost-squad/
 models/
 ├── database/          # SQLAlchemy ORMモデル
 │   ├── base.py       # ベースモデルクラス
-│   ├── inquiry.py    # 問い合わせモデル
+│   ├── inquiry.py    # 問い合わせモデル（実装済み）
 │   ├── story.py      # ストーリーモデル
 │   └── story_template.py  # テンプレートモデル
 ├── schemas/          # Pydanticスキーマ（APIシリアライゼーション）
+│   └── inquiry.py    # 問い合わせスキーマ（実装済み）
 ├── enums/           # 列挙型定義
+│   └── inquiry_status.py  # InquiryStatus列挙型（実装済み）
 ├── api/             # APIリクエスト・レスポンスモデル
 ├── export/          # エクスポート形式モデル
 └── protocols/       # サービス用プロトコル定義
@@ -48,6 +50,7 @@ models/
 **サービス層** (`services/`)
 - ビジネスロジックを含むサービスクラス
 - バリデーション（`inquiry_validator.py` - 問い合わせデータ検証）
+- データアクセス（`inquiry_repository.py` - CRUD操作、フィルタリング、ページネーション）
 - 外部API統合（OpenAI、エクスポートサービス - 将来実装）
 - データ変換・ワークフロー制御
 
