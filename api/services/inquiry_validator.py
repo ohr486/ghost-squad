@@ -130,8 +130,8 @@ class InquiryValidator:
         """
         errors: List[ValidationError] = []
 
-        # 空文字チェック
-        if not source_system:
+        # 空文字チェック（空白のみも不正）
+        if not source_system or not source_system.strip():
             errors.append(
                 ValidationError(
                     field="source_system",
