@@ -1,7 +1,7 @@
 """Ghost Squad API - Configuration."""
 from typing import List
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -15,11 +15,10 @@ class Settings(BaseSettings):
         """CORS originsをリストとして返す."""
         return [origin.strip() for origin in self.cors_origins.split(",")]
 
-    class Config:
-        """Pydantic settings configuration."""
-
-        env_file = ".env"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+    )
 
 
 settings = Settings()
