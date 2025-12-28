@@ -69,6 +69,8 @@ class TestGetDb:
 
     def test_get_db_closes_session_on_completion(self):
         """get_dbが終了時にセッションをクローズすること."""
+        from unittest.mock import patch
+
         db_generator = get_db()
         db = next(db_generator)
 
@@ -76,31 +78,34 @@ class TestGetDb:
         assert db is not None
         assert isinstance(db, Session)
 
-        # ジェネレーターを完了させる
-        try:
-            next(db_generator)
-        except StopIteration:
-            pass
+        # close()メソッドが呼ばれることを確認
+        with patch.object(db, "close", wraps=db.close) as mock_close:
+            # ジェネレーターを完了させる
+            try:
+                next(db_generator)
+            except StopIteration:
+                pass
 
-        # セッションがクローズされたことを確認
-        # クローズ後は新しいクエリを実行できないはず
-        with pytest.raises(Exception):
-            db.execute(text("SELECT 1"))
+            # close()が1回呼ばれたことを確認
+            mock_close.assert_called_once()
 
     def test_get_db_closes_session_on_exception(self):
         """get_dbが例外発生時にもセッションをクローズすること."""
+        from unittest.mock import patch
+
         db_generator = get_db()
         db = next(db_generator)
 
-        # 例外を発生させてクリーンアップ
-        try:
-            db_generator.throw(Exception("Test exception"))
-        except Exception:
-            pass
+        # close()メソッドが呼ばれることを確認
+        with patch.object(db, "close", wraps=db.close) as mock_close:
+            # 例外を発生させてクリーンアップ
+            try:
+                db_generator.throw(Exception("Test exception"))
+            except Exception:
+                pass
 
-        # セッションがクローズされたことを確認
-        with pytest.raises(Exception):
-            db.execute(text("SELECT 1"))
+            # close()が1回呼ばれたことを確認
+            mock_close.assert_called_once()
 
     def test_get_db_creates_new_session_each_time(self):
         """get_dbが毎回新しいセッションを作成すること."""
