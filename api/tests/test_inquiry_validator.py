@@ -82,6 +82,22 @@ class TestInquiryValidatorUserId:
         assert result.errors[0].field == "user_id"
         assert result.errors[0].code == "GS-003"
 
+    def test_validate_user_id_whitespace_only(self):
+        """空白のみのユーザーIDのバリデーション失敗."""
+        validator = InquiryValidator()
+
+        # スペースのみ
+        result = validator._validate_user_id("   ")
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "user_id"
+        assert result.errors[0].code == "GS-003"
+
+        # タブとスペースと改行
+        result = validator._validate_user_id("  \t\n  ")
+        assert result.valid is False
+        assert result.errors[0].code == "GS-003"
+
     def test_validate_user_id_invalid_characters(self):
         """不正な文字を含むユーザーIDのバリデーション失敗."""
         validator = InquiryValidator()
