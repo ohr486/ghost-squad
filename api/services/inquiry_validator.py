@@ -145,24 +145,24 @@ class InquiryValidator:
 
         return ValidationResult(valid=len(errors) == 0, errors=errors)
 
-    def _validate_source_system(self, source_system: str) -> ValidationResult:
+    def _validate_source_system(self, source_system: Any) -> ValidationResult:
         """送信元システムのバリデーション.
 
         Args:
-            source_system: 送信元システム
+            source_system: 送信元システム（任意の型を受け取るが、文字列であることを検証）
 
         Returns:
             ValidationResult: バリデーション結果
         """
         errors: List[ValidationError] = []
 
-        # 型チェック
+        # 型チェック - 文字列以外の場合はエラー
         if not isinstance(source_system, str):
             errors.append(
                 ValidationError(
                     field="source_system",
-                    message=self.ERROR_MESSAGES["GS-014"],
-                    code="GS-014",
+                    message=self.ERROR_MESSAGES["GS-004"],
+                    code="GS-004",
                 )
             )
             return ValidationResult(valid=False, errors=errors)

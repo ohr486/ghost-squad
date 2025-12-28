@@ -237,25 +237,44 @@ class TestInquiryValidatorSourceSystem:
         assert "50" in result.errors[0].message
 
     def test_validate_source_system_none_type(self):
-        """Noneが渡された場合のバリデーション失敗."""
+        """None型の送信元システムのバリデーション失敗."""
         validator = InquiryValidator()
         result = validator._validate_source_system(None)
 
         assert result.valid is False
         assert len(result.errors) == 1
         assert result.errors[0].field == "source_system"
-        assert result.errors[0].code == "GS-014"
-        assert "文字列である必要があります" in result.errors[0].message
+        assert result.errors[0].code == "GS-004"
 
     def test_validate_source_system_int_type(self):
-        """整数が渡された場合のバリデーション失敗."""
+        """整数型の送信元システムのバリデーション失敗."""
         validator = InquiryValidator()
         result = validator._validate_source_system(123)
 
         assert result.valid is False
         assert len(result.errors) == 1
         assert result.errors[0].field == "source_system"
-        assert result.errors[0].code == "GS-014"
+        assert result.errors[0].code == "GS-004"
+
+    def test_validate_source_system_list_type(self):
+        """リスト型の送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_source_system(["manual", "email"])
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
+        assert result.errors[0].code == "GS-004"
+
+    def test_validate_source_system_dict_type(self):
+        """辞書型の送信元システムのバリデーション失敗."""
+        validator = InquiryValidator()
+        result = validator._validate_source_system({"system": "manual"})
+
+        assert result.valid is False
+        assert len(result.errors) == 1
+        assert result.errors[0].field == "source_system"
+        assert result.errors[0].code == "GS-004"
 
 
 class TestInquiryValidatorCreate:
