@@ -70,14 +70,16 @@ make status         # サービス健全性確認
 ### 開発ワークフロー
 ```bash
 make test           # 全テスト実行（カバレッジレポート生成）
-make test-backend   # バックエンドテスト（pytest + coverage）
-make test-frontend  # フロントエンドテスト（Jest + coverage）
+make test-api       # バックエンドテスト（pytest + coverage）
+make test-web       # フロントエンドテスト（Jest + coverage）
 make lint           # コード品質チェック（全体）
-make lint-backend   # バックエンドリント（flake8 + mypy + bandit）
-make lint-frontend  # フロントエンドリント（ESLint + TypeScript）
+make lint-api       # バックエンドリント（flake8 + mypy + bandit）
+                    # 対象: models/ services/ tests/ config.py database.py manage_db.py main.py
+make lint-web       # フロントエンドリント（ESLint + TypeScript）
 make format         # コードフォーマット（black + prettier）
-make format-backend # バックエンドフォーマット（black + isort）
-make format-frontend# フロントエンドフォーマット（prettier + ESLint --fix）
+make format-api     # バックエンドフォーマット（black + isort）
+                    # 対象: models/ services/ tests/ config.py database.py manage_db.py main.py
+make format-web     # フロントエンドフォーマット（prettier + ESLint --fix）
 ```
 
 ### データベース管理
