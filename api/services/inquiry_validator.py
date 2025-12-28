@@ -120,11 +120,11 @@ class InquiryValidator:
 
         return ValidationResult(valid=len(errors) == 0, errors=errors)
 
-    def _validate_source_system(self, source_system: str) -> ValidationResult:
+    def _validate_source_system(self, source_system: Any) -> ValidationResult:
         """送信元システムのバリデーション.
 
         Args:
-            source_system: 送信元システム
+            source_system: 送信元システム（任意の型を受け取るが、文字列であることを検証）
 
         Returns:
             ValidationResult: バリデーション結果
