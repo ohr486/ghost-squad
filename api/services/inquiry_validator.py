@@ -1,4 +1,5 @@
 """問い合わせバリデーションサービス."""
+
 import re
 from dataclasses import dataclass
 from typing import Any, Dict, List
@@ -70,6 +71,17 @@ class InquiryValidator:
         """
         errors: List[ValidationError] = []
 
+        # 型チェック（文字列以外は空文字扱い）
+        if not isinstance(content, str):
+            errors.append(
+                ValidationError(
+                    field="content",
+                    message=self.ERROR_MESSAGES["GS-001"],
+                    code="GS-001",
+                )
+            )
+            return ValidationResult(valid=False, errors=errors)
+
         # 空文字チェック
         if not content or not content.strip():
             errors.append(
@@ -103,9 +115,10 @@ class InquiryValidator:
         """
         errors: List[ValidationError] = []
 
-        # 空文字チェック、文字種チェック、最大文字数チェック
+        # 型チェック、空文字チェック、文字種チェック、最大文字数チェック
         if (
-            not user_id
+            not isinstance(user_id, str)
+            or not user_id
             or not re.match(r"^[a-zA-Z0-9_]+$", user_id)
             or len(user_id) > self.USER_ID_MAX_LENGTH
         ):
@@ -129,6 +142,17 @@ class InquiryValidator:
             ValidationResult: バリデーション結果
         """
         errors: List[ValidationError] = []
+
+        # 型チェック（文字列以外はエラー）
+        if not isinstance(source_system, str):
+            errors.append(
+                ValidationError(
+                    field="source_system",
+                    message=self.ERROR_MESSAGES["GS-004"],
+                    code="GS-004",
+                )
+            )
+            return ValidationResult(valid=False, errors=errors)
 
         # 空文字チェック
         if not source_system:
