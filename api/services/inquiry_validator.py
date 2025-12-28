@@ -130,7 +130,8 @@ class InquiryValidator:
 
         # 空文字チェック、文字種チェック、最大文字数チェック
         if (
-            not user_id
+            not isinstance(user_id, str)
+            or not user_id
             or not re.match(r"^[a-zA-Z0-9_]+$", user_id)
             or len(user_id) > self.USER_ID_MAX_LENGTH
         ):
