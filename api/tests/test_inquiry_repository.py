@@ -13,15 +13,10 @@ from sqlalchemy.orm import Session, sessionmaker
 from models.database.base import BaseModel
 from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
-from services.inquiry_repository import (
-    CreateInquiryData,
-    FindManyOptions,
-    InquiryFilter,
-    InquiryRepository,
-    PaginationOption,
-    SortOption,
-    UpdateInquiryData,
-)
+from services.inquiry_repository import (CreateInquiryData, FindManyOptions,
+                                         InquiryFilter, InquiryRepository,
+                                         PaginationOption, SortOption,
+                                         UpdateInquiryData)
 
 
 @pytest.fixture
