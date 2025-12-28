@@ -136,6 +136,7 @@ class TestDatabaseURL:
         """環境変数からデータベースURLを取得できること."""
         # モジュールを再インポートして環境変数を反映
         import importlib
+
         import database
 
         importlib.reload(database)
