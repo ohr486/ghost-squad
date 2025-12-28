@@ -456,6 +456,42 @@ class TestInquiryValidatorCreate:
         assert result.valid is False
         assert any(e.field == "content" for e in result.errors)
 
+    def test_validate_create_non_string_types(self):
+        """非文字列型のフィールドのバリデーション失敗."""
+        validator = InquiryValidator()
+
+        # user_idが整数
+        data = {
+            "user_id": 123,
+            "content": "有効なコンテンツ",
+            "source_system": "manual",
+        }
+        result = validator.validate_create(data)
+        assert result.valid is False
+        assert any(e.field == "user_id" and e.code == "GS-003" for e in result.errors)
+
+        # contentがNone
+        data = {
+            "user_id": "test_user",
+            "content": None,
+            "source_system": "manual",
+        }
+        result = validator.validate_create(data)
+        assert result.valid is False
+        assert any(e.field == "content" and e.code == "GS-001" for e in result.errors)
+
+        # source_systemがリスト
+        data = {
+            "user_id": "test_user",
+            "content": "有効なコンテンツ",
+            "source_system": ["manual"],
+        }
+        result = validator.validate_create(data)
+        assert result.valid is False
+        assert any(
+            e.field == "source_system" and e.code == "GS-004" for e in result.errors
+        )
+
 
 class TestInquiryValidatorUpdate:
     """validateUpdateメソッドのテスト."""
