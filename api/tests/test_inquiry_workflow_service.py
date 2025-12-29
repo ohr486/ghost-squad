@@ -166,23 +166,33 @@ class TestInquiryWorkflowService:
         assert "changed_at" in history[0]
 
     # 要件3.10-3.11: ステータス遷移制約のテスト
-    def test_approve_from_task_working_fails(
+    @pytest.mark.parametrize(
+        "status,expected_error",
+        [
+            (InquiryStatus.TASK_WORKING, "received"),
+            (InquiryStatus.REJECTED, "received"),
+            (InquiryStatus.COMPLETED, "received"),
+        ],
+    )
+    def test_approve_from_invalid_status_fails(
         self,
         workflow_service: InquiryWorkflowService,
         repository: InquiryRepository,
+        status: InquiryStatus,
+        expected_error: str,
     ) -> None:
-        """TASK_WORKINGステータスからの承認は失敗する.
+        """無効なステータスからの承認は失敗する.
 
         要件3.10: RECEIVEDステータスの問い合わせのみ承認・却下を許可する
         要件3.11: 承認済み・却下済みの問い合わせの再承認・再却下を禁止する
         """
-        # TASK_WORKINGステータスの問い合わせを作成
+        # 指定されたステータスの問い合わせを作成
         data = CreateInquiryData(
             user_id="test_user",
-            content="既に承認済み",
+            content=f"ステータス: {status.value}",
             source_system="manual",
             timestamp=datetime.now(timezone.utc),
-            status=InquiryStatus.TASK_WORKING,
+            status=status,
         )
         inquiry = repository.create(data)
 
@@ -190,75 +200,35 @@ class TestInquiryWorkflowService:
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             workflow_service.approve_inquiry(inquiry.id)
 
-        assert "received" in str(exc_info.value).lower()
+        assert expected_error in str(exc_info.value).lower()
 
-    def test_approve_from_rejected_fails(
+    @pytest.mark.parametrize(
+        "status,expected_error",
+        [
+            (InquiryStatus.TASK_WORKING, "received"),
+            (InquiryStatus.REJECTED, "received"),
+            (InquiryStatus.COMPLETED, "received"),
+        ],
+    )
+    def test_reject_from_invalid_status_fails(
         self,
         workflow_service: InquiryWorkflowService,
         repository: InquiryRepository,
+        status: InquiryStatus,
+        expected_error: str,
     ) -> None:
-        """REJECTEDステータスからの承認は失敗する.
-
-        要件3.11: 承認済み・却下済みの問い合わせの再承認・再却下を禁止する
-        """
-        # REJECTEDステータスの問い合わせを作成
-        data = CreateInquiryData(
-            user_id="test_user",
-            content="既に却下済み",
-            source_system="manual",
-            timestamp=datetime.now(timezone.utc),
-            status=InquiryStatus.REJECTED,
-        )
-        inquiry = repository.create(data)
-
-        # 承認を試みる
-        with pytest.raises(InvalidStateTransitionError) as exc_info:
-            workflow_service.approve_inquiry(inquiry.id)
-
-        assert "received" in str(exc_info.value).lower()
-
-    def test_approve_from_completed_fails(
-        self,
-        workflow_service: InquiryWorkflowService,
-        repository: InquiryRepository,
-    ) -> None:
-        """COMPLETEDステータスからの承認は失敗する.
-
-        要件3.11: 承認済み・却下済みの問い合わせの再承認・再却下を禁止する
-        """
-        # COMPLETEDステータスの問い合わせを作成
-        data = CreateInquiryData(
-            user_id="test_user",
-            content="既に完了済み",
-            source_system="manual",
-            timestamp=datetime.now(timezone.utc),
-            status=InquiryStatus.COMPLETED,
-        )
-        inquiry = repository.create(data)
-
-        # 承認を試みる
-        with pytest.raises(InvalidStateTransitionError) as exc_info:
-            workflow_service.approve_inquiry(inquiry.id)
-
-        assert "received" in str(exc_info.value).lower()
-
-    def test_reject_from_task_working_fails(
-        self,
-        workflow_service: InquiryWorkflowService,
-        repository: InquiryRepository,
-    ) -> None:
-        """TASK_WORKINGステータスからの却下は失敗する.
+        """無効なステータスからの却下は失敗する.
 
         要件3.10: RECEIVEDステータスの問い合わせのみ承認・却下を許可する
         要件3.11: 承認済み・却下済みの問い合わせの再承認・再却下を禁止する
         """
-        # TASK_WORKINGステータスの問い合わせを作成
+        # 指定されたステータスの問い合わせを作成
         data = CreateInquiryData(
             user_id="test_user",
-            content="既に承認済み",
+            content=f"ステータス: {status.value}",
             source_system="manual",
             timestamp=datetime.now(timezone.utc),
-            status=InquiryStatus.TASK_WORKING,
+            status=status,
         )
         inquiry = repository.create(data)
 
@@ -266,57 +236,7 @@ class TestInquiryWorkflowService:
         with pytest.raises(InvalidStateTransitionError) as exc_info:
             workflow_service.reject_inquiry(inquiry.id, reason="テスト")
 
-        assert "received" in str(exc_info.value).lower()
-
-    def test_reject_from_rejected_fails(
-        self,
-        workflow_service: InquiryWorkflowService,
-        repository: InquiryRepository,
-    ) -> None:
-        """REJECTEDステータスからの再却下は失敗する.
-
-        要件3.11: 承認済み・却下済みの問い合わせの再承認・再却下を禁止する
-        """
-        # REJECTEDステータスの問い合わせを作成
-        data = CreateInquiryData(
-            user_id="test_user",
-            content="既に却下済み",
-            source_system="manual",
-            timestamp=datetime.now(timezone.utc),
-            status=InquiryStatus.REJECTED,
-        )
-        inquiry = repository.create(data)
-
-        # 却下を試みる
-        with pytest.raises(InvalidStateTransitionError) as exc_info:
-            workflow_service.reject_inquiry(inquiry.id, reason="テスト")
-
-        assert "received" in str(exc_info.value).lower()
-
-    def test_reject_from_completed_fails(
-        self,
-        workflow_service: InquiryWorkflowService,
-        repository: InquiryRepository,
-    ) -> None:
-        """COMPLETEDステータスからの却下は失敗する.
-
-        要件3.11: 承認済み・却下済みの問い合わせの再承認・再却下を禁止する
-        """
-        # COMPLETEDステータスの問い合わせを作成
-        data = CreateInquiryData(
-            user_id="test_user",
-            content="既に完了済み",
-            source_system="manual",
-            timestamp=datetime.now(timezone.utc),
-            status=InquiryStatus.COMPLETED,
-        )
-        inquiry = repository.create(data)
-
-        # 却下を試みる
-        with pytest.raises(InvalidStateTransitionError) as exc_info:
-            workflow_service.reject_inquiry(inquiry.id, reason="テスト")
-
-        assert "received" in str(exc_info.value).lower()
+        assert expected_error in str(exc_info.value).lower()
 
     def test_approve_nonexistent_inquiry_fails(
         self,
@@ -416,7 +336,11 @@ class TestInquiryWorkflowService:
         result1 = workflow_service.approve_inquiry(inquiry.id)
         assert len(result1.inquiry_metadata["status_history"]) == 1
 
-        # ステータスを手動でRECEIVEDに戻す（テスト用）
+        # ステータスを手動でRECEIVEDに戻す（テスト用）。
+        # このテストでは「同一問い合わせに対して複数回ステータス変更を行った場合に」
+        # メタデータの履歴が正しく蓄積されるかのみを検証しているため、
+        # ワークフローサービスの状態遷移ロジックはあえて経由せず、直接DBの状態を調整している。
+        # （実運用の状態遷移の正当性は他のテストケースで検証する前提）
         result1.status = InquiryStatus.RECEIVED
         repository.session.commit()
 

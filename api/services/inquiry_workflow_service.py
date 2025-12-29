@@ -17,8 +17,6 @@ class InvalidStateTransitionError(Exception):
     要件3.10-3.11に違反するステータス遷移を試みた場合にスローされる。
     """
 
-    pass
-
 
 class InquiryWorkflowService:
     """問い合わせワークフローサービス.
@@ -139,12 +137,8 @@ class InquiryWorkflowService:
             to_status=InquiryStatus.REJECTED,
         )
 
-        # 変更をコミット
-        self.repository.session.commit()
-        self.repository.session.refresh(inquiry)
-
         # ステータスを更新（要件3.4）
-        # update_statusメソッドはupdated_atを自動更新する（要件3.7）
+        # update_statusメソッドはupdated_atを自動更新し、一度のトランザクションで全変更をコミットする（要件3.7）
         return self.repository.update_status(inquiry_id, InquiryStatus.REJECTED)
 
     def can_transition_to(
