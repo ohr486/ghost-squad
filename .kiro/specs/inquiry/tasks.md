@@ -59,7 +59,7 @@
 
 ### 4. ワークフロー管理サービスの実装
 
-- [ ] 4.1 InquiryWorkflowServiceを実装する
+- [x] 4.1 InquiryWorkflowServiceを実装する
   - approveInquiry、rejectInquiry、canTransitionToメソッドを実装する
   - ステータス遷移ロジック（received → task_working、received → rejected）を実装する
   - ステータス遷移制約（received状態のみ承認・却下可能）を実装する
@@ -68,7 +68,7 @@
   - ステータス変更履歴の記録機能を実装する
   - _Requirements: 3.1, 3.2, 3.4, 3.5, 3.6, 3.7, 3.10, 3.11, 3.12_
 
-- [ ] 4.2 InquiryWorkflowServiceのユニットテストを作成する
+- [x] 4.2 InquiryWorkflowServiceのユニットテストを作成する
   - 承認フローの正常系テスト（received → task_working）を実装する
   - 却下フローの正常系テスト（received → rejected、却下理由あり/なし）を実装する
   - 無効なステータス遷移のテスト（task_working/rejected/completedからの承認・却下）を実装する
