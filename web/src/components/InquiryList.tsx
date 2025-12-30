@@ -5,10 +5,7 @@ import type { InquiryStatus } from "../types/inquiry";
 
 interface InquiryListProps {
   onInquiryClick: (inquiryId: number) => void;
-  onApprove?: (inquiryId: number) => Promise<void>;
-  onReject?: (inquiryId: number) => Promise<void>;
 }
-
 const STATUS_LABELS: Record<InquiryStatus, string> = {
   received: "受付済み",
   processing: "処理中",
