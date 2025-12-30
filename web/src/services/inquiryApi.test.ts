@@ -30,6 +30,9 @@ const mockAxiosInstance = (axios as any).create() as {
   delete: jest.Mock;
 };
 
+// applyErrorInterceptor をインポート
+const { applyErrorInterceptor } = jest.requireMock("axios");
+
 describe("inquiryApi", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -218,6 +221,136 @@ describe("inquiryApi", () => {
       expect(result).toEqual(responseData);
       expect(result.status).toBe("ok");
       expect(mockAxiosInstance.get).toHaveBeenCalledWith("/health");
+    });
+  });
+
+  describe("Error Handling", () => {
+    it("should handle backend error responses with ErrorResponse structure", async () => {
+      const backendError: import("../types").ErrorResponse = {
+        errors: [
+          {
+            code: "VALIDATION_ERROR",
+            message: "Invalid input data",
+            field: "content",
+          },
+        ],
+        timestamp: "2025-12-30T00:00:00Z",
+      };
+
+      // Simulate a backend error response and apply interceptor
+      const axiosError = {
+        response: {
+          data: backendError,
+        },
+      };
+
+      mockAxiosInstance.post.mockImplementationOnce(() =>
+        applyErrorInterceptor(axiosError),
+      );
+
+      await expect(
+        createInquiry({
+          user_id: "test_user",
+          content: "",
+          source_system: "manual",
+        }),
+      ).rejects.toEqual(backendError);
+    });
+
+    it("should transform network errors to generic NETWORK_ERROR format", async () => {
+      // Simulate a network error (no response from backend)
+      const networkError = {
+        message: "Network Error",
+        // No response property - simulates connection failure
+      };
+
+      mockAxiosInstance.get.mockImplementationOnce(() =>
+        applyErrorInterceptor(networkError),
+      );
+
+      await expect(getInquiry(1)).rejects.toMatchObject({
+        errors: [
+          {
+            code: "NETWORK_ERROR",
+            message: expect.stringContaining("ネットワークエラー"),
+          },
+        ],
+        timestamp: expect.any(String),
+      });
+    });
+
+    it("should pass through error.response.data when available", async () => {
+      const backendError: import("../types").ErrorResponse = {
+        errors: [
+          {
+            code: "NOT_FOUND",
+            message: "Inquiry not found",
+          },
+        ],
+        timestamp: "2025-12-30T00:00:00Z",
+      };
+
+      // Simulate a 404 error from backend
+      const axiosError = {
+        response: {
+          status: 404,
+          data: backendError,
+        },
+      };
+
+      mockAxiosInstance.get.mockImplementationOnce(() =>
+        applyErrorInterceptor(axiosError),
+      );
+
+      await expect(getInquiry(999)).rejects.toEqual(backendError);
+    });
+
+    it("should handle server errors with proper structure", async () => {
+      const serverError: import("../types").ErrorResponse = {
+        errors: [
+          {
+            code: "INTERNAL_ERROR",
+            message: "Internal server error occurred",
+          },
+        ],
+        timestamp: "2025-12-30T00:00:00Z",
+      };
+
+      const axiosError = {
+        response: {
+          status: 500,
+          data: serverError,
+        },
+      };
+
+      mockAxiosInstance.put.mockImplementationOnce(() =>
+        applyErrorInterceptor(axiosError),
+      );
+
+      await expect(
+        updateInquiry(1, { content: "test" }),
+      ).rejects.toEqual(serverError);
+    });
+
+    it("should handle timeout errors as network errors", async () => {
+      // Simulate a timeout error
+      const timeoutError = {
+        code: "ECONNABORTED",
+        message: "timeout of 30000ms exceeded",
+      };
+
+      mockAxiosInstance.post.mockImplementationOnce(() =>
+        applyErrorInterceptor(timeoutError),
+      );
+
+      await expect(approveInquiry(1)).rejects.toMatchObject({
+        errors: [
+          {
+            code: "NETWORK_ERROR",
+          },
+        ],
+        timestamp: expect.any(String),
+      });
     });
   });
 });
