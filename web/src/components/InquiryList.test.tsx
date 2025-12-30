@@ -348,4 +348,66 @@ describe("InquiryList", () => {
       expect(content.textContent?.length).toBeLessThanOrEqual(103); // 100 + '...'
     });
   });
+
+  it("データがない場合でもステータスフィルターを表示する", async () => {
+    // Empty response
+    (inquiryApi.listInquiries as jest.Mock).mockResolvedValue({
+      data: [],
+      meta: {
+        page: 1,
+        limit: 20,
+        total: 0,
+        has_next: false,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    const queryClient = createQueryClient();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <InquiryList onInquiryClick={jest.fn()} />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("問い合わせが見つかりませんでした。"),
+      ).toBeInTheDocument();
+    });
+
+    // ステータスフィルターが表示されていることを確認
+    const filterSelect = screen.getByLabelText("ステータスフィルター");
+    expect(filterSelect).toBeInTheDocument();
+    expect(filterSelect).toBeEnabled();
+
+    // フィルターを変更できることを確認
+    fireEvent.change(filterSelect, { target: { value: "received" } });
+    expect(filterSelect).toHaveValue("received");
+  });
+
+  it("エラー時でもステータスフィルターを表示する", async () => {
+    (inquiryApi.listInquiries as jest.Mock).mockRejectedValue(
+      new Error("API Error"),
+    );
+
+    const queryClient = createQueryClient();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <InquiryList onInquiryClick={jest.fn()} />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/問い合わせの読み込みに失敗しました/),
+      ).toBeInTheDocument();
+    });
+
+    // エラー時でもステータスフィルターが表示されていることを確認
+    const filterSelect = screen.getByLabelText("ステータスフィルター");
+    expect(filterSelect).toBeInTheDocument();
+    expect(filterSelect).toBeEnabled();
+  });
 });

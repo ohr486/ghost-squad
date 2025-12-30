@@ -1,10 +1,9 @@
-import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import InquiryDetail from "./InquiryDetail";
 import * as inquiryApi from "../services/inquiryApi";
-import { InquiryResponse } from "../types/inquiry";
+import { InquiryResponse, InquiryStatus } from "../types/inquiry";
 
 // AxiosモックはsetupTests.tsで設定済み
 jest.mock("../services/inquiryApi");
@@ -361,9 +360,9 @@ describe("InquiryDetail", () => {
   // receivedステータス以外での承認・却下ボタン非表示テスト
   describe("Button visibility based on status", () => {
     test("hides approve/reject buttons when status is not RECEIVED", async () => {
-      const taskWorkingInquiry = {
+      const taskWorkingInquiry: InquiryResponse = {
         ...mockInquiry,
-        status: "task_working",
+        status: "task_working" as InquiryStatus,
       };
 
       mockInquiryApi.getInquiry.mockResolvedValueOnce(taskWorkingInquiry);
@@ -396,9 +395,9 @@ describe("InquiryDetail", () => {
     });
 
     test("hides approve/reject buttons when status is REJECTED", async () => {
-      const rejectedInquiry = {
+      const rejectedInquiry: InquiryResponse = {
         ...mockInquiry,
-        status: "rejected",
+        status: "rejected" as InquiryStatus,
       };
 
       mockInquiryApi.getInquiry.mockResolvedValueOnce(rejectedInquiry);
@@ -418,9 +417,9 @@ describe("InquiryDetail", () => {
     });
 
     test("hides approve/reject buttons when status is COMPLETED", async () => {
-      const completedInquiry = {
+      const completedInquiry: InquiryResponse = {
         ...mockInquiry,
-        status: "completed",
+        status: "completed" as InquiryStatus,
       };
 
       mockInquiryApi.getInquiry.mockResolvedValueOnce(completedInquiry);
