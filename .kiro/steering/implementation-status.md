@@ -48,7 +48,7 @@ inclusion: always
 
 **3. フロントエンド実装（`web/`）**
 - React アプリケーション（**TypeScript 5.1実装完了** ✅）
-  - `package.json` - React 18、Testing Library設定、TypeScript 5.1.6、Axios 1.6.2
+  - `package.json` - React 18、Testing Library設定、TypeScript 5.1.6、Axios 1.6.2、TanStack React Query 5.8.4
   - `App.tsx` - メインアプリケーションコンポーネント（TypeScript化）
   - `index.tsx` - エントリーポイント（TypeScript化）
   - `App.test.tsx` - アプリケーションテスト（TypeScript化）
@@ -60,6 +60,8 @@ inclusion: always
 - コンポーネント（`src/components/`）
   - `InquiryForm.tsx` - 問い合わせ入力フォーム（React Hook Form + Zod、100% statements、94.28% branches）
   - `InquiryForm.test.tsx` - InquiryForm包括的テスト（13テスト、バリデーション・送信・エラーハンドリング）
+  - `InquiryList.tsx` - 問い合わせ一覧表示（TanStack Query、ページネーション、フィルタ、84.21% statements）
+  - `InquiryList.test.tsx` - InquiryList包括的テスト（25テスト、一覧表示・フィルタリング・ページネーション）
   - `index.ts` - コンポーネントエクスポート
 - APIクライアントサービス（`src/services/`）
   - `inquiryApi.ts` - 問い合わせAPI呼び出し実装（Axios、エラーインターセプター、86.11%カバレッジ）
@@ -69,8 +71,9 @@ inclusion: always
   - `__mocks__/axios.ts` - Axiosマニュアルモック（エラーハンドリングテスト用）
   - `inquiryApi.test.ts` - APIクライアント包括的テスト（14テスト、エラーハンドリング含む）
 - 依存関係定義（`package.json`、`package-lock.json`）
-  - TypeScript 5.3: `@types/react`, `@types/react-dom`, `@types/node`, `@types/jest`
+  - TypeScript 5.1.6: `@types/react`, `@types/react-dom`, `@types/node`, `@types/jest`
   - フォーム: `@hookform/resolvers@5.2.2`, `react-hook-form@7.43.0`, `zod@3.22.4`
+  - 状態管理: `@tanstack/react-query@5.8.4`（サーバー状態管理）
   - テスト: `@testing-library/dom@10.4.1`, `@testing-library/react@14.0.0`
   - UI: `react-hot-toast@2.4.1`
   - コード品質: `prettier`, `eslint-config-prettier`, `eslint-plugin-prettier`
@@ -121,11 +124,12 @@ inclusion: always
 - ✅ Axios設定（完了 - `src/services/inquiryApi.ts`、エラーインターセプター実装）
 - ✅ サービス層基盤（完了 - APIクライアント実装、86.11%カバレッジ、14テスト）
 - ✅ InquiryFormコンポーネント（完了 - React Hook Form + Zod、100% statements、13テスト）
-- ✅ テスト基盤（完了 - Jest + RTL + TypeScript、27テスト、91.93%カバレッジ）
+- ✅ InquiryListコンポーネント（完了 - TanStack Query、ページネーション、フィルタ、84.21% statements、25テスト）
+- ✅ TanStack React Query設定（完了 - サーバー状態管理、InquiryListで実装）
+- ✅ テスト基盤（完了 - Jest + RTL + TypeScript、38テスト、89%カバレッジ）
 - ✅ コード品質基盤（完了 - Prettier + ESLint設定、全チェック通過）
 - ❌ Tailwind CSS設定（未設定）
 - ❌ React Router設定（未設定）
-- ❌ TanStack React Query設定（未設定）
 - ❌ ページコンポーネント（ページレイアウト未作成）
 
 ## 📋 次のステップ
@@ -141,32 +145,35 @@ inclusion: always
 6. ✅ ~~InquiryRepository実装（データアクセス層）~~ （完了）
 7. ❌ 開発環境の動作確認（`make dev`、`make db-migrate`）
 
-**Phase 2: Inquiry機能の完全実装（優先度：高）** - 🎉 **フォーム実装完了**
+**Phase 2: Inquiry機能の完全実装（優先度：高）** - 🎉 **基本コンポーネント実装完了**
 - `.kiro/specs/inquiry/` の仕様に従って実装
-- Tasks: 8.1, 8.2完了（InquiryFormコンポーネント + テスト）
-- 進捗: データモデル → サービス層 → API層 → **InquiryForm完了** ✅
-- 次: ページコンポーネント → 統合テスト
+- Tasks: 8.1, 8.2, 8.3, 8.4完了（InquiryForm + InquiryList コンポーネント + テスト）
+- 進捗: データモデル → サービス層 → API層 → **基本コンポーネント完了** ✅
+- 次: ページコンポーネント → ルーティング → E2Eテスト
 - 実装状況:
   - ✅ ~~InquiryRepository（データアクセス層）~~ （完了 - 90%カバレッジ）
   - ✅ ~~InquiryWorkflowService（ワークフロー管理）~~ （完了 - 89%カバレッジ）
   - ✅ ~~InquiryQueryService（クエリサービス）~~ （完了 - 100%カバレッジ）
   - ✅ ~~問い合わせCRUD APIエンドポイント（ルーター層）~~ （完了 - 全エンドポイント実装済み）
   - ✅ ~~トランザクション管理・エラーハンドリング強化~~ （完了 - PR #80, #81, #82）
-  - ✅ ~~問い合わせ登録フォーム（React + Validation）~~ （完了 - Tasks 8.1, 8.2、91.93%カバレッジ）
-  - ❌ 問い合わせ一覧・詳細画面（React）
+  - ✅ ~~問い合わせ登録フォーム（React + Validation）~~ （完了 - Tasks 8.1, 8.2、100% statements）
+  - ✅ ~~問い合わせ一覧コンポーネント（React + TanStack Query）~~ （完了 - Tasks 8.3, 8.4、84.21% statements）
+  - ❌ 問い合わせ詳細画面（React）
+  - ❌ ページレイアウト・ルーティング統合
   - ❌ E2Eテスト・統合テスト
 
-**Phase 3: フロントエンド基盤の完成（優先度：中）** - 🎉 **基盤 + InquiryForm完了**
+**Phase 3: フロントエンド基盤の完成（優先度：中）** - 🎉 **基盤 + 基本コンポーネント完了**
 1. ✅ ~~`web/package.json` の作成~~ （完了）
 2. ✅ ~~TypeScriptへの移行（`.tsx`、`tsconfig.json`）~~ （完了 - TypeScript 5.1.6）
 3. ✅ ~~型定義作成（`src/types/inquiry.ts`）~~ （完了）
 4. ✅ ~~Axios設定（API通信、エラーハンドリング）~~ （完了）
-5. ✅ ~~テスト基盤（Jest + RTL + TypeScript）~~ （完了 - 27テスト、91.93%カバレッジ）
+5. ✅ ~~テスト基盤（Jest + RTL + TypeScript）~~ （完了 - 38テスト、89%カバレッジ）
 6. ✅ ~~コード品質設定（Prettier + ESLint）~~ （完了）
 7. ✅ ~~InquiryFormコンポーネント実装~~ （完了 - Tasks 8.1, 8.2）
-8. ❌ Tailwind CSS設定
-9. ❌ React Router設定
-10. ❌ TanStack React Query設定
+8. ✅ ~~InquiryListコンポーネント実装~~ （完了 - Tasks 8.3, 8.4）
+9. ✅ ~~TanStack React Query設定~~ （完了 - InquiryListで実装）
+10. ❌ Tailwind CSS設定
+11. ❌ React Router設定
 
 **Phase 4: Story機能の実装（優先度：中）**
 - `.kiro/specs/story/` の設計・タスク生成から開始
@@ -249,7 +256,7 @@ inclusion: always
 
 ## 📈 開発進捗追跡
 
-### 完了済み（70%） - 🚀 InquiryForm実装完了
+### 完了済み（75%） - 🚀 InquiryForm + InquiryList実装完了
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
 - ✅ 仕様定義（Inquiry: implementation phase、Story: requirements-generated）
 - ✅ ステアリングドキュメント
@@ -266,15 +273,17 @@ inclusion: always
 - ✅ **型定義基盤**（InquiryResponse、CreateInquiryRequest、ErrorResponse等）
 - ✅ **APIクライアントサービス**（Axios、エラーインターセプター、86.11%カバレッジ）
 - ✅ **InquiryFormコンポーネント**（React Hook Form + Zod、100% statements、94.28% branches）
-- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、27テスト、91.93%カバレッジ）
+- ✅ **InquiryListコンポーネント**（TanStack Query、ページネーション、フィルタ、84.21% statements）
+- ✅ **TanStack React Query基盤**（サーバー状態管理、InquiryListで実装）
+- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、38テスト、89%カバレッジ）
 - ✅ **コード品質基盤**（Prettier + ESLint設定、全チェック通過）
 
 ### 進行中（5%）
-- 🔄 Inquiry UI実装（一覧・詳細ページ）
-- 🔄 フロントエンド高度機能（Tailwind、Router、Query）
+- 🔄 Inquiry UI実装（詳細ページ、ページレイアウト）
+- 🔄 フロントエンド高度機能（Tailwind、Router）
 
-### 未着手（25%）
-- ❌ Inquiry機能の一覧・詳細ページ実装
+### 未着手（20%）
+- ❌ Inquiry機能の詳細ページ・ページレイアウト実装
 - ❌ Story機能の設計・実装
 - ❌ AI統合（OpenAI API）
 - ❌ 外部システム統合（Trello、Jira、GitHub Projects）
@@ -283,4 +292,4 @@ inclusion: always
 ---
 
 **最終更新**: 2025年12月30日
-**更新理由**: InquiryForm実装完了 - TypeScript 5.1.6アップグレード（ESLint互換）、React Hook Form + Zod統合、包括的テスト（Tasks 8.1, 8.2完了、91.93%カバレッジ達成）
+**更新理由**: InquiryList実装完了 - TanStack React Query統合、ページネーション・フィルタリング機能、包括的テスト（Tasks 8.3, 8.4完了、38テスト、89%カバレッジ達成）
