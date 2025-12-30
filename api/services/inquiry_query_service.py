@@ -2,6 +2,7 @@
 
 問い合わせの検索、フィルタリング、ソート、ページネーション機能を提供する。
 """
+
 from typing import Any, Dict, List, Optional, Union
 
 from sqlalchemy import asc, desc
@@ -25,9 +26,20 @@ class InquiryNotFoundError(Exception):
 
 
 class InvalidPaginationError(Exception):
-    """無効なページネーションパラメータエラー."""
+    """無効なページネーションパラメータエラー.
 
-    pass
+    ページ番号やページサイズなどのページネーション用パラメータが
+    許容範囲外または不正な場合に発生する。
+    """
+
+    def __init__(self, message: str = "無効なページネーションパラメータです。"):
+        """Initialize InvalidPaginationError.
+
+        Args:
+            message: エラーの詳細メッセージ
+        """
+        super().__init__(message)
+        self.message = message
 
 
 class ListInquiriesRequest:
@@ -83,12 +95,32 @@ class InquiryQueryService:
         Raises:
             InvalidPaginationError: ページネーションパラメータが不正な場合
         """
-        # Validate pagination parameters
+        # Validate page parameter
+        if request.page < 1:
+            raise InvalidPaginationError("pageは1以上である必要があります")
+
+        # Validate limit parameter
         if request.limit < 1:
             raise InvalidPaginationError("limitは1以上である必要があります")
 
         # Clamp limit to maximum 100
         limit = min(request.limit, 100)
+
+        # Validate sort_by parameter
+        allowed_sort_fields = {"created_at", "updated_at"}
+        if request.sort_by not in allowed_sort_fields:
+            raise InvalidPaginationError(
+                f"無効なソートフィールドが指定されました: {request.sort_by}. "
+                f"有効な値: {', '.join(sorted(allowed_sort_fields))}"
+            )
+
+        # Validate sort_order parameter
+        allowed_sort_orders = {"asc", "desc"}
+        if request.sort_order not in allowed_sort_orders:
+            raise InvalidPaginationError(
+                f"無効なソート順序が指定されました: {request.sort_order}. "
+                f"有効な値: {', '.join(sorted(allowed_sort_orders))}"
+            )
 
         # Build query with filters
         query = self.session.query(InquiryModel)
@@ -108,7 +140,7 @@ class InquiryQueryService:
         total = query.count()
 
         # Apply sorting
-        sort_field = getattr(InquiryModel, request.sort_by, InquiryModel.created_at)
+        sort_field = getattr(InquiryModel, request.sort_by)
         if request.sort_order == "asc":
             query = query.order_by(asc(sort_field))
         else:
