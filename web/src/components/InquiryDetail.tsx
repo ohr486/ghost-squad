@@ -12,6 +12,26 @@ export interface InquiryDetailProps {
   inquiryId: number;
 }
 
+/**
+ * InquiryDetail is responsible for displaying and managing the lifecycle of a single inquiry.
+ *
+ * It fetches the inquiry details, allows authorized users to edit the content, and provides
+ * actions to approve or reject the inquiry with an optional rejection reason. The component
+ * keeps the local UI state in sync with the server by invalidating the corresponding
+ * react-query cache entries after each mutation and surfaces operation results via toast
+ * notifications.
+ *
+ * Requirements / behavior mapping:
+ * - Presents the full details of an inquiry for review.
+ * - Supports updating the inquiry content while handling loading and error states.
+ * - Enables approving or rejecting an inquiry as part of the inquiry workflow, including
+ *   capturing and submitting a rejection reason when provided.
+ *
+ * @component
+ * @param {InquiryDetailProps} props - The props for the component.
+ * @param {number} props.inquiryId - The identifier of the inquiry whose details are shown
+ * and managed.
+ */
 const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
