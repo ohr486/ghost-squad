@@ -127,9 +127,7 @@ async def create_inquiry(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response(
-            "GS-010", f"データベース操作に失敗しました: {str(e)}"
-        )
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -148,9 +146,7 @@ async def create_inquiry(
 async def list_inquiries(
     page: int = Query(default=1, ge=1, description="ページ番号（1以上）"),
     limit: int = Query(default=20, ge=1, le=100, description="ページサイズ（1-100）"),
-    status: Optional[str] = Query(
-        default=None, description="ステータスフィルタ（カンマ区切りで複数指定可能）"
-    ),
+    status: Optional[str] = Query(default=None, description="ステータスフィルタ（カンマ区切りで複数指定可能）"),
     user_id: Optional[str] = Query(default=None, description="ユーザーIDフィルタ"),
     sort_by: SortField = Query(
         default=SortField.CREATED_AT,
@@ -222,9 +218,7 @@ async def list_inquiries(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response(
-            "GS-010", f"データベース操作に失敗しました: {str(e)}"
-        )
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -269,9 +263,7 @@ async def get_inquiry(
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        error_response = _create_error_response(
-            "GS-010", f"データベース操作に失敗しました: {str(e)}"
-        )
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -334,9 +326,7 @@ async def update_inquiry(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response(
-            "GS-010", f"データベース操作に失敗しました: {str(e)}"
-        )
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -393,9 +383,7 @@ async def approve_inquiry(
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        error_response = _create_error_response(
-            "GS-010", f"データベース操作に失敗しました: {str(e)}"
-        )
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -465,9 +453,7 @@ async def reject_inquiry(
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        error_response = _create_error_response(
-            "GS-010", f"データベース操作に失敗しました: {str(e)}"
-        )
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
