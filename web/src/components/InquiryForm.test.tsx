@@ -24,13 +24,14 @@ jest.mock("react-hot-toast", () => {
 
 describe("InquiryForm", () => {
   // テストユーティリティ
-  const user = userEvent.setup();
+  let user: ReturnType<typeof userEvent.setup>;
 
   // モック関数
   let mockOnSubmit: jest.Mock<Promise<void>, [CreateInquiryRequest]>;
   let mockOnCancel: jest.Mock;
 
   beforeEach(() => {
+    user = userEvent.setup();
     mockOnSubmit = jest.fn();
     mockOnCancel = jest.fn();
     jest.clearAllMocks();
