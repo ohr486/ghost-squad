@@ -13,10 +13,8 @@ from models.database.base import BaseModel
 from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
 from services.inquiry_repository import CreateInquiryData, InquiryRepository
-from services.inquiry_workflow_service import (
-    InquiryWorkflowService,
-    InvalidStateTransitionError,
-)
+from services.inquiry_workflow_service import (InquiryWorkflowService,
+                                               InvalidStateTransitionError)
 
 
 @pytest.fixture
@@ -375,7 +373,9 @@ class TestInquiryWorkflowService:
 
         # 明確化要求実行（理由あり）
         reason = "追加情報が必要です"
-        result = workflow_service.request_clarification(received_inquiry.id, reason=reason)
+        result = workflow_service.request_clarification(
+            received_inquiry.id, reason=reason
+        )
 
         # アサーション
         assert result.id == received_inquiry.id
@@ -416,7 +416,9 @@ class TestInquiryWorkflowService:
     ) -> None:
         """明確化要求時にステータス変更履歴が記録されることを確認."""
         # 明確化要求実行
-        result = workflow_service.request_clarification(received_inquiry.id, reason="テスト")
+        result = workflow_service.request_clarification(
+            received_inquiry.id, reason="テスト"
+        )
 
         # ステータス変更履歴の確認
         assert "status_history" in result.inquiry_metadata

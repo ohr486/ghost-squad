@@ -442,9 +442,9 @@ describe("inquiryApi", () => {
         applyErrorInterceptor(axiosError),
       );
 
-      await expect(
-        requestClarification(1, { reason: "test" }),
-      ).rejects.toEqual(errorResponse);
+      await expect(requestClarification(1, { reason: "test" })).rejects.toEqual(
+        errorResponse,
+      );
     });
   });
 

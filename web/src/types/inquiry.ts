@@ -63,6 +63,7 @@ export interface ClarificationRequestInfo {
   reason?: string; // 明確化要求理由
   requested_at: string; // 要求日時（ISO 8601）
   requested_by?: string; // 要求者（将来実装）
+  completed_at?: string; // 完了日時（ISO 8601）
 }
 
 /**
