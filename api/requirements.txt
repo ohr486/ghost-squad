@@ -10,7 +10,7 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
 hypothesis==6.92.1
-httpx==0.25.2
+httpx==0.25.2  # Required for FastAPI's TestClient
 psycopg2-binary==2.9.9
 black==23.11.0
 isort==5.12.0

@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=False,
+        # NOTE: We intentionally ignore extra environment variables because this app
+        # may run in environments with many unrelated env vars (e.g. platform defaults).
+        # Be aware that misnamed env vars for this application will be silently ignored.
         extra="ignore",
     )
 
