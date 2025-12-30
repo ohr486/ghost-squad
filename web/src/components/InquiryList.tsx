@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { listInquiries } from "../services/inquiryApi";
 import type { InquiryStatus } from "../types/inquiry";
 
-interface InquiryListProps {
+export interface InquiryListProps {
   onInquiryClick: (inquiryId: number) => void;
 }
 const STATUS_LABELS: Record<InquiryStatus, string> = {
@@ -214,8 +214,8 @@ const InquiryList: React.FC<InquiryListProps> = ({ onInquiryClick }) => {
                 onClick={handlePrevPage}
                 disabled={currentPage === 1}
                 className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="前のページへ"
               >
-                <span className="sr-only">前へ</span>
                 前へ
               </button>
               <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300">
@@ -225,8 +225,8 @@ const InquiryList: React.FC<InquiryListProps> = ({ onInquiryClick }) => {
                 onClick={handleNextPage}
                 disabled={!data.meta.has_next}
                 className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="次のページへ"
               >
-                <span className="sr-only">次へ</span>
                 次へ
               </button>
             </nav>
