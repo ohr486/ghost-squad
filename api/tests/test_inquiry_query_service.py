@@ -2,6 +2,7 @@
 
 問い合わせクエリサービスのユニットテストを提供する。
 """
+
 from datetime import datetime, timezone
 from typing import Generator
 
@@ -327,6 +328,54 @@ class TestListInquiries:
 
         # Assert
         assert result["meta"]["limit"] == 100
+
+    def test_list_inquiries_with_invalid_page_zero(self, db_session: Session):
+        """page=0でInvalidPaginationErrorを発生させることをテストする."""
+        # Arrange
+        service = InquiryQueryService(db_session)
+
+        # Act & Assert
+        with pytest.raises(InvalidPaginationError) as exc_info:
+            service.list_inquiries(ListInquiriesRequest(page=0))
+        assert "page" in str(exc_info.value).lower()
+
+    def test_list_inquiries_with_negative_page(self, db_session: Session):
+        """負のpage値でInvalidPaginationErrorを発生させることをテストする."""
+        # Arrange
+        service = InquiryQueryService(db_session)
+
+        # Act & Assert
+        with pytest.raises(InvalidPaginationError) as exc_info:
+            service.list_inquiries(ListInquiriesRequest(page=-1))
+        assert "page" in str(exc_info.value).lower()
+
+    def test_list_inquiries_with_invalid_sort_by(self, db_session: Session):
+        """無効なsort_byフィールドでInvalidPaginationErrorを発生させることをテストする."""
+        # Arrange
+        service = InquiryQueryService(db_session)
+
+        # Act & Assert
+        with pytest.raises(InvalidPaginationError) as exc_info:
+            service.list_inquiries(ListInquiriesRequest(sort_by="invalid_field"))
+        assert "無効なソートフィールド" in str(exc_info.value)
+        assert "invalid_field" in str(exc_info.value)
+
+    def test_list_inquiries_with_invalid_sort_order(self, db_session: Session):
+        """無効なsort_order値でInvalidPaginationErrorを発生させることをテストする."""
+        # Arrange
+        service = InquiryQueryService(db_session)
+
+        # Act & Assert - "invalid"
+        with pytest.raises(InvalidPaginationError) as exc_info:
+            service.list_inquiries(ListInquiriesRequest(sort_order="invalid"))
+        assert "無効なソート順序" in str(exc_info.value)
+        assert "invalid" in str(exc_info.value)
+
+        # Act & Assert - "ascending"
+        with pytest.raises(InvalidPaginationError) as exc_info:
+            service.list_inquiries(ListInquiriesRequest(sort_order="ascending"))
+        assert "無効なソート順序" in str(exc_info.value)
+        assert "ascending" in str(exc_info.value)
 
     def test_list_inquiries_empty_result(self, db_session: Session):
         """問い合わせが存在しない場合に空のリストを返すことをテストする."""
