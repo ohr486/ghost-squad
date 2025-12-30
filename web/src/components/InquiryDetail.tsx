@@ -245,8 +245,15 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
       {/* Reject Dialog */}
       {showRejectDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">問い合わせの却下</h3>
+          <div
+            className="bg-white rounded-lg p-6 max-w-md w-full"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rejectDialogTitle"
+          >
+            <h3 id="rejectDialogTitle" className="text-lg font-semibold mb-4">
+              問い合わせの却下
+            </h3>
             <div className="mb-4">
               <label
                 htmlFor="rejectReason"
