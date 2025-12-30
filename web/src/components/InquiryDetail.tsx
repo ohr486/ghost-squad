@@ -189,6 +189,7 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
           ) : (
             <p className="whitespace-pre-wrap bg-gray-50 p-4 rounded-md">
               {inquiry.content}
+            </p>
           )}
         </div>
 

@@ -321,10 +321,9 @@ describe("InquiryDetail", () => {
       fireEvent.click(confirmButton);
 
       await waitFor(() => {
-        expect(mockInquiryApi.rejectInquiry).toHaveBeenCalledWith(
-          1,
-          { reason: "要件が不明確です" },
-        );
+        expect(mockInquiryApi.rejectInquiry).toHaveBeenCalledWith(1, {
+          reason: "要件が不明確です",
+        });
       });
 
       await waitFor(() => {
