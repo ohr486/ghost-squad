@@ -109,9 +109,9 @@ make db-data
 **出力例**:
 ```
 📋 Inquiries (問い合わせ):
- id | user_id |              content_preview              | language | status  |      timestamp
-----+---------+-------------------------------------------+----------+---------+---------------------
-  1 | user123 | ユーザーがログインできる機能が欲しい...   | ja       | received| 2024-01-01 00:00:00
+ id | user_id |              content_preview              | source_system | status  |      timestamp
+----+---------+-------------------------------------------+---------------+---------+---------------------
+  1 | user123 | ユーザーがログインできる機能が欲しい...   | manual        | received| 2024-01-01 00:00:00
 
 📋 Stories (ストーリー):
  id |                title_preview                | category    | priority | status         | estimated_effort
@@ -145,7 +145,7 @@ make db-tables
  id                                                               | bigint  | not null
  user_id                                                          | varchar | not null
  content                                                          | text    | not null
- language                                                         | varchar | not null
+ source_system                                                    | varchar | not null
  timestamp                                                        | timestamp | not null
  status                                                           | varchar | not null
  created_at                                                       | timestamp | not null
@@ -230,14 +230,14 @@ make db-seed
 | カラム名 | 型 | 説明 | 制約 |
 |---------|-----|------|------|
 | id | BigInteger | 一意識別子 | PRIMARY KEY, AUTO_INCREMENT |
-| user_id | String | ユーザーID | NOT NULL |
+| user_id | String(50) | ユーザーID | NOT NULL |
 | content | Text | 問い合わせ内容 | NOT NULL |
-| language | String | 言語コード | NOT NULL, DEFAULT 'ja' |
+| source_system | String(50) | 送信元システム（例: manual, email, chat） | NOT NULL |
 | timestamp | DateTime | タイムスタンプ | NOT NULL |
 | status | Enum(InquiryStatus) | ステータス | NOT NULL |
 | created_at | DateTime | 作成日時 | NOT NULL |
 | updated_at | DateTime | 更新日時 | NOT NULL |
-| inquiry_metadata | JSON | メタデータ | NULLABLE |
+| inquiry_metadata | JSON | メタデータ（却下理由、ステータス履歴等） | NULLABLE |
 
 **ステータス値**:
 - `received` - 受付済み

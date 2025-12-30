@@ -802,7 +802,7 @@ curl -X GET http://localhost:8000/api/inquiries
 # 詳細な出力
 curl -v -X POST http://localhost:8000/api/inquiries \
   -H "Content-Type: application/json" \
-  -d '{"user_id":"test","content":"test inquiry","language":"ja"}'
+  -d '{"user_id":"test","content":"test inquiry","source_system":"manual"}'
 
 # または Thunder Client (VS Code拡張) や Postman を使用
 ```
