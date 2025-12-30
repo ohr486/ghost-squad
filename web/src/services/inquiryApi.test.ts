@@ -16,6 +16,8 @@ import {
   updateInquiry,
   approveInquiry,
   rejectInquiry,
+  requestClarification,
+  completeClarification,
   healthCheck,
 } from "./inquiryApi";
 
@@ -353,6 +355,178 @@ describe("inquiryApi", () => {
         ],
         timestamp: expect.any(String),
       });
+    });
+  });
+
+  describe("requestClarification", () => {
+    it("should request clarification with reason", async () => {
+      const responseData: InquiryResponse = {
+        id: 1,
+        user_id: "test_user",
+        content: "テスト問い合わせ",
+        source_system: "manual",
+        timestamp: "2025-12-30T00:00:00Z",
+        status: "needs_clarification",
+        created_at: "2025-12-30T00:00:00Z",
+        updated_at: "2025-12-30T00:00:01Z",
+        inquiry_metadata: {
+          clarification_request: {
+            reason: "追加情報が必要です",
+            requested_at: "2025-12-30T00:00:01Z",
+          },
+        },
+      };
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: responseData });
+
+      const result = await requestClarification(1, {
+        reason: "追加情報が必要です",
+      });
+
+      expect(result).toEqual(responseData);
+      expect(result.status).toBe("needs_clarification");
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        "/api/inquiries/1/request-clarification",
+        { reason: "追加情報が必要です" },
+      );
+    });
+
+    it("should request clarification without reason", async () => {
+      const responseData: InquiryResponse = {
+        id: 1,
+        user_id: "test_user",
+        content: "テスト問い合わせ",
+        source_system: "manual",
+        timestamp: "2025-12-30T00:00:00Z",
+        status: "needs_clarification",
+        created_at: "2025-12-30T00:00:00Z",
+        updated_at: "2025-12-30T00:00:01Z",
+        inquiry_metadata: {
+          clarification_request: {
+            requested_at: "2025-12-30T00:00:01Z",
+          },
+        },
+      };
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: responseData });
+
+      const result = await requestClarification(1);
+
+      expect(result).toEqual(responseData);
+      expect(result.status).toBe("needs_clarification");
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        "/api/inquiries/1/request-clarification",
+        {},
+      );
+    });
+
+    it("should handle request clarification error", async () => {
+      const errorResponse: ErrorResponse = {
+        errors: [
+          {
+            code: "INVALID_STATE_TRANSITION",
+            message: "Cannot request clarification for this inquiry",
+          },
+        ],
+        timestamp: "2025-12-30T00:00:00Z",
+      };
+
+      const axiosError = {
+        response: {
+          status: 409,
+          data: errorResponse,
+        },
+      };
+
+      mockAxiosInstance.post.mockImplementationOnce(() =>
+        applyErrorInterceptor(axiosError),
+      );
+
+      await expect(
+        requestClarification(1, { reason: "test" }),
+      ).rejects.toEqual(errorResponse);
+    });
+  });
+
+  describe("completeClarification", () => {
+    it("should complete clarification successfully", async () => {
+      const responseData: InquiryResponse = {
+        id: 1,
+        user_id: "test_user",
+        content: "テスト問い合わせ",
+        source_system: "manual",
+        timestamp: "2025-12-30T00:00:00Z",
+        status: "received",
+        created_at: "2025-12-30T00:00:00Z",
+        updated_at: "2025-12-30T00:00:01Z",
+        inquiry_metadata: {
+          clarification_request: {
+            reason: "追加情報が必要です",
+            requested_at: "2025-12-30T00:00:00Z",
+            completed_at: "2025-12-30T00:00:01Z",
+          },
+        },
+      };
+
+      mockAxiosInstance.post.mockResolvedValueOnce({ data: responseData });
+
+      const result = await completeClarification(1);
+
+      expect(result).toEqual(responseData);
+      expect(result.status).toBe("received");
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        "/api/inquiries/1/complete-clarification",
+      );
+    });
+
+    it("should handle complete clarification error", async () => {
+      const errorResponse: ErrorResponse = {
+        errors: [
+          {
+            code: "INVALID_STATE_TRANSITION",
+            message: "Cannot complete clarification for this inquiry",
+          },
+        ],
+        timestamp: "2025-12-30T00:00:00Z",
+      };
+
+      const axiosError = {
+        response: {
+          status: 409,
+          data: errorResponse,
+        },
+      };
+
+      mockAxiosInstance.post.mockImplementationOnce(() =>
+        applyErrorInterceptor(axiosError),
+      );
+
+      await expect(completeClarification(1)).rejects.toEqual(errorResponse);
+    });
+
+    it("should handle not found error for complete clarification", async () => {
+      const errorResponse: ErrorResponse = {
+        errors: [
+          {
+            code: "NOT_FOUND",
+            message: "Inquiry not found",
+          },
+        ],
+        timestamp: "2025-12-30T00:00:00Z",
+      };
+
+      const axiosError = {
+        response: {
+          status: 404,
+          data: errorResponse,
+        },
+      };
+
+      mockAxiosInstance.post.mockImplementationOnce(() =>
+        applyErrorInterceptor(axiosError),
+      );
+
+      await expect(completeClarification(999)).rejects.toEqual(errorResponse);
     });
   });
 });

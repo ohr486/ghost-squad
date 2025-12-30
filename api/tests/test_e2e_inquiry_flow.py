@@ -346,3 +346,220 @@ class TestE2EInquiryListFiltering:
         assert all(
             item["status"] == "task_working" for item in task_working_data["data"]
         )
+
+
+class TestE2EInquiryClarificationFlow:
+    """問い合わせ明確化フローのテスト.
+
+    要件カバレッジ: clarification request workflow
+    """
+
+    def test_complete_clarification_flow(self, client: TestClient):
+        """完全な明確化フロー: 作成 → 明確化要求 → 明確化完了 → 確認."""
+        # 問い合わせ作成
+        create_response = client.post(
+            "/api/inquiries",
+            json={
+                "user_id": "e2e_user_clarification_001",
+                "content": "明確化フローテスト",
+                "source_system": "manual",
+            },
+        )
+        assert create_response.status_code == 201
+        inquiry_id = create_response.json()["id"]
+        assert create_response.json()["status"] == "received"
+
+        # 明確化要求（理由あり）
+        request_clarification_response = client.post(
+            f"/api/inquiries/{inquiry_id}/request-clarification",
+            json={"reason": "追加情報が必要です"},
+        )
+        assert request_clarification_response.status_code == 200
+        clarification_requested = request_clarification_response.json()
+        assert clarification_requested["status"] == "needs_clarification"
+
+        # ステータス確認
+        verify_response = client.get(f"/api/inquiries/{inquiry_id}")
+        assert verify_response.status_code == 200
+        assert verify_response.json()["status"] == "needs_clarification"
+
+        # 明確化完了
+        complete_clarification_response = client.post(
+            f"/api/inquiries/{inquiry_id}/complete-clarification"
+        )
+        assert complete_clarification_response.status_code == 200
+        clarification_completed = complete_clarification_response.json()
+        assert clarification_completed["status"] == "received"
+
+        # 最終確認
+        final_verify_response = client.get(f"/api/inquiries/{inquiry_id}")
+        assert final_verify_response.status_code == 200
+        assert final_verify_response.json()["status"] == "received"
+
+    def test_request_clarification_without_reason(self, client: TestClient):
+        """明確化要求（理由なし）が正常に動作することを確認する."""
+        # 問い合わせ作成
+        create_response = client.post(
+            "/api/inquiries",
+            json={
+                "user_id": "e2e_user_clarification_002",
+                "content": "理由なし明確化テスト",
+                "source_system": "manual",
+            },
+        )
+        assert create_response.status_code == 201
+        inquiry_id = create_response.json()["id"]
+
+        # 明確化要求（理由なし）
+        request_clarification_response = client.post(
+            f"/api/inquiries/{inquiry_id}/request-clarification"
+        )
+        assert request_clarification_response.status_code == 200
+        clarification_requested = request_clarification_response.json()
+        assert clarification_requested["status"] == "needs_clarification"
+
+    def test_clarification_with_rejection(self, client: TestClient):
+        """明確化要求後に却下するフロー."""
+        # 問い合わせ作成
+        create_response = client.post(
+            "/api/inquiries",
+            json={
+                "user_id": "e2e_user_clarification_003",
+                "content": "明確化→却下テスト",
+                "source_system": "manual",
+            },
+        )
+        assert create_response.status_code == 201
+        inquiry_id = create_response.json()["id"]
+
+        # 明確化要求
+        request_clarification_response = client.post(
+            f"/api/inquiries/{inquiry_id}/request-clarification",
+            json={"reason": "詳細が不明確です"},
+        )
+        assert request_clarification_response.status_code == 200
+        assert request_clarification_response.json()["status"] == "needs_clarification"
+
+        # 明確化完了してreceivedに戻す
+        complete_response = client.post(
+            f"/api/inquiries/{inquiry_id}/complete-clarification"
+        )
+        assert complete_response.status_code == 200
+        assert complete_response.json()["status"] == "received"
+
+        # 却下
+        reject_response = client.post(
+            f"/api/inquiries/{inquiry_id}/reject",
+            json={"reason": "要件が不十分です"},
+        )
+        assert reject_response.status_code == 200
+        rejected = reject_response.json()
+        assert rejected["status"] == "rejected"
+
+        # 最終確認
+        verify_response = client.get(f"/api/inquiries/{inquiry_id}")
+        assert verify_response.status_code == 200
+        assert verify_response.json()["status"] == "rejected"
+
+    def test_clarification_with_approval(self, client: TestClient):
+        """明確化要求後に承認するフロー."""
+        # 問い合わせ作成
+        create_response = client.post(
+            "/api/inquiries",
+            json={
+                "user_id": "e2e_user_clarification_004",
+                "content": "明確化→承認テスト",
+                "source_system": "manual",
+            },
+        )
+        assert create_response.status_code == 201
+        inquiry_id = create_response.json()["id"]
+
+        # 明確化要求
+        request_clarification_response = client.post(
+            f"/api/inquiries/{inquiry_id}/request-clarification",
+            json={"reason": "詳細確認が必要です"},
+        )
+        assert request_clarification_response.status_code == 200
+        assert request_clarification_response.json()["status"] == "needs_clarification"
+
+        # 明確化完了してreceivedに戻す
+        complete_response = client.post(
+            f"/api/inquiries/{inquiry_id}/complete-clarification"
+        )
+        assert complete_response.status_code == 200
+        assert complete_response.json()["status"] == "received"
+
+        # 承認
+        approve_response = client.post(f"/api/inquiries/{inquiry_id}/approve")
+        assert approve_response.status_code == 200
+        approved = approve_response.json()
+        assert approved["status"] == "task_working"
+
+        # 最終確認
+        verify_response = client.get(f"/api/inquiries/{inquiry_id}")
+        assert verify_response.status_code == 200
+        assert verify_response.json()["status"] == "task_working"
+
+    def test_request_clarification_invalid_status_transition(self, client: TestClient):
+        """無効なステータスからの明確化要求はエラーになる."""
+        # 問い合わせ作成
+        create_response = client.post(
+            "/api/inquiries",
+            json={
+                "user_id": "e2e_user_clarification_005",
+                "content": "無効な遷移テスト",
+                "source_system": "manual",
+            },
+        )
+        assert create_response.status_code == 201
+        inquiry_id = create_response.json()["id"]
+
+        # 承認してtask_workingにする
+        approve_response = client.post(f"/api/inquiries/{inquiry_id}/approve")
+        assert approve_response.status_code == 200
+        assert approve_response.json()["status"] == "task_working"
+
+        # task_workingステータスから明確化要求を試みる（エラーになるはず）
+        request_clarification_response = client.post(
+            f"/api/inquiries/{inquiry_id}/request-clarification",
+            json={"reason": "これは失敗するはず"},
+        )
+        assert request_clarification_response.status_code == 409  # Conflict
+
+    def test_complete_clarification_invalid_status_transition(self, client: TestClient):
+        """無効なステータスからの明確化完了はエラーになる."""
+        # 問い合わせ作成
+        create_response = client.post(
+            "/api/inquiries",
+            json={
+                "user_id": "e2e_user_clarification_006",
+                "content": "無効な明確化完了テスト",
+                "source_system": "manual",
+            },
+        )
+        assert create_response.status_code == 201
+        inquiry_id = create_response.json()["id"]
+
+        # receivedステータスから明確化完了を試みる（エラーになるはず）
+        complete_clarification_response = client.post(
+            f"/api/inquiries/{inquiry_id}/complete-clarification"
+        )
+        assert complete_clarification_response.status_code == 409  # Conflict
+
+    def test_request_clarification_nonexistent_inquiry(self, client: TestClient):
+        """存在しない問い合わせへの明確化要求はエラーになる."""
+        nonexistent_id = 999999
+        request_clarification_response = client.post(
+            f"/api/inquiries/{nonexistent_id}/request-clarification",
+            json={"reason": "これは失敗するはず"},
+        )
+        assert request_clarification_response.status_code == 404  # Not Found
+
+    def test_complete_clarification_nonexistent_inquiry(self, client: TestClient):
+        """存在しない問い合わせへの明確化完了はエラーになる."""
+        nonexistent_id = 999999
+        complete_clarification_response = client.post(
+            f"/api/inquiries/{nonexistent_id}/complete-clarification"
+        )
+        assert complete_clarification_response.status_code == 404  # Not Found
