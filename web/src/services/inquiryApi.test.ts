@@ -6,6 +6,7 @@ import type {
   InquiryResponse,
   CreateInquiryRequest,
   PaginatedResponse,
+  ErrorResponse,
 } from "../types";
 import axios from "axios";
 import {
@@ -30,8 +31,9 @@ const mockAxiosInstance = (axios as any).create() as {
   delete: jest.Mock;
 };
 
-// applyErrorInterceptor をインポート
-const { applyErrorInterceptor } = jest.requireMock("axios");
+// Get the applyErrorInterceptor helper from the mocked module
+const axiosMock = axios as any;
+const applyErrorInterceptor = axiosMock.applyErrorInterceptor;
 
 describe("inquiryApi", () => {
   beforeEach(() => {
@@ -226,7 +228,7 @@ describe("inquiryApi", () => {
 
   describe("Error Handling", () => {
     it("should handle backend error responses with ErrorResponse structure", async () => {
-      const backendError: import("../types").ErrorResponse = {
+      const backendError: ErrorResponse = {
         errors: [
           {
             code: "VALIDATION_ERROR",
@@ -280,7 +282,7 @@ describe("inquiryApi", () => {
     });
 
     it("should pass through error.response.data when available", async () => {
-      const backendError: import("../types").ErrorResponse = {
+      const backendError: ErrorResponse = {
         errors: [
           {
             code: "NOT_FOUND",
@@ -306,7 +308,7 @@ describe("inquiryApi", () => {
     });
 
     it("should handle server errors with proper structure", async () => {
-      const serverError: import("../types").ErrorResponse = {
+      const serverError: ErrorResponse = {
         errors: [
           {
             code: "INTERNAL_ERROR",

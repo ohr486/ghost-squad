@@ -2,8 +2,10 @@
  * Axios manual mock for testing
  */
 
+import type { AxiosError } from "axios";
+
 // Store the error interceptor handler
-let errorInterceptor: ((error: any) => any) | null = null;
+let errorInterceptor: ((error: any) => Promise<any>) | null = null;
 
 export const mockAxiosInstance = {
   get: jest.fn(),
@@ -29,7 +31,9 @@ export const mockAxiosInstance = {
 };
 
 // Helper function to apply error interceptor (for testing)
-export const applyErrorInterceptor = (error: any) => {
+export const applyErrorInterceptor = (
+  error: AxiosError | any,
+): Promise<any> => {
   if (errorInterceptor) {
     return errorInterceptor(error);
   }
@@ -42,6 +46,7 @@ const mock = {
   post: jest.fn(),
   put: jest.fn(),
   delete: jest.fn(),
+  applyErrorInterceptor,
 };
 
 export default mock;
