@@ -22,8 +22,8 @@ from models.database.base import BaseModel
 from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
 
-# テスト用データベースの設定
-SQLALCHEMY_DATABASE_URL = "sqlite:///./test_inquiry_api.db"
+# テスト用データベースの設定（in-memoryを使用してクリーンアップ不要に）
+SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
@@ -39,8 +39,21 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
-client = TestClient(app)
+@pytest.fixture(scope="module")
+def client():
+    """テストクライアントと依存関係のオーバーライドを管理する."""
+    # 既存のオーバーライドを保存
+    original_override = app.dependency_overrides.get(get_db)
+    app.dependency_overrides[get_db] = override_get_db
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+    # 元の状態に戻す
+    if original_override is not None:
+        app.dependency_overrides[get_db] = original_override
+    else:
+        app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -58,6 +71,7 @@ def db_session():
     try:
         yield db
     finally:
+        db.rollback()
         db.close()
 
 
@@ -154,6 +168,33 @@ def test_create_inquiry_validation_error_invalid_user_id():
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
+def test_create_inquiry_missing_required_fields():
+    """問い合わせ作成のバリデーションエラーテスト（必須フィールド欠落）."""
+    # Arrange - contentフィールドが欠落
+    inquiry_data = {
+        "user_id": "test_user",
+        "source_system": "manual",
+    }
+
+    # Act
+    response = client.post("/api/inquiries", json=inquiry_data)
+
+    # Assert
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # Arrange - user_idフィールドが欠落
+    inquiry_data = {
+        "content": "ログイン機能が欲しい",
+        "source_system": "manual",
+    }
+
+    # Act
+    response = client.post("/api/inquiries", json=inquiry_data)
+
+    # Assert
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
 # GET /api/inquiries - 問い合わせ一覧API
 
 
@@ -180,17 +221,21 @@ def test_list_inquiries_pagination():
     """問い合わせ一覧のページネーションテスト."""
     # Arrange - 30件の問い合わせを作成
     db = TestingSessionLocal()
+    from datetime import timedelta
+
+    base_time = datetime.now(timezone.utc)
     for i in range(30):
         inquiry = InquiryModel(
             user_id=f"user_{i}",
             content=f"問い合わせ内容 {i}",
             source_system="manual",
-            timestamp=datetime.now(timezone.utc),
+            timestamp=base_time + timedelta(seconds=i),
             status=InquiryStatus.RECEIVED,
             inquiry_metadata={},
         )
         db.add(inquiry)
     db.commit()
+    db.rollback()
     db.close()
 
     # Act - ページ1を取得
@@ -240,6 +285,7 @@ def test_list_inquiries_status_filter(sample_inquiry):
     )
     db.add(inquiry2)
     db.commit()
+    db.rollback()
     db.close()
 
     # Act - receivedのみフィルタ
@@ -291,6 +337,7 @@ def test_list_inquiries_user_id_filter():
     )
     db.add_all([inquiry1, inquiry2])
     db.commit()
+    db.rollback()
     db.close()
 
     # Act
@@ -306,12 +353,15 @@ def test_list_inquiries_user_id_filter():
 def test_list_inquiries_sort():
     """問い合わせ一覧のソートテスト."""
     # Arrange
+    from datetime import timedelta
+
     db = TestingSessionLocal()
+    base_time = datetime.now(timezone.utc)
     inquiry1 = InquiryModel(
         user_id="user1",
         content="問い合わせ1",
         source_system="manual",
-        timestamp=datetime.now(timezone.utc),
+        timestamp=base_time,
         status=InquiryStatus.RECEIVED,
         inquiry_metadata={},
     )
@@ -319,12 +369,13 @@ def test_list_inquiries_sort():
         user_id="user2",
         content="問い合わせ2",
         source_system="manual",
-        timestamp=datetime.now(timezone.utc),
+        timestamp=base_time + timedelta(seconds=1),
         status=InquiryStatus.RECEIVED,
         inquiry_metadata={},
     )
     db.add_all([inquiry1, inquiry2])
     db.commit()
+    db.rollback()
     db.close()
 
     # Act - sort_byとsort_orderパラメータが受け入れられることを確認
@@ -342,6 +393,44 @@ def test_list_inquiries_sort():
     assert response_updated.status_code == status.HTTP_200_OK
     data_updated = response_updated.json()
     assert len(data_updated["data"]) == 2
+
+
+def test_list_inquiries_invalid_pagination():
+    """問い合わせ一覧の無効なページネーションパラメータテスト."""
+    # Act - page=0（最小値違反）
+    response = client.get("/api/inquiries?page=0")
+
+    # Assert
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # Act - page=-1（負の値）
+    response = client.get("/api/inquiries?page=-1")
+
+    # Assert
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # Act - limit=0（最小値違反）
+    response = client.get("/api/inquiries?limit=0")
+
+    # Assert
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # Act - limit=101（最大値超過）
+    response = client.get("/api/inquiries?limit=101")
+
+    # Assert
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_list_inquiries_invalid_status_filter():
+    """問い合わせ一覧の無効なステータスフィルタテスト."""
+    # Act - 無効なステータス値
+    response = client.get("/api/inquiries?status=invalid_status")
+
+    # Assert
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    data = response.json()
+    assert "detail" in data
 
 
 # GET /api/inquiries/{id} - 問い合わせ詳細API
@@ -463,6 +552,7 @@ def test_approve_inquiry_invalid_state_transition(sample_inquiry):
     )
     inquiry.status = InquiryStatus.TASK_WORKING
     db.commit()
+    db.rollback()
     db.close()
 
     # Act - 再度承認を試みる
@@ -509,7 +599,13 @@ def test_reject_inquiry_success_with_reason(sample_inquiry):
     inquiry = (
         db.query(InquiryModel).filter(InquiryModel.id == sample_inquiry.id).first()
     )
+    # メタデータ構造を明示的に検証してから値を確認する
+    assert inquiry.inquiry_metadata is not None
+    assert "rejection" in inquiry.inquiry_metadata
+    assert isinstance(inquiry.inquiry_metadata["rejection"], dict)
+    assert "reason" in inquiry.inquiry_metadata["rejection"]
     assert inquiry.inquiry_metadata["rejection"]["reason"] == "要件が不明確です"
+    db.rollback()
     db.close()
 
 
@@ -533,6 +629,7 @@ def test_reject_inquiry_invalid_state_transition(sample_inquiry):
     )
     inquiry.status = InquiryStatus.REJECTED
     db.commit()
+    db.rollback()
     db.close()
 
     # Act - 再度却下を試みる

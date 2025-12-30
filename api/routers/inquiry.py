@@ -27,6 +27,24 @@ from services.inquiry_workflow_service import (InquiryWorkflowService,
 router = APIRouter(prefix="/api/inquiries", tags=["inquiries"])
 
 
+# Response models for pagination
+class PaginationMeta(BaseModel):
+    """ページネーションメタデータ."""
+
+    page: int = Field(..., description="現在のページ番号")
+    limit: int = Field(..., description="ページサイズ")
+    total: int = Field(..., description="総件数")
+    has_next: bool = Field(..., description="次ページの有無")
+
+
+class PaginatedInquiriesResponse(BaseModel):
+    """ページネーション付き問い合わせリストレスポンス."""
+
+    data: List[InquiryResponse] = Field(..., description="問い合わせリスト")
+    meta: PaginationMeta = Field(..., description="ページネーションメタデータ")
+    timestamp: str = Field(..., description="レスポンスタイムスタンプ")
+
+
 # Helper function to create error response
 def _create_error_response(
     code: str, message: str, field: Optional[str] = None
@@ -92,7 +110,7 @@ async def create_inquiry(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -102,7 +120,7 @@ async def create_inquiry(
 # GET /api/inquiries - 問い合わせ一覧取得
 @router.get(
     "",
-    response_model=dict,
+    response_model=PaginatedInquiriesResponse,
     responses={
         400: {"model": ErrorResponse, "description": "バリデーションエラー"},
         500: {"model": ErrorResponse, "description": "サーバーエラー"},
@@ -118,7 +136,7 @@ async def list_inquiries(
     ),
     sort_order: str = Query(default="desc", description="ソート順序（asc, desc）"),
     db: Session = Depends(get_db),
-) -> Dict[str, Any]:
+) -> PaginatedInquiriesResponse:
     """問い合わせ一覧を取得する.
 
     要件2.1-2.4: 問い合わせの一覧表示、検索
@@ -133,7 +151,7 @@ async def list_inquiries(
         db: データベースセッション
 
     Returns:
-        dict: ページネーション付き問い合わせリスト
+        PaginatedInquiriesResponse: ページネーション付き問い合わせリスト
 
     Raises:
         HTTPException: パラメータエラーまたはサーバーエラー
@@ -166,14 +184,11 @@ async def list_inquiries(
         result = query_service.list_inquiries(list_request)
 
         # レスポンス変換
-        return {
-            "data": [
-                InquiryResponse.model_validate(inq).model_dump()
-                for inq in result["data"]
-            ],
-            "meta": result["meta"],
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        return PaginatedInquiriesResponse(
+            data=[InquiryResponse.model_validate(inq) for inq in result["data"]],
+            meta=PaginationMeta(**result["meta"]),
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
     except InvalidPaginationError as e:
         error_response = _create_error_response("GS-011", str(e))
         raise HTTPException(
@@ -183,7 +198,7 @@ async def list_inquiries(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -228,7 +243,7 @@ async def get_inquiry(
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -291,7 +306,7 @@ async def update_inquiry(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -333,25 +348,22 @@ async def approve_inquiry(
         repository = InquiryRepository(db)
         workflow_service = InquiryWorkflowService(repository)
         inquiry = workflow_service.approve_inquiry(inquiry_id)
-        db.commit()
+        # Repository already commits internally, no need for explicit commit
         return InquiryResponse.model_validate(inquiry)
     except ValueError as e:
-        db.rollback()
         error_response = _create_error_response("GS-005", str(e))
         raise HTTPException(
             status_code=http_status.HTTP_404_NOT_FOUND,
             detail=error_response.model_dump(),
         )
     except InvalidStateTransitionError as e:
-        db.rollback()
         error_response = _create_error_response("GS-007", str(e))
         raise HTTPException(
             status_code=http_status.HTTP_409_CONFLICT,
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        db.rollback()
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -383,7 +395,7 @@ class RejectInquiryRequest(BaseModel):
 )
 async def reject_inquiry(
     inquiry_id: int,
-    request: Optional[RejectInquiryRequest] = None,
+    request: RejectInquiryRequest = RejectInquiryRequest(),
     db: Session = Depends(get_db),
 ) -> InquiryResponse:
     """問い合わせを却下する.
@@ -404,27 +416,24 @@ async def reject_inquiry(
     try:
         repository = InquiryRepository(db)
         workflow_service = InquiryWorkflowService(repository)
-        reason = request.reason if request else None
+        reason = request.reason
         inquiry = workflow_service.reject_inquiry(inquiry_id, reason)
-        db.commit()
+        # Repository already commits internally, no need for explicit commit
         return InquiryResponse.model_validate(inquiry)
     except ValueError as e:
-        db.rollback()
         error_response = _create_error_response("GS-005", str(e))
         raise HTTPException(
             status_code=http_status.HTTP_404_NOT_FOUND,
             detail=error_response.model_dump(),
         )
     except InvalidStateTransitionError as e:
-        db.rollback()
         error_response = _create_error_response("GS-007", str(e))
         raise HTTPException(
             status_code=http_status.HTTP_409_CONFLICT,
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        db.rollback()
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
