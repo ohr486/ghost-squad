@@ -173,7 +173,7 @@ format-api:
 format-web:
 	@echo "🎨 Formatting web code..."
 	@echo "📝 Running prettier..."
-	docker-compose run --rm web npx prettier --write "src/**/*.{ts,tsx,js,jsx,json,css,md}"
+	docker-compose run --rm web npm run format
 	@echo "📝 Running ESLint with --fix..."
 	docker-compose run --rm web npm run lint:fix
 

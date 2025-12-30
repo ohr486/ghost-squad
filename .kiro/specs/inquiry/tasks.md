@@ -123,7 +123,7 @@
 
 ### 7. フロントエンド基盤の構築
 
-- [ ] 7.1 (P) TypeScript型定義を作成する
+- [x] 7.1 (P) TypeScript型定義を作成する
   - InquiryStatus、Priority、StoryCategoryの列挙型を定義する
   - InquiryResponse、CreateInquiryRequest、UpdateInquiryRequest、PaginatedResponseインターフェースを定義する
   - ErrorResponseインターフェースを定義する
@@ -131,7 +131,7 @@
   - バックエンドスキーマと完全に一致させる
   - _Requirements: 1.1, 1.2, 1.6, 2.4, 3.6, 3.7, 3.12_
 
-- [ ] 7.2 (P) APIクライアントサービスを実装する
+- [x] 7.2 (P) APIクライアントサービスを実装する
   - Axiosインスタンスを設定し、ベースURL（http://localhost:8000）とCORS設定を行う
   - createInquiry、listInquiries、getInquiry、updateInquiry、approveInquiry、rejectInquiry関数を実装する
   - エラーハンドリングとエラーレスポンスの型付けを実装する

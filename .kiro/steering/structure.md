@@ -67,26 +67,57 @@ models/
 
 ## フロントエンド構造 (`web/`)
 
-**推奨ディレクトリ構造**
+**実装済みディレクトリ構造**
 ```
 src/
-├── components/       # 再利用可能コンポーネント
+├── types/              # TypeScript型定義（実装済み）
+│   ├── inquiry.ts     # Inquiry関連型（InquiryResponse、CreateInquiryRequest等）
+│   └── index.ts       # 型エクスポート
+├── services/          # API呼び出しサービス（実装済み）
+│   ├── inquiryApi.ts  # 問い合わせAPIクライアント（Axios、エラーハンドリング）
+│   └── index.ts       # サービスエクスポート
+├── __mocks__/         # テストモック（実装済み）
+│   └── axios.ts       # Axiosマニュアルモック
+├── App.tsx            # メインアプリケーションコンポーネント
+├── index.tsx          # エントリーポイント
+├── setupTests.ts      # テスト設定
+└── App.test.tsx       # アプリケーションテスト
+```
+
+**将来実装予定のディレクトリ**
+```
+src/
+├── components/       # 再利用可能コンポーネント（未実装）
 │   ├── ui/          # 基本UIコンポーネント
 │   ├── forms/       # フォームコンポーネント
 │   └── layout/      # レイアウトコンポーネント
-├── pages/           # ページコンポーネント
-├── hooks/           # カスタムReactフック
-├── services/        # API呼び出し・ビジネスロジック
-├── utils/           # ユーティリティ関数
-├── types/           # TypeScript型定義
-└── constants/       # 定数定義
+├── pages/           # ページコンポーネント（未実装）
+├── hooks/           # カスタムReactフック（未実装）
+├── utils/           # ユーティリティ関数（未実装）
+└── constants/       # 定数定義（未実装）
 ```
 
 **型定義組織化** (`src/types/`)
-- `api/` - API関連型定義
-- `enums/` - バックエンドと対応する列挙型
-- `models/` - ドメインモデル型
-- `components/` - コンポーネントプロパティ型
+- **実装済み**: `inquiry.ts` - Inquiry関連型定義（バックエンドPydanticスキーマと整合）
+  - InquiryStatus, Priority, StoryCategory（列挙型）
+  - InquiryResponse, CreateInquiryRequest, UpdateInquiryRequest（API型）
+  - PaginatedResponse, ErrorResponse（共通型）
+- **将来実装**:
+  - `story.ts` - Story関連型定義
+  - `api/` - 追加のAPI関連型定義
+  - `components/` - コンポーネントプロパティ型
+
+**サービス層組織化** (`src/services/`)
+- **実装済み**: `inquiryApi.ts` - 問い合わせAPIクライアント
+  - Axiosインスタンス作成（30秒タイムアウト、CORS設定）
+  - エラーレスポンスインターセプター（ErrorResponse標準化）
+  - CRUD操作（createInquiry、listInquiries、getInquiry、updateInquiry）
+  - ワークフロー操作（approveInquiry、rejectInquiry）
+  - ヘルスチェック（healthCheck）
+- **将来実装**:
+  - `storyApi.ts` - ストーリーAPIクライアント
+  - `authService.ts` - 認証サービス
+  - `exportService.ts` - エクスポートサービス
 
 ## 命名規則
 

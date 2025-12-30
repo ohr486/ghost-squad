@@ -15,7 +15,7 @@ Ghost Squadプロジェクトの技術スタックと開発環境に関するガ
 - **AI統合**: OpenAI API 1.3.7（GPT-4使用推奨）
 - **認証**: python-jose[cryptography] 3.3.0 + passlib[bcrypt] 1.7.4
 - **バリデーション**: Pydantic 2.5.0 + pydantic-settings 2.1.0
-- **テスト**: pytest 7.4.3 + pytest-asyncio + pytest-cov 4.1.0 + hypothesis 6.92.1（PBT）
+- **テスト**: pytest 7.4.3 + pytest-asyncio + pytest-cov 4.1.0 + hypothesis 6.92.1（PBT） + httpx 0.25.2（TestClient）
 - **コード品質**: black 23.11.0 + flake8 6.1.0 + mypy 1.7.1 + isort 5.12.0 + bandit 1.7.5
 - **開発支援**: rich 13.7.0 + structlog 23.2.0 + ipdb 0.13.13
 
@@ -167,11 +167,13 @@ npm test -- --coverage --watchAll=false
 
 **品質基準**
 - **テストカバレッジ**:
-  - バックエンド: 現在157テスト、91%カバレッジ（inquiry完全カバー）、新機能は80%以上
+  - バックエンド: 現在189テスト、高カバレッジ（inquiry: 91%、database接続テスト含む）、新機能は80%以上
   - InquiryRepository: 90%カバレッジ、17ユニットテスト
   - InquiryQueryService: 100%カバレッジ、12ユニットテスト
   - InquiryWorkflowService: 89%カバレッジ
-  - フロントエンド: 最低50%（段階的に70%へ引き上げ予定）、新機能は80%以上
+  - フロントエンド: **現在75.67%カバレッジ**（9テスト、2スイート）、新機能は80%以上
+  - inquiryApi.ts: 75%カバレッジ（エラーハンドリングテスト含む）
+  - App.tsx: 100%カバレッジ
 - **型安全性**: TypeScript strict mode、mypy strict mode
 - **コードスタイル**: Black（Python）、Prettier（TypeScript）
 - **セキュリティ**: Bandit（Python）、ESLint security rules
