@@ -1,8 +1,8 @@
 """Ghost Squad API - Main application."""
+from config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from config import settings
+from routers import inquiry
 
 app = FastAPI(
     title="Ghost Squad API",
@@ -18,6 +18,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ルーター登録
+app.include_router(inquiry.router)
 
 
 @app.get("/")
