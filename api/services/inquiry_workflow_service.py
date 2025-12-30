@@ -177,8 +177,9 @@ class InquiryWorkflowService:
             inquiry.status, InquiryStatus.NEEDS_CLARIFICATION
         ):
             raise InvalidStateTransitionError(
-                f"Cannot request clarification for inquiry with status '{inquiry.status.value}'. "
-                "Only 'received' status inquiries can be requested for clarification."
+                f"Cannot request clarification for inquiry with status "
+                f"'{inquiry.status.value}'. Only 'received' status inquiries "
+                "can be requested for clarification."
             )
 
         # 現在のステータスを記録（履歴用）
@@ -236,8 +237,9 @@ class InquiryWorkflowService:
         # ステータス遷移検証
         if not self.can_transition_to(inquiry.status, InquiryStatus.RECEIVED):
             raise InvalidStateTransitionError(
-                f"Cannot complete clarification for inquiry with status '{inquiry.status.value}'. "
-                "Only 'needs_clarification' status inquiries can be completed."
+                f"Cannot complete clarification for inquiry with status "
+                f"'{inquiry.status.value}'. Only 'needs_clarification' status "
+                "inquiries can be completed."
             )
 
         # 現在のステータスを記録（履歴用）
