@@ -35,7 +35,7 @@ inclusion: always
   - `inquiry_workflow_service.py` - ワークフローサービス（89%カバレッジ、承認・却下・ステータス遷移管理）
 - テストコード（`tests/`）
   - pytest設定済み（`conftest.py`、`pytest.ini`）
-  - 157テスト、91%カバレッジ
+  - 189テスト、高カバレッジ（inquiry: 91%、database接続テスト含む）
   - `test_inquiry_model.py` - Inquiryモデルテスト
   - `test_inquiry_schemas.py` - Pydanticスキーマテスト
   - `test_inquiry_validator.py` - バリデーションテスト
@@ -47,13 +47,14 @@ inclusion: always
 - コード品質設定（`.flake8`、`mypy.ini`）
 
 **3. フロントエンド実装（`web/`）**
-- React アプリケーション（基本構成）
+- React アプリケーション（基本構成、JavaScript実装）
   - `package.json` - React 18、Testing Library設定
   - `App.js` - メインアプリケーションコンポーネント
   - `index.js` - エントリーポイント
   - `App.test.js` - アプリケーションテスト
 - 依存関係定義（`package.json`、`package-lock.json`）
 - テスト設定（`setupTests.js`）
+- **注**: TypeScript移行は未着手（JavaScript実装のまま）
 
 **4. 設計・仕様ドキュメント**
 - `.kiro/specs/inquiry/` - 問い合わせ機能仕様
@@ -83,7 +84,13 @@ inclusion: always
 - ✅ サービス層（`services/` 実装済み - バリデーション＋リポジトリ＋クエリ＋ワークフロー）
 - ✅ ワークフローサービス（`InquiryWorkflowService` 実装済み - 89%カバレッジ）
 - ✅ クエリサービス（`InquiryQueryService` 実装済み - 100%カバレッジ）
-- ❌ APIエンドポイント（問い合わせCRUD未実装 - ルーター層のみ残り）
+- ✅ **APIエンドポイント**（`routers/inquiry.py` 実装完了 - CRUD + ワークフロー）
+  - POST /api/inquiries - 問い合わせ作成
+  - GET /api/inquiries - 問い合わせ一覧（ページネーション・フィルタリング・ソート）
+  - GET /api/inquiries/{id} - 問い合わせ詳細
+  - PUT /api/inquiries/{id} - 問い合わせ更新
+  - POST /api/inquiries/{id}/approve - 承認処理
+  - POST /api/inquiries/{id}/reject - 却下処理
 - ❌ ストーリーモデル（`story.py` 未作成）
 
 **フロントエンド（`web/`）**
@@ -110,19 +117,20 @@ inclusion: always
 6. ✅ ~~InquiryRepository実装（データアクセス層）~~ （完了）
 7. ❌ 開発環境の動作確認（`make dev`、`make db-migrate`）
 
-**Phase 2: Inquiry機能の完全実装（優先度：高）**
+**Phase 2: Inquiry機能の完全実装（優先度：高）** - 🎉 **バックエンド完了**
 - `.kiro/specs/inquiry/` の仕様に従って実装
-- Tasks: タスク3.1、3.2、4.1、4.2、5.1、5.2完了（サービス層実装完了）
-- 進捗: データモデル → バリデーション → データアクセス層 → サービス層（クエリ・ワークフロー） 完了
-- 次: API層 → フロントエンド
-- 必須実装項目:
+- Tasks: 全バックエンドタスク完了（データモデル → サービス層 → API層）
+- 進捗: データモデル → バリデーション → データアクセス層 → サービス層 → **API層完了** ✅
+- 次: フロントエンド実装 → 統合テスト
+- 実装状況:
   - ✅ ~~InquiryRepository（データアクセス層）~~ （完了 - 90%カバレッジ）
   - ✅ ~~InquiryWorkflowService（ワークフロー管理）~~ （完了 - 89%カバレッジ）
   - ✅ ~~InquiryQueryService（クエリサービス）~~ （完了 - 100%カバレッジ）
-  - ❌ 問い合わせCRUD APIエンドポイント（ルーター層）
+  - ✅ ~~問い合わせCRUD APIエンドポイント（ルーター層）~~ （完了 - 全エンドポイント実装済み）
+  - ✅ ~~トランザクション管理・エラーハンドリング強化~~ （完了 - PR #80, #81, #82）
   - ❌ 問い合わせ一覧・詳細画面（React）
   - ❌ 問い合わせ登録フォーム（React + Validation）
-  - ❌ 統合テスト
+  - ❌ E2Eテスト・統合テスト
 
 **Phase 3: フロントエンド基盤の完成（優先度：中）**
 1. ✅ ~~`web/package.json` の作成~~ （完了）
@@ -212,9 +220,9 @@ inclusion: always
 
 ## 📈 開発進捗追跡
 
-### 完了済み（45%）
+### 完了済み（55%） - 🚀 大幅進捗
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
-- ✅ 仕様定義（Inquiry: tasks-generated、Story: requirements-generated）
+- ✅ 仕様定義（Inquiry: implementation phase、Story: requirements-generated）
 - ✅ ステアリングドキュメント
 - ✅ バックエンド基本構成（FastAPI、モデル、テスト設定）
 - ✅ フロントエンド基本構成（React、テスト設定）
@@ -222,20 +230,22 @@ inclusion: always
 - ✅ Inquiryデータアクセス層（InquiryRepository、InquiryValidator）
 - ✅ Inquiryサービス層（InquiryQueryService、InquiryWorkflowService）
 - ✅ Pydanticスキーマ（CreateInquiryRequest、UpdateInquiryRequest、InquiryResponse）
-- ✅ 包括的テストスイート（157テスト、91%カバレッジ）
+- ✅ **Inquiry API層完全実装**（CRUD + ワークフロー全エンドポイント）
+- ✅ **トランザクション管理・エラーハンドリング**（PR #80, #81, #82で強化）
+- ✅ 包括的テストスイート（189テスト、高カバレッジ）
 
 ### 進行中（5%）
-- 🔄 バックエンドAPI層（ルーター、エンドポイント）
-- 🔄 フロントエンド基盤（TypeScript、Tailwind、Router、Query）
+- 🔄 フロントエンド基盤（TypeScript移行、Tailwind、Router、Query）
+- 🔄 Inquiry UI実装（一覧・詳細・登録フォーム）
 
-### 未着手（50%）
-- ❌ Inquiry機能の完全実装（API層 + UI）
+### 未着手（40%）
+- ❌ Inquiry機能のフロントエンド実装
 - ❌ Story機能の設計・実装
 - ❌ AI統合（OpenAI API）
 - ❌ 外部システム統合（Trello、Jira、GitHub Projects）
-- ❌ 統合テスト・E2Eテスト
+- ❌ E2Eテスト・統合テスト
 
 ---
 
 **最終更新**: 2025年12月30日
-**更新理由**: タスク5.1、5.2完了 - InquiryQueryService実装（157テスト、91%カバレッジ達成、InquiryQueryService 100%カバレッジ）
+**更新理由**: Inquiry API層完全実装完了（PR #80, #81, #82マージ） - 全CRUDエンドポイント実装、トランザクション管理・エラーハンドリング強化、189テスト達成

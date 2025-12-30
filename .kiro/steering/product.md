@@ -28,9 +28,11 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 - **クエリサービス**: InquiryQueryService（一覧取得、検索、フィルタリング、ページネーション）
 - **ワークフローサービス**: InquiryWorkflowService（承認・却下処理、ステータス遷移管理）
 - **Pydanticスキーマ**: 完全な型安全APIスキーマ（CreateInquiryRequest、UpdateInquiryRequest、InquiryResponse）
+- **REST API層**: 問い合わせCRUD + ワークフローエンドポイント完全実装（`routers/inquiry.py`）
+- **トランザクション管理**: ロールバック対応、エラーハンドリング強化
 - **データ永続化**: PostgreSQL + SQLAlchemy + Alembic
 - **開発環境**: Docker Compose + Makefile統合
-- **テスト**: 157テスト、91%カバレッジ
+- **テスト**: 189テスト、高カバレッジ（inquiry: 91%、database接続テスト含む）
 
 ### 🚧 開発中機能
 - **AI統合**: OpenAI APIによるストーリー生成
@@ -66,20 +68,22 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 
 **現在実装済みのRESTful設計**
 ```
-# 実装済み
-GET    /api/inquiries          # 問い合わせ一覧（ページネーション対応）
-POST   /api/inquiries          # 新規問い合わせ作成
-GET    /api/inquiries/{id}     # 問い合わせ詳細
-GET    /api/info               # API情報
-GET    /api/db-test            # データベーステスト
-GET    /health                 # ヘルスチェック
+# 実装済み（Inquiry API - 完全実装）
+POST   /api/inquiries              # 問い合わせ作成
+GET    /api/inquiries              # 問い合わせ一覧（ページネーション・フィルタリング・ソート）
+GET    /api/inquiries/{id}         # 問い合わせ詳細
+PUT    /api/inquiries/{id}         # 問い合わせ更新
+POST   /api/inquiries/{id}/approve # 承認処理
+POST   /api/inquiries/{id}/reject  # 却下処理
 
-# 開発中
-PUT    /api/inquiries/{id}     # 問い合わせ更新
-GET    /api/stories            # ストーリー一覧
-POST   /api/stories/generate   # AI生成エンドポイント
-PUT    /api/stories/{id}       # ストーリー編集
-POST   /api/stories/batch      # 一括操作
+# システムエンドポイント
+GET    /health                     # ヘルスチェック
+
+# 開発中（Story API）
+GET    /api/stories                # ストーリー一覧
+POST   /api/stories/generate       # AI生成エンドポイント
+PUT    /api/stories/{id}           # ストーリー編集
+POST   /api/stories/batch          # 一括操作
 
 # 将来実装
 GET    /api/templates          # テンプレート一覧
