@@ -296,4 +296,9 @@ inclusion: always
 ---
 
 **最終更新**: 2025年12月31日
-**更新理由**: InquiryDetail実装完了 - 詳細表示・編集・承認/却下機能、ダイアログUI、包括的テスト（Tasks 10.1, 10.2完了、16テスト追加、54テスト合計、91.02%カバレッジ達成）
+**更新理由**:
+- InquiryWorkflowService ステータスフロー修正（design.mdと完全一致）
+  - 削除: `failed` ステータス、`received → processing`、`processing → task_working`、`processing → failed`、`needs_clarification → rejected`、`needs_clarification → task_working` 遷移
+  - 追加: `task_working → processing` 遷移
+  - 変更: `processing → completed` （タスク完了）
+- requirements.md 更新（`failed` 削除、`completed` 説明変更）

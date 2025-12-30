@@ -134,11 +134,11 @@ POST   /api/export/github      # GitHub Projectsエクスポート
 # 問い合わせステータス（実装済み）
 class InquiryStatus(Enum):
     RECEIVED = "received"                    # 受付済み
-    PROCESSING = "processing"                # AI処理中
-    NEEDS_CLARIFICATION = "needs_clarification"  # 明確化要求
-    TASK_WORKING = "task_working"           # タスク作業中
-    COMPLETED = "completed"                  # 完了
-    FAILED = "failed"                       # 失敗
+    TASK_WORKING = "task_working"           # タスク作業中（承認済み、AI変換待ち）
+    PROCESSING = "processing"                # AI処理中（ストーリー生成中）
+    COMPLETED = "completed"                  # 完了（タスク作業完了）
+    REJECTED = "rejected"                    # 却下済み
+    NEEDS_CLARIFICATION = "needs_clarification"  # 明確化要求（将来実装）
 
 # ストーリーステータス（実装済み）
 class StoryStatus(Enum):
@@ -164,6 +164,16 @@ class StoryCategory(Enum):
     CUSTOM = "custom"                      # カスタム
 ```
 
+**問い合わせワークフロー（実装済み）**
+
+問い合わせのステータス遷移は以下の通り：
+- `received` → `task_working`: 承認操作
+- `received` → `rejected`: 却下操作
+- `received` → `needs_clarification`: 明確化要求（将来実装）
+- `needs_clarification` → `received`: 明確化完了（将来実装）
+- `task_working` → `processing`: AI変換開始（story specで実装予定）
+- `processing` → `completed`: タスク完了（story specで実装予定）
+
 **実装済みフィールド設計**
 ```python
 # 全エンティティ共通（BigInteger ID使用）
@@ -178,6 +188,8 @@ language: str = "ja"          # 言語（デフォルト日本語）
 timestamp: datetime           # タイムスタンプ
 status: InquiryStatus         # ステータス
 inquiry_metadata: dict        # メタデータ（JSON）
+                              # - rejection: 却下情報（rejected_at、reason）
+                              # - status_history: ステータス変更履歴
 
 # ストーリー固有（実装済み）
 inquiry_id: int               # 問い合わせID（外部キー）
