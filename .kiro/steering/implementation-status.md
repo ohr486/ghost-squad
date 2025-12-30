@@ -47,8 +47,8 @@ inclusion: always
 - コード品質設定（`.flake8`、`mypy.ini`）
 
 **3. フロントエンド実装（`web/`）**
-- React アプリケーション（**TypeScript 5.1実装完了** ✅）
-  - `package.json` - React 18、Testing Library設定、TypeScript 5.1.6、Axios 1.6.2、TanStack React Query 5.8.4
+- React アプリケーション（**TypeScript 4.9実装完了** ✅）
+  - `package.json` - React 18、Testing Library設定、TypeScript 4.9.5、Axios 1.6.2、TanStack React Query 5.8.4
   - `App.tsx` - メインアプリケーションコンポーネント（TypeScript化）
   - `index.tsx` - エントリーポイント（TypeScript化）
   - `App.test.tsx` - アプリケーションテスト（TypeScript化）
@@ -71,8 +71,8 @@ inclusion: always
   - `__mocks__/axios.ts` - Axiosマニュアルモック（エラーハンドリングテスト用）
   - `inquiryApi.test.ts` - APIクライアント包括的テスト（14テスト、エラーハンドリング含む）
 - 依存関係定義（`package.json`、`package-lock.json`）
-  - TypeScript 5.1.6: `@types/react`, `@types/react-dom`, `@types/node`, `@types/jest`
-  - フォーム: `@hookform/resolvers@5.2.2`, `react-hook-form@7.43.0`, `zod@3.22.4`
+  - TypeScript 4.9.5: `@types/react`, `@types/react-dom`, `@types/node`, `@types/jest`
+  - フォーム: `@hookform/resolvers@3.3.2`（固定）, `react-hook-form@7.43.0`（固定）, `zod@3.22.4`（固定）
   - 状態管理: `@tanstack/react-query@5.8.4`（サーバー状態管理）
   - テスト: `@testing-library/dom@10.4.1`, `@testing-library/react@14.0.0`
   - UI: `react-hot-toast@2.4.1`
@@ -119,7 +119,7 @@ inclusion: always
 - ❌ ストーリーモデル（`story.py` 未作成）
 
 **フロントエンド（`web/`）**
-- ✅ TypeScript 5.1設定（完了 - strict mode、tsconfig.json、--legacy-peer-deps）
+- ✅ TypeScript 4.9設定（完了 - strict mode、tsconfig.json、--legacy-peer-deps）
 - ✅ 型定義（完了 - `src/types/inquiry.ts`、バックエンドスキーマと整合）
 - ✅ Axios設定（完了 - `src/services/inquiryApi.ts`、エラーインターセプター実装）
 - ✅ サービス層基盤（完了 - APIクライアント実装、86.11%カバレッジ、14テスト）
@@ -164,7 +164,7 @@ inclusion: always
 
 **Phase 3: フロントエンド基盤の完成（優先度：中）** - 🎉 **基盤 + 基本コンポーネント完了**
 1. ✅ ~~`web/package.json` の作成~~ （完了）
-2. ✅ ~~TypeScriptへの移行（`.tsx`、`tsconfig.json`）~~ （完了 - TypeScript 5.1.6）
+2. ✅ ~~TypeScriptへの移行（`.tsx`、`tsconfig.json`）~~ （完了 - TypeScript 4.9.5）
 3. ✅ ~~型定義作成（`src/types/inquiry.ts`）~~ （完了）
 4. ✅ ~~Axios設定（API通信、エラーハンドリング）~~ （完了）
 5. ✅ ~~テスト基盤（Jest + RTL + TypeScript）~~ （完了 - 38テスト、89%カバレッジ）
@@ -197,11 +197,14 @@ inclusion: always
 - **CORS**: localhost:3000、Docker内部通信対応
 
 ### フロントエンド
-- **技術スタック**: React 18+ + TypeScript 5.1+ + Tailwind CSS 3.3+
+- **技術スタック**: React 18+ + TypeScript 4.9+ + Tailwind CSS 3.3+
 - **状態管理**: TanStack React Query（サーバー状態管理）
-- **フォーム**: React Hook Form 7.43 + @hookform/resolvers 5.2.2 + Zod 3.22.4 バリデーション
+- **フォーム**: React Hook Form 7.43.0（固定） + @hookform/resolvers 3.3.2（固定） + Zod 3.22.4（固定） バリデーション
 - **API通信**: Axios 1.6.2（プロキシ設定）
 - **型安全性**: strict モード、バックエンドと型定義を統一
+  - 注: TypeScript 4.9.5使用（react-scripts 5.0.1互換性）
+  - `npm run type-check`はnode_modules型定義互換性問題によりスキップ
+  - ESLintとテストで品質保証、`npm run build`時に型チェック実行
 - **ビルド**: --legacy-peer-deps対応（react-scripts 5.0.1との互換性）
 
 ### 開発環境
@@ -269,7 +272,7 @@ inclusion: always
 - ✅ **Inquiry API層完全実装**（CRUD + ワークフロー全エンドポイント）
 - ✅ **トランザクション管理・エラーハンドリング**（PR #80, #81, #82で強化）
 - ✅ 包括的バックエンドテスト（189テスト、高カバレッジ）
-- ✅ **TypeScript 5.1完全移行**（strict mode、tsconfig.json、--legacy-peer-deps、ESLint互換）
+- ✅ **TypeScript 4.9完全移行**（strict mode、tsconfig.json、--legacy-peer-deps、ESLint互換）
 - ✅ **型定義基盤**（InquiryResponse、CreateInquiryRequest、ErrorResponse等）
 - ✅ **APIクライアントサービス**（Axios、エラーインターセプター、86.11%カバレッジ）
 - ✅ **InquiryFormコンポーネント**（React Hook Form + Zod、100% statements、94.28% branches）
