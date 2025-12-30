@@ -138,6 +138,13 @@ src/
     - 行クリック・キーボードナビゲーション対応（アクセシビリティ）
     - 内容の省略表示（100文字制限）
     - ローディング・エラー状態表示
+  - `InquiryDetail.tsx` - 問い合わせ詳細・編集
+    - TanStack React Query（詳細取得・mutations）
+    - 読み取り/編集モード切り替え
+    - インライン編集（textarea）
+    - 承認・却下ワークフロー（ステータス='received'のみ）
+    - モーダルダイアログ（却下理由入力）
+    - 94.64% statements カバレッジ、86.36% branches カバレッジ
 - **将来実装**:
   - `ui/` - 基本UIコンポーネント（Button、Input、Modal等）
   - `layout/` - レイアウトコンポーネント（Header、Footer、Sidebar等）

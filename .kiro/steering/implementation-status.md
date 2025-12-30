@@ -259,7 +259,7 @@ inclusion: always
 
 ## 📈 開発進捗追跡
 
-### 完了済み（75%） - 🚀 InquiryForm + InquiryList実装完了
+### 完了済み（80%） - 🎉 Inquiry基本コンポーネント完全実装完了
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
 - ✅ 仕様定義（Inquiry: implementation phase、Story: requirements-generated）
 - ✅ ステアリングドキュメント
@@ -277,16 +277,17 @@ inclusion: always
 - ✅ **APIクライアントサービス**（Axios、エラーインターセプター、86.11%カバレッジ）
 - ✅ **InquiryFormコンポーネント**（React Hook Form + Zod、100% statements、94.28% branches）
 - ✅ **InquiryListコンポーネント**（TanStack Query、ページネーション、フィルタ、84.21% statements）
-- ✅ **TanStack React Query基盤**（サーバー状態管理、InquiryListで実装）
-- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、38テスト、89%カバレッジ）
+- ✅ **InquiryDetailコンポーネント**（詳細表示、編集、承認・却下、94.64% statements、86.36% branches）
+- ✅ **TanStack React Query基盤**（サーバー状態管理、全コンポーネントで活用）
+- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、54テスト、91.02%カバレッジ）
 - ✅ **コード品質基盤**（Prettier + ESLint設定、全チェック通過）
 
-### 進行中（5%）
-- 🔄 Inquiry UI実装（詳細ページ、ページレイアウト）
-- 🔄 フロントエンド高度機能（Tailwind、Router）
+### 進行中（3%）
+- 🔄 フロントエンド統合（ページレイアウト、ルーティング）
+- 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
-### 未着手（20%）
-- ❌ Inquiry機能の詳細ページ・ページレイアウト実装
+### 未着手（17%）
+- ❌ Inquiry機能のページレイアウト・ルーティング統合
 - ❌ Story機能の設計・実装
 - ❌ AI統合（OpenAI API）
 - ❌ 外部システム統合（Trello、Jira、GitHub Projects）
@@ -294,5 +295,5 @@ inclusion: always
 
 ---
 
-**最終更新**: 2025年12月30日
-**更新理由**: InquiryList実装完了 - TanStack React Query統合、ページネーション・フィルタリング機能、包括的テスト（Tasks 8.3, 8.4完了、38テスト、89%カバレッジ達成）
+**最終更新**: 2025年12月31日
+**更新理由**: InquiryDetail実装完了 - 詳細表示・編集・承認/却下機能、ダイアログUI、包括的テスト（Tasks 10.1, 10.2完了、16テスト追加、54テスト合計、91.02%カバレッジ達成）
