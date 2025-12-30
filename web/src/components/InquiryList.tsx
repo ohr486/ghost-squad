@@ -144,6 +144,13 @@ const InquiryList: React.FC<InquiryListProps> = ({ onInquiryClick }) => {
               <tr
                 key={inquiry.id}
                 onClick={() => handleRowClick(inquiry.id)}
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    handleRowClick(inquiry.id);
+                  }
+                }}
                 className="hover:bg-gray-50 cursor-pointer"
               >
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
