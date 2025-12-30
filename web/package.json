@@ -52,7 +52,14 @@
   },
   "jest": {
     "transformIgnorePatterns": [
-      "node_modules/(?!(@testing-library)/)"
+      "node_modules/(?!(@testing-library|axios)/)"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/types/**",
+      "!src/index.tsx",
+      "!src/setupTests.ts"
     ]
   },
   "browserslist": {
