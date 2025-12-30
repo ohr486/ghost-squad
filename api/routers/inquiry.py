@@ -3,9 +3,9 @@
 問い合わせの作成、取得、更新、承認、却下のエンドポイントを提供する。
 """
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from fastapi import status as http_status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -110,7 +110,7 @@ async def create_inquiry(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -198,7 +198,7 @@ async def list_inquiries(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -243,7 +243,7 @@ async def get_inquiry(
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -306,7 +306,7 @@ async def update_inquiry(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -363,7 +363,7 @@ async def approve_inquiry(
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -395,7 +395,7 @@ class RejectInquiryRequest(BaseModel):
 )
 async def reject_inquiry(
     inquiry_id: int,
-    request: RejectInquiryRequest = RejectInquiryRequest(),
+    request: RejectInquiryRequest = Body(default=RejectInquiryRequest(reason=None)),
     db: Session = Depends(get_db),
 ) -> InquiryResponse:
     """問い合わせを却下する.
@@ -433,7 +433,7 @@ async def reject_inquiry(
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        error_response = _create_error_response("GS-010", "データベース操作に失敗しました")
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),

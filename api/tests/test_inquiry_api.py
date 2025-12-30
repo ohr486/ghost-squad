@@ -18,14 +18,14 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from database import get_db
 from main import app
-from models.database.base import BaseModel
+from models.database.base import Base
 from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
 
-# テスト用データベースの設定（in-memoryを使用してクリーンアップ不要に）
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
+# テスト用データベースの設定（shared in-memory SQLiteを使用）
+SQLALCHEMY_DATABASE_URL = "sqlite:///file:test_db?mode=memory&cache=shared&uri=true"
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False, "uri": True}
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -42,6 +42,12 @@ def override_get_db():
 @pytest.fixture(scope="module")
 def client():
     """テストクライアントと依存関係のオーバーライドを管理する."""
+    # InquiryModelが確実に登録されるように明示的にインポート
+    from models.database.inquiry import InquiryModel as _  # noqa: F401
+
+    # データベーススキーマを作成
+    Base.metadata.create_all(bind=engine)
+
     # 既存のオーバーライドを保存
     original_override = app.dependency_overrides.get(get_db)
     app.dependency_overrides[get_db] = override_get_db
@@ -55,13 +61,21 @@ def client():
     else:
         app.dependency_overrides.pop(get_db, None)
 
+    # データベーススキーマを削除
+    Base.metadata.drop_all(bind=engine)
 
-@pytest.fixture(scope="function", autouse=True)
-def setup_database():
-    """テストごとにデータベースをセットアップする."""
-    BaseModel.metadata.create_all(bind=engine)
+
+@pytest.fixture(autouse=True)
+def cleanup_database():
+    """各テスト後にデータベースをクリーンアップする."""
     yield
-    BaseModel.metadata.drop_all(bind=engine)
+    db = TestingSessionLocal()
+    try:
+        # すべてのテーブルのデータを削除
+        db.query(InquiryModel).delete()
+        db.commit()
+    finally:
+        db.close()
 
 
 @pytest.fixture
@@ -95,7 +109,7 @@ def sample_inquiry(db_session: Session):
 # POST /api/inquiries - 問い合わせ作成API
 
 
-def test_create_inquiry_success():
+def test_create_inquiry_success(client):
     """問い合わせ作成の正常系テスト."""
     # Arrange
     inquiry_data = {
@@ -120,7 +134,7 @@ def test_create_inquiry_success():
     assert "updated_at" in data
 
 
-def test_create_inquiry_validation_error_empty_content():
+def test_create_inquiry_validation_error_empty_content(client):
     """問い合わせ作成のバリデーションエラーテスト（content空）."""
     # Arrange
     inquiry_data = {
@@ -136,7 +150,7 @@ def test_create_inquiry_validation_error_empty_content():
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_create_inquiry_validation_error_whitespace_only_content():
+def test_create_inquiry_validation_error_whitespace_only_content(client):
     """問い合わせ作成のバリデーションエラーテスト（content空白のみ）."""
     # Arrange
     inquiry_data = {
@@ -152,7 +166,7 @@ def test_create_inquiry_validation_error_whitespace_only_content():
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_create_inquiry_validation_error_invalid_user_id():
+def test_create_inquiry_validation_error_invalid_user_id(client):
     """問い合わせ作成のバリデーションエラーテスト（user_id不正）."""
     # Arrange
     inquiry_data = {
@@ -168,7 +182,7 @@ def test_create_inquiry_validation_error_invalid_user_id():
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_create_inquiry_missing_required_fields():
+def test_create_inquiry_missing_required_fields(client):
     """問い合わせ作成のバリデーションエラーテスト（必須フィールド欠落）."""
     # Arrange - contentフィールドが欠落
     inquiry_data = {
@@ -198,7 +212,7 @@ def test_create_inquiry_missing_required_fields():
 # GET /api/inquiries - 問い合わせ一覧API
 
 
-def test_list_inquiries_success(sample_inquiry):
+def test_list_inquiries_success(client, sample_inquiry):
     """問い合わせ一覧取得の正常系テスト."""
     # Act
     response = client.get("/api/inquiries")
@@ -217,7 +231,7 @@ def test_list_inquiries_success(sample_inquiry):
     assert data["meta"]["has_next"] is False
 
 
-def test_list_inquiries_pagination():
+def test_list_inquiries_pagination(client):
     """問い合わせ一覧のページネーションテスト."""
     # Arrange - 30件の問い合わせを作成
     db = TestingSessionLocal()
@@ -271,7 +285,7 @@ def test_list_inquiries_pagination():
     assert data["meta"]["has_next"] is False
 
 
-def test_list_inquiries_status_filter(sample_inquiry):
+def test_list_inquiries_status_filter(client, sample_inquiry):
     """問い合わせ一覧のステータスフィルタリングテスト."""
     # Arrange - 別のステータスの問い合わせを追加
     db = TestingSessionLocal()
@@ -315,7 +329,7 @@ def test_list_inquiries_status_filter(sample_inquiry):
     assert len(data["data"]) == 2
 
 
-def test_list_inquiries_user_id_filter():
+def test_list_inquiries_user_id_filter(client):
     """問い合わせ一覧のuser_idフィルタリングテスト."""
     # Arrange
     db = TestingSessionLocal()
@@ -350,7 +364,7 @@ def test_list_inquiries_user_id_filter():
     assert data["data"][0]["user_id"] == "user1"
 
 
-def test_list_inquiries_sort():
+def test_list_inquiries_sort(client):
     """問い合わせ一覧のソートテスト."""
     # Arrange
     from datetime import timedelta
@@ -395,7 +409,7 @@ def test_list_inquiries_sort():
     assert len(data_updated["data"]) == 2
 
 
-def test_list_inquiries_invalid_pagination():
+def test_list_inquiries_invalid_pagination(client):
     """問い合わせ一覧の無効なページネーションパラメータテスト."""
     # Act - page=0（最小値違反）
     response = client.get("/api/inquiries?page=0")
@@ -422,7 +436,7 @@ def test_list_inquiries_invalid_pagination():
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_list_inquiries_invalid_status_filter():
+def test_list_inquiries_invalid_status_filter(client):
     """問い合わせ一覧の無効なステータスフィルタテスト."""
     # Act - 無効なステータス値
     response = client.get("/api/inquiries?status=invalid_status")
@@ -436,7 +450,7 @@ def test_list_inquiries_invalid_status_filter():
 # GET /api/inquiries/{id} - 問い合わせ詳細API
 
 
-def test_get_inquiry_success(sample_inquiry):
+def test_get_inquiry_success(client, sample_inquiry):
     """問い合わせ詳細取得の正常系テスト."""
     # Act
     response = client.get(f"/api/inquiries/{sample_inquiry.id}")
@@ -450,7 +464,7 @@ def test_get_inquiry_success(sample_inquiry):
     assert data["status"] == "received"
 
 
-def test_get_inquiry_not_found():
+def test_get_inquiry_not_found(client):
     """問い合わせ詳細取得の404エラーテスト."""
     # Act
     response = client.get("/api/inquiries/99999")
@@ -464,7 +478,7 @@ def test_get_inquiry_not_found():
 # PUT /api/inquiries/{id} - 問い合わせ更新API
 
 
-def test_update_inquiry_success(sample_inquiry):
+def test_update_inquiry_success(client, sample_inquiry):
     """問い合わせ更新の正常系テスト."""
     # Arrange
     update_data = {
@@ -483,7 +497,7 @@ def test_update_inquiry_success(sample_inquiry):
     assert data["source_system"] == "email"
 
 
-def test_update_inquiry_partial_update(sample_inquiry):
+def test_update_inquiry_partial_update(client, sample_inquiry):
     """問い合わせの部分更新テスト."""
     # Arrange - contentのみ更新
     update_data = {
@@ -500,7 +514,7 @@ def test_update_inquiry_partial_update(sample_inquiry):
     assert data["source_system"] == "manual"  # 元のまま
 
 
-def test_update_inquiry_validation_error(sample_inquiry):
+def test_update_inquiry_validation_error(client, sample_inquiry):
     """問い合わせ更新のバリデーションエラーテスト."""
     # Arrange - 空白のみのcontent
     update_data = {
@@ -514,7 +528,7 @@ def test_update_inquiry_validation_error(sample_inquiry):
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
 
-def test_update_inquiry_not_found():
+def test_update_inquiry_not_found(client):
     """問い合わせ更新の404エラーテスト."""
     # Arrange
     update_data = {
@@ -531,7 +545,7 @@ def test_update_inquiry_not_found():
 # POST /api/inquiries/{id}/approve - 問い合わせ承認API
 
 
-def test_approve_inquiry_success(sample_inquiry):
+def test_approve_inquiry_success(client, sample_inquiry):
     """問い合わせ承認の正常系テスト."""
     # Act
     response = client.post(f"/api/inquiries/{sample_inquiry.id}/approve")
@@ -543,7 +557,7 @@ def test_approve_inquiry_success(sample_inquiry):
     assert data["status"] == "task_working"
 
 
-def test_approve_inquiry_invalid_state_transition(sample_inquiry):
+def test_approve_inquiry_invalid_state_transition(client, sample_inquiry):
     """問い合わせ承認の無効なステータス遷移テスト."""
     # Arrange - 既に承認済みにする
     db = TestingSessionLocal()
@@ -564,7 +578,7 @@ def test_approve_inquiry_invalid_state_transition(sample_inquiry):
     assert "errors" in data["detail"]
 
 
-def test_approve_inquiry_not_found():
+def test_approve_inquiry_not_found(client):
     """問い合わせ承認の404エラーテスト."""
     # Act
     response = client.post("/api/inquiries/99999/approve")
@@ -576,7 +590,7 @@ def test_approve_inquiry_not_found():
 # POST /api/inquiries/{id}/reject - 問い合わせ却下API
 
 
-def test_reject_inquiry_success_with_reason(sample_inquiry):
+def test_reject_inquiry_success_with_reason(client, sample_inquiry):
     """問い合わせ却下の正常系テスト（却下理由あり）."""
     # Arrange
     reject_data = {
@@ -609,7 +623,7 @@ def test_reject_inquiry_success_with_reason(sample_inquiry):
     db.close()
 
 
-def test_reject_inquiry_success_without_reason(sample_inquiry):
+def test_reject_inquiry_success_without_reason(client, sample_inquiry):
     """問い合わせ却下の正常系テスト（却下理由なし）."""
     # Act - 却下理由なし
     response = client.post(f"/api/inquiries/{sample_inquiry.id}/reject", json={})
@@ -620,7 +634,7 @@ def test_reject_inquiry_success_without_reason(sample_inquiry):
     assert data["status"] == "rejected"
 
 
-def test_reject_inquiry_invalid_state_transition(sample_inquiry):
+def test_reject_inquiry_invalid_state_transition(client, sample_inquiry):
     """問い合わせ却下の無効なステータス遷移テスト."""
     # Arrange - 既に却下済みにする
     db = TestingSessionLocal()
@@ -639,7 +653,7 @@ def test_reject_inquiry_invalid_state_transition(sample_inquiry):
     assert response.status_code == status.HTTP_409_CONFLICT
 
 
-def test_reject_inquiry_not_found():
+def test_reject_inquiry_not_found(client):
     """問い合わせ却下の404エラーテスト."""
     # Act
     response = client.post("/api/inquiries/99999/reject", json={})
