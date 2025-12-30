@@ -323,7 +323,7 @@ describe("InquiryDetail", () => {
       await waitFor(() => {
         expect(mockInquiryApi.rejectInquiry).toHaveBeenCalledWith(
           1,
-          "要件が不明確です",
+          { reason: "要件が不明確です" },
         );
       });
 
