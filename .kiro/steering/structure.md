@@ -76,6 +76,12 @@ src/
 ├── services/          # API呼び出しサービス（実装済み）
 │   ├── inquiryApi.ts  # 問い合わせAPIクライアント（Axios、エラーハンドリング）
 │   └── index.ts       # サービスエクスポート
+├── components/        # 再利用可能コンポーネント（実装済み）
+│   ├── InquiryForm.tsx      # 問い合わせ入力フォーム（React Hook Form + Zod）
+│   ├── InquiryForm.test.tsx # フォームコンポーネントテスト
+│   ├── InquiryList.tsx      # 問い合わせ一覧コンポーネント（TanStack Query、ページネーション、フィルタ）
+│   ├── InquiryList.test.tsx # 一覧コンポーネントテスト
+│   └── index.ts             # コンポーネントエクスポート
 ├── __mocks__/         # テストモック（実装済み）
 │   └── axios.ts       # Axiosマニュアルモック
 ├── App.tsx            # メインアプリケーションコンポーネント
@@ -87,10 +93,9 @@ src/
 **将来実装予定のディレクトリ**
 ```
 src/
-├── components/       # 再利用可能コンポーネント（未実装）
-│   ├── ui/          # 基本UIコンポーネント
-│   ├── forms/       # フォームコンポーネント
-│   └── layout/      # レイアウトコンポーネント
+├── components/       # 追加の再利用可能コンポーネント
+│   ├── ui/          # 基本UIコンポーネント（未実装）
+│   └── layout/      # レイアウトコンポーネント（未実装）
 ├── pages/           # ページコンポーネント（未実装）
 ├── hooks/           # カスタムReactフック（未実装）
 ├── utils/           # ユーティリティ関数（未実装）
@@ -118,6 +123,24 @@ src/
   - `storyApi.ts` - ストーリーAPIクライアント
   - `authService.ts` - 認証サービス
   - `exportService.ts` - エクスポートサービス
+
+**コンポーネント組織化** (`src/components/`)
+- **実装済み**:
+  - `InquiryForm.tsx` - 問い合わせ入力フォーム
+    - React Hook Form + Zod バリデーション
+    - リアルタイム入力検証
+    - エラーハンドリング・成功通知（react-hot-toast）
+    - 100% statements カバレッジ、94.28% branches カバレッジ
+  - `InquiryList.tsx` - 問い合わせ一覧表示
+    - TanStack React Query（サーバー状態管理）
+    - ページネーション（前へ/次へ、ページ番号表示）
+    - ステータスフィルタリング（全ステータス対応）
+    - 行クリック・キーボードナビゲーション対応（アクセシビリティ）
+    - 内容の省略表示（100文字制限）
+    - ローディング・エラー状態表示
+- **将来実装**:
+  - `ui/` - 基本UIコンポーネント（Button、Input、Modal等）
+  - `layout/` - レイアウトコンポーネント（Header、Footer、Sidebar等）
 
 ## 命名規則
 
