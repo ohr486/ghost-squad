@@ -72,7 +72,7 @@ inclusion: always
   - `inquiryApi.test.ts` - APIクライアント包括的テスト（14テスト、エラーハンドリング含む）
 - 依存関係定義（`package.json`、`package-lock.json`）
   - TypeScript 4.9.5: `@types/react`, `@types/react-dom`, `@types/node`, `@types/jest`
-  - フォーム: `@hookform/resolvers@5.2.2`, `react-hook-form@7.43.0`, `zod@3.22.4`
+  - フォーム: `@hookform/resolvers@3.3.2`（固定）, `react-hook-form@7.43.0`（固定）, `zod@3.22.4`（固定）
   - 状態管理: `@tanstack/react-query@5.8.4`（サーバー状態管理）
   - テスト: `@testing-library/dom@10.4.1`, `@testing-library/react@14.0.0`
   - UI: `react-hot-toast@2.4.1`
@@ -199,9 +199,12 @@ inclusion: always
 ### フロントエンド
 - **技術スタック**: React 18+ + TypeScript 4.9+ + Tailwind CSS 3.3+
 - **状態管理**: TanStack React Query（サーバー状態管理）
-- **フォーム**: React Hook Form 7.43 + @hookform/resolvers 5.2.2 + Zod 3.22.4 バリデーション
+- **フォーム**: React Hook Form 7.43.0（固定） + @hookform/resolvers 3.3.2（固定） + Zod 3.22.4（固定） バリデーション
 - **API通信**: Axios 1.6.2（プロキシ設定）
 - **型安全性**: strict モード、バックエンドと型定義を統一
+  - 注: TypeScript 4.9.5使用（react-scripts 5.0.1互換性）
+  - `npm run type-check`はnode_modules型定義互換性問題によりスキップ
+  - ESLintとテストで品質保証、`npm run build`時に型チェック実行
 - **ビルド**: --legacy-peer-deps対応（react-scripts 5.0.1との互換性）
 
 ### 開発環境
