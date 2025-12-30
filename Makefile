@@ -132,14 +132,14 @@ lint-api:
 	@echo "🔍 Running api linting..."
 	@echo "📝 Running flake8..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api flake8 models/ services/ tests/ config.py database.py manage_db.py main.py; \
+		docker-compose run --rm api flake8 models/ services/ routers/ tests/ config.py database.py manage_db.py main.py; \
 	else \
-		docker-compose run --rm api flake8 models/ services/ config.py database.py manage_db.py main.py; \
+		docker-compose run --rm api flake8 models/ services/ routers/ config.py database.py manage_db.py main.py; \
 	fi
 	@echo "🔍 Running mypy type checking..."
-	docker-compose run --rm api mypy --explicit-package-bases models/ services/ config.py database.py manage_db.py main.py
+	docker-compose run --rm api mypy --explicit-package-bases models/ services/ routers/ config.py database.py manage_db.py main.py
 	@echo "🛡️ Running bandit security check..."
-	docker-compose run --rm api bandit -r models/ services/ -f json
+	docker-compose run --rm api bandit -r models/ services/ routers/ -f json
 
 # フロントエンドコード品質チェック (Run web linting)
 lint-web:
@@ -158,15 +158,15 @@ format-api:
 	@echo "🎨 Formatting api code..."
 	@echo "📝 Running black formatter..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api black models/ services/ tests/ config.py database.py manage_db.py main.py; \
+		docker-compose run --rm api black models/ services/ routers/ tests/ config.py database.py manage_db.py main.py; \
 	else \
-		docker-compose run --rm api black models/ services/ config.py database.py manage_db.py main.py; \
+		docker-compose run --rm api black models/ services/ routers/ config.py database.py manage_db.py main.py; \
 	fi
 	@echo "📦 Running isort import sorter..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api isort models/ services/ tests/ config.py database.py manage_db.py main.py; \
+		docker-compose run --rm api isort models/ services/ routers/ tests/ config.py database.py manage_db.py main.py; \
 	else \
-		docker-compose run --rm api isort models/ services/ config.py database.py manage_db.py main.py; \
+		docker-compose run --rm api isort models/ services/ routers/ config.py database.py manage_db.py main.py; \
 	fi
 
 # フロントエンドコードフォーマット (Format web code)
