@@ -22,14 +22,15 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 ## 現在の実装状況
 
 ### ✅ 実装済み機能
-- **問い合わせ管理**: 日本語での問い合わせ入力・保存・履歴管理
+- **問い合わせ管理**: 日本語での問い合わせ入力・保存・履歴管理・検索
 - **バリデーション層**: InquiryValidator（入力検証、日本語エラーメッセージ、GS-xxxエラーコード体系）
 - **データアクセス層**: InquiryRepository（CRUD操作、フィルタリング、ソート、ページネーション）
+- **クエリサービス**: InquiryQueryService（一覧取得、検索、フィルタリング、ページネーション）
+- **ワークフローサービス**: InquiryWorkflowService（承認・却下処理、ステータス遷移管理）
 - **Pydanticスキーマ**: 完全な型安全APIスキーマ（CreateInquiryRequest、UpdateInquiryRequest、InquiryResponse）
-- **REST API**: 問い合わせCRUD操作の完全実装（API層実装待ち）
 - **データ永続化**: PostgreSQL + SQLAlchemy + Alembic
 - **開発環境**: Docker Compose + Makefile統合
-- **テスト**: 122テスト、93%カバレッジ
+- **テスト**: 157テスト、91%カバレッジ
 
 ### 🚧 開発中機能
 - **AI統合**: OpenAI APIによるストーリー生成

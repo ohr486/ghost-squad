@@ -78,7 +78,7 @@
 
 ### 5. クエリサービスの実装
 
-- [ ] 5.1 (P) InquiryQueryServiceを実装する
+- [x] 5.1 (P) InquiryQueryServiceを実装する
   - listInquiriesメソッドを実装し、ListInquiriesRequestを受け取る
   - ページネーション処理（page、limit、has_next計算）を実装する
   - ステータスフィルタリング（単一/複数ステータス）を実装する
@@ -87,7 +87,7 @@
   - getInquiryメソッドを実装し、存在しないIDの場合はInquiryNotFoundErrorをスローする
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
 
-- [ ] 5.2 (P) InquiryQueryServiceのユニットテストを作成する
+- [x] 5.2 (P) InquiryQueryServiceのユニットテストを作成する
   - ページネーション機能のテスト（デフォルト値、範囲検証）を実装する
   - フィルタリング機能のテスト（status、user_id）を実装する
   - ソート機能のテスト（created_at DESC、その他）を実装する
