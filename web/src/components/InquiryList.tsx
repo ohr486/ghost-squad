@@ -7,7 +7,6 @@ interface InquiryListProps {
   onInquiryClick: (inquiryId: number) => void;
   onApprove?: (inquiryId: number) => Promise<void>;
   onReject?: (inquiryId: number) => Promise<void>;
-  statusFilter?: InquiryStatus[];
 }
 
 const STATUS_LABELS: Record<InquiryStatus, string> = {
@@ -20,10 +19,7 @@ const STATUS_LABELS: Record<InquiryStatus, string> = {
   failed: "失敗",
 };
 
-const InquiryList: React.FC<InquiryListProps> = ({
-  onInquiryClick,
-  statusFilter,
-}) => {
+const InquiryList: React.FC<InquiryListProps> = ({ onInquiryClick }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedStatus, setSelectedStatus] = useState<InquiryStatus | "">("");
   const limit = 20;
