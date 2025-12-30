@@ -329,9 +329,9 @@ describe("inquiryApi", () => {
         applyErrorInterceptor(axiosError),
       );
 
-      await expect(
-        updateInquiry(1, { content: "test" }),
-      ).rejects.toEqual(serverError);
+      await expect(updateInquiry(1, { content: "test" })).rejects.toEqual(
+        serverError,
+      );
     });
 
     it("should handle timeout errors as network errors", async () => {

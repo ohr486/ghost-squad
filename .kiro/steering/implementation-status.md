@@ -47,14 +47,28 @@ inclusion: always
 - コード品質設定（`.flake8`、`mypy.ini`）
 
 **3. フロントエンド実装（`web/`）**
-- React アプリケーション（基本構成、JavaScript実装）
-  - `package.json` - React 18、Testing Library設定
-  - `App.js` - メインアプリケーションコンポーネント
-  - `index.js` - エントリーポイント
-  - `App.test.js` - アプリケーションテスト
+- React アプリケーション（**TypeScript実装完了** ✅）
+  - `package.json` - React 18、Testing Library設定、TypeScript 4.9.5、Axios 1.6.2
+  - `App.tsx` - メインアプリケーションコンポーネント（TypeScript化）
+  - `index.tsx` - エントリーポイント（TypeScript化）
+  - `App.test.tsx` - アプリケーションテスト（TypeScript化）
+  - `tsconfig.json` - TypeScript strict mode設定
+- 型定義（`src/types/`）
+  - `inquiry.ts` - Inquiry関連型定義（InquiryResponse、CreateInquiryRequest、ErrorResponse等）
+  - `index.ts` - 型エクスポート
+- APIクライアントサービス（`src/services/`）
+  - `inquiryApi.ts` - 問い合わせAPI呼び出し実装（Axios、エラーインターセプター、75%カバレッジ）
+  - `index.ts` - サービスエクスポート
+- テスト設定
+  - `setupTests.ts` - TypeScript化
+  - `__mocks__/axios.ts` - Axiosマニュアルモック（エラーハンドリングテスト用）
+  - `inquiryApi.test.ts` - APIクライアント包括的テスト（9テスト、エラーハンドリング含む）
 - 依存関係定義（`package.json`、`package-lock.json`）
-- テスト設定（`setupTests.js`）
-- **注**: TypeScript移行は未着手（JavaScript実装のまま）
+  - TypeScript: `@types/react`, `@types/react-dom`, `@types/node`, `@types/jest`
+  - コード品質: `prettier`, `eslint-config-prettier`, `eslint-plugin-prettier`
+- コード品質設定
+  - `.prettierrc.json` - Prettierフォーマット設定
+  - `.prettierignore` - フォーマット除外ファイル
 
 **4. 設計・仕様ドキュメント**
 - `.kiro/specs/inquiry/` - 問い合わせ機能仕様
@@ -94,15 +108,17 @@ inclusion: always
 - ❌ ストーリーモデル（`story.py` 未作成）
 
 **フロントエンド（`web/`）**
-- ❌ TypeScript設定（JavaScript実装のみ）
+- ✅ TypeScript設定（完了 - strict mode、tsconfig.json）
+- ✅ 型定義（完了 - `src/types/inquiry.ts`、バックエンドスキーマと整合）
+- ✅ Axios設定（完了 - `src/services/inquiryApi.ts`、エラーインターセプター実装）
+- ✅ サービス層基盤（完了 - APIクライアント実装、75%カバレッジ、9テスト）
+- ✅ テスト基盤（完了 - Jest + RTL + TypeScript、Axiosマニュアルモック）
+- ✅ コード品質基盤（完了 - Prettier + ESLint設定）
 - ❌ Tailwind CSS設定（未設定）
 - ❌ React Router設定（未設定）
 - ❌ TanStack React Query設定（未設定）
-- ❌ Axios設定（未設定）
 - ❌ コンポーネント（UIコンポーネント未作成）
 - ❌ ページ（ページコンポーネント未作成）
-- ❌ サービス層（API呼び出し未実装）
-- ❌ 型定義（TypeScript型定義未作成）
 
 ## 📋 次のステップ
 
@@ -132,13 +148,16 @@ inclusion: always
   - ❌ 問い合わせ登録フォーム（React + Validation）
   - ❌ E2Eテスト・統合テスト
 
-**Phase 3: フロントエンド基盤の完成（優先度：中）**
+**Phase 3: フロントエンド基盤の完成（優先度：中）** - 🎉 **基盤完了**
 1. ✅ ~~`web/package.json` の作成~~ （完了）
-2. ❌ TypeScriptへの移行（`.tsx`、`tsconfig.json`）
-3. ❌ Tailwind CSS設定
-4. ❌ React Router設定
-5. ❌ TanStack React Query設定
-6. ❌ Axios設定（API通信）
+2. ✅ ~~TypeScriptへの移行（`.tsx`、`tsconfig.json`）~~ （完了）
+3. ✅ ~~型定義作成（`src/types/inquiry.ts`）~~ （完了）
+4. ✅ ~~Axios設定（API通信、エラーハンドリング）~~ （完了）
+5. ✅ ~~テスト基盤（Jest + RTL + TypeScript）~~ （完了）
+6. ✅ ~~コード品質設定（Prettier + ESLint）~~ （完了）
+7. ❌ Tailwind CSS設定
+8. ❌ React Router設定
+9. ❌ TanStack React Query設定
 
 **Phase 4: Story機能の実装（優先度：中）**
 - `.kiro/specs/story/` の設計・タスク生成から開始
@@ -220,7 +239,7 @@ inclusion: always
 
 ## 📈 開発進捗追跡
 
-### 完了済み（55%） - 🚀 大幅進捗
+### 完了済み（65%） - 🚀 フロントエンド基盤完成
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
 - ✅ 仕様定義（Inquiry: implementation phase、Story: requirements-generated）
 - ✅ ステアリングドキュメント
@@ -232,14 +251,19 @@ inclusion: always
 - ✅ Pydanticスキーマ（CreateInquiryRequest、UpdateInquiryRequest、InquiryResponse）
 - ✅ **Inquiry API層完全実装**（CRUD + ワークフロー全エンドポイント）
 - ✅ **トランザクション管理・エラーハンドリング**（PR #80, #81, #82で強化）
-- ✅ 包括的テストスイート（189テスト、高カバレッジ）
+- ✅ 包括的バックエンドテスト（189テスト、高カバレッジ）
+- ✅ **TypeScript完全移行**（strict mode、tsconfig.json）
+- ✅ **型定義基盤**（InquiryResponse、CreateInquiryRequest、ErrorResponse等）
+- ✅ **APIクライアントサービス**（Axios、エラーインターセプター、75%カバレッジ）
+- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、9テスト）
+- ✅ **コード品質基盤**（Prettier + ESLint設定）
 
 ### 進行中（5%）
-- 🔄 フロントエンド基盤（TypeScript移行、Tailwind、Router、Query）
 - 🔄 Inquiry UI実装（一覧・詳細・登録フォーム）
+- 🔄 フロントエンド高度機能（Tailwind、Router、Query）
 
-### 未着手（40%）
-- ❌ Inquiry機能のフロントエンド実装
+### 未着手（30%）
+- ❌ Inquiry機能のUIコンポーネント実装
 - ❌ Story機能の設計・実装
 - ❌ AI統合（OpenAI API）
 - ❌ 外部システム統合（Trello、Jira、GitHub Projects）
@@ -248,4 +272,4 @@ inclusion: always
 ---
 
 **最終更新**: 2025年12月30日
-**更新理由**: Inquiry API層完全実装完了（PR #80, #81, #82マージ） - 全CRUDエンドポイント実装、トランザクション管理・エラーハンドリング強化、189テスト達成
+**更新理由**: フロントエンド基盤完成 - TypeScript完全移行、型定義・APIクライアント実装、テスト基盤・コード品質基盤整備（Tasks 7.1, 7.2完了）

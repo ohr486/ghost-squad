@@ -171,7 +171,9 @@ npm test -- --coverage --watchAll=false
   - InquiryRepository: 90%カバレッジ、17ユニットテスト
   - InquiryQueryService: 100%カバレッジ、12ユニットテスト
   - InquiryWorkflowService: 89%カバレッジ
-  - フロントエンド: 最低50%（段階的に70%へ引き上げ予定）、新機能は80%以上
+  - フロントエンド: **現在75.67%カバレッジ**（9テスト、2スイート）、新機能は80%以上
+  - inquiryApi.ts: 75%カバレッジ（エラーハンドリングテスト含む）
+  - App.tsx: 100%カバレッジ
 - **型安全性**: TypeScript strict mode、mypy strict mode
 - **コードスタイル**: Black（Python）、Prettier（TypeScript）
 - **セキュリティ**: Bandit（Python）、ESLint security rules
