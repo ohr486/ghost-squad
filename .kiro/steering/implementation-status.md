@@ -30,14 +30,18 @@ inclusion: always
   - `inquiry.py` - 問い合わせスキーマ（CreateInquiryRequest、UpdateInquiryRequest、InquiryResponse、ErrorResponse）
 - サービス層（`services/`）
   - `inquiry_validator.py` - 問い合わせバリデーション（97%カバレッジ）
-  - `inquiry_repository.py` - データアクセス層（88%カバレッジ、CRUD・フィルタリング・ソート・ページネーション実装）
+  - `inquiry_repository.py` - データアクセス層（90%カバレッジ、CRUD・フィルタリング・ソート・ページネーション実装）
+  - `inquiry_query_service.py` - クエリサービス（100%カバレッジ、検索・一覧取得・ページネーション）
+  - `inquiry_workflow_service.py` - ワークフローサービス（89%カバレッジ、承認・却下・ステータス遷移管理）
 - テストコード（`tests/`）
   - pytest設定済み（`conftest.py`、`pytest.ini`）
-  - 122テスト、93%カバレッジ
+  - 157テスト、91%カバレッジ
   - `test_inquiry_model.py` - Inquiryモデルテスト
   - `test_inquiry_schemas.py` - Pydanticスキーマテスト
   - `test_inquiry_validator.py` - バリデーションテスト
   - `test_inquiry_repository.py` - リポジトリテスト（17テスト）
+  - `test_inquiry_query_service.py` - クエリサービステスト（12テスト、100%カバレッジ）
+  - `test_inquiry_workflow_service.py` - ワークフローサービステスト
   - カバレッジレポート設定（`.coveragerc`）
 - 依存関係定義（`requirements.txt`）- FastAPI、SQLAlchemy、Alembic、pytest等
 - コード品質設定（`.flake8`、`mypy.ini`）
@@ -76,10 +80,10 @@ inclusion: always
 - ✅ Alembic マイグレーションファイル（作成済み）
 - ✅ データベース接続設定（`database.py` 作成済み）
 - ✅ Pydanticスキーマ（`models/schemas/inquiry.py` 実装済み）
-- ✅ サービス層（`services/` 実装済み - バリデーション＋リポジトリ）
+- ✅ サービス層（`services/` 実装済み - バリデーション＋リポジトリ＋クエリ＋ワークフロー）
+- ✅ ワークフローサービス（`InquiryWorkflowService` 実装済み - 89%カバレッジ）
+- ✅ クエリサービス（`InquiryQueryService` 実装済み - 100%カバレッジ）
 - ❌ APIエンドポイント（問い合わせCRUD未実装 - ルーター層のみ残り）
-- ❌ ワークフローサービス（`InquiryWorkflowService` 未実装）
-- ❌ クエリサービス（`InquiryQueryService` 未実装）
 - ❌ ストーリーモデル（`story.py` 未作成）
 
 **フロントエンド（`web/`）**
@@ -108,13 +112,13 @@ inclusion: always
 
 **Phase 2: Inquiry機能の完全実装（優先度：高）**
 - `.kiro/specs/inquiry/` の仕様に従って実装
-- Tasks: タスク3.1、3.2完了（InquiryRepository実装）
-- 進捗: データモデル → バリデーション → データアクセス層 完了
-- 次: サービス層 → API層 → フロントエンド
+- Tasks: タスク3.1、3.2、4.1、4.2、5.1、5.2完了（サービス層実装完了）
+- 進捗: データモデル → バリデーション → データアクセス層 → サービス層（クエリ・ワークフロー） 完了
+- 次: API層 → フロントエンド
 - 必須実装項目:
-  - ✅ ~~InquiryRepository（データアクセス層）~~ （完了）
-  - ❌ InquiryWorkflowService（ワークフロー管理）
-  - ❌ InquiryQueryService（クエリサービス）
+  - ✅ ~~InquiryRepository（データアクセス層）~~ （完了 - 90%カバレッジ）
+  - ✅ ~~InquiryWorkflowService（ワークフロー管理）~~ （完了 - 89%カバレッジ）
+  - ✅ ~~InquiryQueryService（クエリサービス）~~ （完了 - 100%カバレッジ）
   - ❌ 問い合わせCRUD APIエンドポイント（ルーター層）
   - ❌ 問い合わせ一覧・詳細画面（React）
   - ❌ 問い合わせ登録フォーム（React + Validation）
@@ -208,7 +212,7 @@ inclusion: always
 
 ## 📈 開発進捗追跡
 
-### 完了済み（35%）
+### 完了済み（45%）
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
 - ✅ 仕様定義（Inquiry: tasks-generated、Story: requirements-generated）
 - ✅ ステアリングドキュメント
@@ -216,15 +220,15 @@ inclusion: always
 - ✅ フロントエンド基本構成（React、テスト設定）
 - ✅ 依存関係定義（requirements.txt、package.json）
 - ✅ Inquiryデータアクセス層（InquiryRepository、InquiryValidator）
+- ✅ Inquiryサービス層（InquiryQueryService、InquiryWorkflowService）
 - ✅ Pydanticスキーマ（CreateInquiryRequest、UpdateInquiryRequest、InquiryResponse）
-- ✅ 包括的テストスイート（122テスト、93%カバレッジ）
+- ✅ 包括的テストスイート（157テスト、91%カバレッジ）
 
-### 進行中（10%）
-- 🔄 バックエンドサービス層（ワークフロー、クエリサービス）
+### 進行中（5%）
 - 🔄 バックエンドAPI層（ルーター、エンドポイント）
 - 🔄 フロントエンド基盤（TypeScript、Tailwind、Router、Query）
 
-### 未着手（55%）
+### 未着手（50%）
 - ❌ Inquiry機能の完全実装（API層 + UI）
 - ❌ Story機能の設計・実装
 - ❌ AI統合（OpenAI API）
@@ -233,5 +237,5 @@ inclusion: always
 
 ---
 
-**最終更新**: 2025年12月28日
-**更新理由**: タスク3.1、3.2完了 - InquiryRepository実装（122テスト、93%カバレッジ達成）
+**最終更新**: 2025年12月30日
+**更新理由**: タスク5.1、5.2完了 - InquiryQueryService実装（157テスト、91%カバレッジ達成、InquiryQueryService 100%カバレッジ）

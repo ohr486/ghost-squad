@@ -50,9 +50,10 @@ models/
 **サービス層** (`services/`)
 - ビジネスロジックを含むサービスクラス
 - バリデーション（`inquiry_validator.py` - 問い合わせデータ検証）
-- データアクセス（`inquiry_repository.py` - CRUD操作、フィルタリング、ページネーション）
+- データアクセス（`inquiry_repository.py` - CRUD操作、フィルタリング、ソート、ページネーション）
+- クエリサービス（`inquiry_query_service.py` - 問い合わせ検索・一覧取得、100%カバレッジ）
+- ワークフローサービス（`inquiry_workflow_service.py` - 承認・却下処理、ステータス遷移管理）
 - 外部API統合（OpenAI、エクスポートサービス - 将来実装）
-- データ変換・ワークフロー制御
 
 **API層** (`api/`) - 将来実装
 - FastAPIルーター定義

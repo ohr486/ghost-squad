@@ -167,8 +167,10 @@ npm test -- --coverage --watchAll=false
 
 **品質基準**
 - **テストカバレッジ**:
-  - バックエンド: 現在122テスト、93%カバレッジ（inquiry完全カバー）、新機能は80%以上
-  - InquiryRepository: 88%カバレッジ、17ユニットテスト
+  - バックエンド: 現在157テスト、91%カバレッジ（inquiry完全カバー）、新機能は80%以上
+  - InquiryRepository: 90%カバレッジ、17ユニットテスト
+  - InquiryQueryService: 100%カバレッジ、12ユニットテスト
+  - InquiryWorkflowService: 89%カバレッジ
   - フロントエンド: 最低50%（段階的に70%へ引き上げ予定）、新機能は80%以上
 - **型安全性**: TypeScript strict mode、mypy strict mode
 - **コードスタイル**: Black（Python）、Prettier（TypeScript）
