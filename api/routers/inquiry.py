@@ -2,7 +2,9 @@
 
 問い合わせの作成、取得、更新、承認、却下のエンドポイントを提供する。
 """
+
 from datetime import datetime, timezone
+from enum import Enum
 from typing import List, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
@@ -25,6 +27,21 @@ from services.inquiry_workflow_service import (InquiryWorkflowService,
                                                InvalidStateTransitionError)
 
 router = APIRouter(prefix="/api/inquiries", tags=["inquiries"])
+
+
+# Enums for query parameters
+class SortField(str, Enum):
+    """ソート可能なフィールド."""
+
+    CREATED_AT = "created_at"
+    UPDATED_AT = "updated_at"
+
+
+class SortOrder(str, Enum):
+    """ソート順序."""
+
+    ASC = "asc"
+    DESC = "desc"
 
 
 # Response models for pagination
@@ -110,7 +127,9 @@ async def create_inquiry(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response(
+            "GS-010", f"データベース操作に失敗しました: {str(e)}"
+        )
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -129,12 +148,17 @@ async def create_inquiry(
 async def list_inquiries(
     page: int = Query(default=1, ge=1, description="ページ番号（1以上）"),
     limit: int = Query(default=20, ge=1, le=100, description="ページサイズ（1-100）"),
-    status: Optional[str] = Query(default=None, description="ステータスフィルタ（カンマ区切りで複数指定可能）"),
-    user_id: Optional[str] = Query(default=None, description="ユーザーIDフィルタ"),
-    sort_by: str = Query(
-        default="created_at", description="ソートフィールド（created_at, updated_at）"
+    status: Optional[str] = Query(
+        default=None, description="ステータスフィルタ（カンマ区切りで複数指定可能）"
     ),
-    sort_order: str = Query(default="desc", description="ソート順序（asc, desc）"),
+    user_id: Optional[str] = Query(default=None, description="ユーザーIDフィルタ"),
+    sort_by: SortField = Query(
+        default=SortField.CREATED_AT,
+        description="ソートフィールド（created_at, updated_at）",
+    ),
+    sort_order: SortOrder = Query(
+        default=SortOrder.DESC, description="ソート順序（asc, desc）"
+    ),
     db: Session = Depends(get_db),
 ) -> PaginatedInquiriesResponse:
     """問い合わせ一覧を取得する.
@@ -178,8 +202,8 @@ async def list_inquiries(
             limit=limit,
             status=status_filter,
             user_id=user_id,
-            sort_by=sort_by,
-            sort_order=sort_order,
+            sort_by=sort_by.value,
+            sort_order=sort_order.value,
         )
         result = query_service.list_inquiries(list_request)
 
@@ -198,7 +222,9 @@ async def list_inquiries(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response(
+            "GS-010", f"データベース操作に失敗しました: {str(e)}"
+        )
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -243,7 +269,9 @@ async def get_inquiry(
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response(
+            "GS-010", f"データベース操作に失敗しました: {str(e)}"
+        )
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -306,7 +334,9 @@ async def update_inquiry(
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response(
+            "GS-010", f"データベース操作に失敗しました: {str(e)}"
+        )
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -363,7 +393,9 @@ async def approve_inquiry(
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response(
+            "GS-010", f"データベース操作に失敗しました: {str(e)}"
+        )
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -433,7 +465,9 @@ async def reject_inquiry(
             detail=error_response.model_dump(),
         )
     except Exception as e:
-        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        error_response = _create_error_response(
+            "GS-010", f"データベース操作に失敗しました: {str(e)}"
+        )
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),

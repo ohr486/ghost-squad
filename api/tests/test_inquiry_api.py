@@ -8,6 +8,7 @@
 - 承認APIのテスト（正常系、無効なステータス遷移）
 - 却下APIのテスト（正常系、却下理由あり/なし、無効なステータス遷移）
 """
+
 from datetime import datetime, timezone
 
 import pytest
@@ -90,20 +91,24 @@ def db_session():
 
 
 @pytest.fixture
-def sample_inquiry(db_session: Session):
+def sample_inquiry():
     """テスト用の問い合わせを作成する."""
-    inquiry = InquiryModel(
-        user_id="test_user",
-        content="ログイン機能が欲しい",
-        source_system="manual",
-        timestamp=datetime.now(timezone.utc),
-        status=InquiryStatus.RECEIVED,
-        inquiry_metadata={},
-    )
-    db_session.add(inquiry)
-    db_session.commit()
-    db_session.refresh(inquiry)
-    return inquiry
+    db = TestingSessionLocal()
+    try:
+        inquiry = InquiryModel(
+            user_id="test_user",
+            content="ログイン機能が欲しい",
+            source_system="manual",
+            timestamp=datetime.now(timezone.utc),
+            status=InquiryStatus.RECEIVED,
+            inquiry_metadata={},
+        )
+        db.add(inquiry)
+        db.commit()
+        db.refresh(inquiry)
+        return inquiry
+    finally:
+        db.close()
 
 
 # POST /api/inquiries - 問い合わせ作成API
@@ -249,7 +254,6 @@ def test_list_inquiries_pagination(client):
         )
         db.add(inquiry)
     db.commit()
-    db.rollback()
     db.close()
 
     # Act - ページ1を取得
@@ -299,7 +303,6 @@ def test_list_inquiries_status_filter(client, sample_inquiry):
     )
     db.add(inquiry2)
     db.commit()
-    db.rollback()
     db.close()
 
     # Act - receivedのみフィルタ
@@ -351,7 +354,6 @@ def test_list_inquiries_user_id_filter(client):
     )
     db.add_all([inquiry1, inquiry2])
     db.commit()
-    db.rollback()
     db.close()
 
     # Act
@@ -389,24 +391,41 @@ def test_list_inquiries_sort(client):
     )
     db.add_all([inquiry1, inquiry2])
     db.commit()
-    db.rollback()
+    db.refresh(inquiry1)
+    db.refresh(inquiry2)
+    inquiry1_id = inquiry1.id
+    inquiry2_id = inquiry2.id
     db.close()
 
-    # Act - sort_byとsort_orderパラメータが受け入れられることを確認
+    # Act - created_at降順（新しいものが先）でソート
     response_desc = client.get("/api/inquiries?sort_by=created_at&sort_order=desc")
 
-    # Assert
+    # Assert - inquiry2が先、inquiry1が後
     assert response_desc.status_code == status.HTTP_200_OK
     data_desc = response_desc.json()
     assert len(data_desc["data"]) == 2
+    assert data_desc["data"][0]["id"] == inquiry2_id
+    assert data_desc["data"][1]["id"] == inquiry1_id
 
-    # Act - updated_atでソート
+    # Act - created_at昇順（古いものが先）でソート
+    response_asc = client.get("/api/inquiries?sort_by=created_at&sort_order=asc")
+
+    # Assert - inquiry1が先、inquiry2が後
+    assert response_asc.status_code == status.HTTP_200_OK
+    data_asc = response_asc.json()
+    assert len(data_asc["data"]) == 2
+    assert data_asc["data"][0]["id"] == inquiry1_id
+    assert data_asc["data"][1]["id"] == inquiry2_id
+
+    # Act - updated_atで昇順ソート
     response_updated = client.get("/api/inquiries?sort_by=updated_at&sort_order=asc")
 
-    # Assert
+    # Assert - updated_atは作成時に設定されるため、created_atと同じ順序
     assert response_updated.status_code == status.HTTP_200_OK
     data_updated = response_updated.json()
     assert len(data_updated["data"]) == 2
+    assert data_updated["data"][0]["id"] == inquiry1_id
+    assert data_updated["data"][1]["id"] == inquiry2_id
 
 
 def test_list_inquiries_invalid_pagination(client):
@@ -443,6 +462,25 @@ def test_list_inquiries_invalid_status_filter(client):
 
     # Assert
     assert response.status_code == status.HTTP_400_BAD_REQUEST
+    data = response.json()
+    assert "detail" in data
+
+
+def test_list_inquiries_invalid_sort_parameters(client):
+    """問い合わせ一覧の無効なソートパラメータテスト."""
+    # Act - 無効なsort_by値
+    response = client.get("/api/inquiries?sort_by=invalid_field")
+
+    # Assert - Enumによる自動バリデーションで422エラー
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    data = response.json()
+    assert "detail" in data
+
+    # Act - 無効なsort_order値
+    response = client.get("/api/inquiries?sort_order=invalid_order")
+
+    # Assert - Enumによる自動バリデーションで422エラー
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     data = response.json()
     assert "detail" in data
 
@@ -566,7 +604,6 @@ def test_approve_inquiry_invalid_state_transition(client, sample_inquiry):
     )
     inquiry.status = InquiryStatus.TASK_WORKING
     db.commit()
-    db.rollback()
     db.close()
 
     # Act - 再度承認を試みる
@@ -619,7 +656,6 @@ def test_reject_inquiry_success_with_reason(client, sample_inquiry):
     assert isinstance(inquiry.inquiry_metadata["rejection"], dict)
     assert "reason" in inquiry.inquiry_metadata["rejection"]
     assert inquiry.inquiry_metadata["rejection"]["reason"] == "要件が不明確です"
-    db.rollback()
     db.close()
 
 
@@ -643,7 +679,6 @@ def test_reject_inquiry_invalid_state_transition(client, sample_inquiry):
     )
     inquiry.status = InquiryStatus.REJECTED
     db.commit()
-    db.rollback()
     db.close()
 
     # Act - 再度却下を試みる
