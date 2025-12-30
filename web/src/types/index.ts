@@ -18,4 +18,4 @@ export type {
   ErrorResponse,
   RejectInquiryRequest,
   ListInquiriesParams,
-} from './inquiry';
+} from "./inquiry";

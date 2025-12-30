@@ -9,33 +9,33 @@
  * 問い合わせステータス列挙型
  */
 export type InquiryStatus =
-  | 'received'              // 受付済み
-  | 'processing'            // AI処理中
-  | 'needs_clarification'   // 明確化要求
-  | 'task_working'          // タスク作業中
-  | 'completed'             // 完了
-  | 'rejected'              // 却下済み
-  | 'failed';               // 失敗
+  | "received" // 受付済み
+  | "processing" // AI処理中
+  | "needs_clarification" // 明確化要求
+  | "task_working" // タスク作業中
+  | "completed" // 完了
+  | "rejected" // 却下済み
+  | "failed"; // 失敗
 
 /**
  * 優先度列挙型
  */
 export type Priority =
-  | 'low'                   // 低
-  | 'medium'                // 中
-  | 'high'                  // 高
-  | 'urgent';               // 緊急
+  | "low" // 低
+  | "medium" // 中
+  | "high" // 高
+  | "urgent"; // 緊急
 
 /**
  * ストーリーカテゴリ列挙型
  */
 export type StoryCategory =
-  | 'development'           // 開発
-  | 'testing'               // テスト
-  | 'documentation'         // ドキュメント
-  | 'research'              // 調査
-  | 'maintenance'           // メンテナンス
-  | 'custom';               // カスタム
+  | "development" // 開発
+  | "testing" // テスト
+  | "documentation" // ドキュメント
+  | "research" // 調査
+  | "maintenance" // メンテナンス
+  | "custom"; // カスタム
 
 /**
  * ステータス変更履歴エントリ
@@ -43,17 +43,17 @@ export type StoryCategory =
 export interface StatusHistoryEntry {
   from_status: InquiryStatus;
   to_status: InquiryStatus;
-  changed_at: string;       // ISO 8601形式
-  changed_by?: string;      // 変更者（将来実装）
+  changed_at: string; // ISO 8601形式
+  changed_by?: string; // 変更者（将来実装）
 }
 
 /**
  * 却下情報
  */
 export interface RejectionInfo {
-  reason?: string;          // 却下理由
-  rejected_at: string;      // 却下日時（ISO 8601）
-  rejected_by?: string;     // 却下者（将来実装）
+  reason?: string; // 却下理由
+  rejected_at: string; // 却下日時（ISO 8601）
+  rejected_by?: string; // 却下者（将来実装）
 }
 
 /**
@@ -67,8 +67,8 @@ export interface InquiryMetadata {
   status_history?: StatusHistoryEntry[];
 
   // その他のメタデータ
-  source?: string;          // 送信元詳細情報
-  tags?: string[];          // タグ（将来実装）
+  source?: string; // 送信元詳細情報
+  tags?: string[]; // タグ（将来実装）
 }
 
 /**
@@ -80,10 +80,10 @@ export interface InquiryResponse {
   user_id: string;
   content: string;
   source_system: string;
-  timestamp: string;        // ISO 8601形式
+  timestamp: string; // ISO 8601形式
   status: InquiryStatus;
-  created_at: string;       // ISO 8601形式
-  updated_at: string;       // ISO 8601形式
+  created_at: string; // ISO 8601形式
+  updated_at: string; // ISO 8601形式
   inquiry_metadata?: InquiryMetadata;
 }
 
@@ -93,7 +93,7 @@ export interface InquiryResponse {
 export interface CreateInquiryRequest {
   user_id: string;
   content: string;
-  source_system: string;    // 送信元システム (例: "manual", "email", "chat")
+  source_system: string; // 送信元システム (例: "manual", "email", "chat")
 }
 
 /**
@@ -120,7 +120,7 @@ export interface PaginationMeta {
 export interface PaginatedResponse<T> {
   data: T[];
   meta: PaginationMeta;
-  timestamp: string;        // ISO 8601形式
+  timestamp: string; // ISO 8601形式
 }
 
 /**
@@ -129,7 +129,7 @@ export interface PaginatedResponse<T> {
 export interface ValidationError {
   field: string;
   message: string;
-  code: string;             // GS-xxx形式
+  code: string; // GS-xxx形式
 }
 
 /**
@@ -137,28 +137,28 @@ export interface ValidationError {
  */
 export interface ErrorResponse {
   errors: Array<{
-    code: string;           // GS-xxx形式
-    message: string;        // 日本語メッセージ
-    field?: string;         // バリデーションエラー時のフィールド名
+    code: string; // GS-xxx形式
+    message: string; // 日本語メッセージ
+    field?: string; // バリデーションエラー時のフィールド名
   }>;
-  timestamp: string;        // ISO 8601形式
+  timestamp: string; // ISO 8601形式
 }
 
 /**
  * 問い合わせ却下リクエスト型
  */
 export interface RejectInquiryRequest {
-  reason?: string;          // 却下理由（任意）
+  reason?: string; // 却下理由（任意）
 }
 
 /**
  * 問い合わせ一覧リクエストパラメータ型
  */
 export interface ListInquiriesParams {
-  page?: number;            // デフォルト: 1
-  limit?: number;           // デフォルト: 20、範囲: 1-100
+  page?: number; // デフォルト: 1
+  limit?: number; // デフォルト: 20、範囲: 1-100
   status?: InquiryStatus | InquiryStatus[];
   user_id?: string;
-  sort_by?: 'created_at' | 'updated_at';
-  sort_order?: 'asc' | 'desc';  // デフォルト: 'desc'
+  sort_by?: "created_at" | "updated_at";
+  sort_order?: "asc" | "desc"; // デフォルト: 'desc'
 }

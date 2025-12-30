@@ -10,6 +10,6 @@ export {
   approveInquiry,
   rejectInquiry,
   healthCheck,
-} from './inquiryApi';
+} from "./inquiryApi";
 
-export { default as inquiryApi } from './inquiryApi';
+export { default as inquiryApi } from "./inquiryApi";

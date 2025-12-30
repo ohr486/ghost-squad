@@ -5,7 +5,7 @@
  * 要件: 1.1, 2.1, 2.3, 2.5, 2.8, 3.1, 3.4
  */
 
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, AxiosResponse } from "axios";
 import type {
   InquiryResponse,
   CreateInquiryRequest,
@@ -14,13 +14,13 @@ import type {
   ErrorResponse,
   RejectInquiryRequest,
   ListInquiriesParams,
-} from '../types';
+} from "../types";
 
 /**
  * APIベースURL
  * 環境変数から取得、デフォルトはlocalhost:8000
  */
-const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
 
 /**
  * Axiosインスタンスの作成と設定
@@ -29,7 +29,7 @@ const apiClient: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   timeout: 30000, // 30秒タイムアウト
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   withCredentials: false, // CORS設定
 });
@@ -38,7 +38,7 @@ const apiClient: AxiosInstance = axios.create({
  * レスポンスインターセプター - タイムスタンプのパース
  */
 apiClient.interceptors.response.use(
-  (response) => {
+  (response: AxiosResponse) => {
     // タイムスタンプフィールドをDateオブジェクトに変換する処理は
     // コンポーネント側で必要に応じて実施
     return response;
@@ -54,14 +54,14 @@ apiClient.interceptors.response.use(
     const genericError: ErrorResponse = {
       errors: [
         {
-          code: 'NETWORK_ERROR',
-          message: 'ネットワークエラーが発生しました。接続を確認してください。',
+          code: "NETWORK_ERROR",
+          message: "ネットワークエラーが発生しました。接続を確認してください。",
         },
       ],
       timestamp: new Date().toISOString(),
     };
     return Promise.reject(genericError);
-  }
+  },
 );
 
 /**
@@ -72,9 +72,12 @@ apiClient.interceptors.response.use(
  * @throws ErrorResponse バリデーションエラーまたはサーバーエラー
  */
 export async function createInquiry(
-  data: CreateInquiryRequest
+  data: CreateInquiryRequest,
 ): Promise<InquiryResponse> {
-  const response = await apiClient.post<InquiryResponse>('/api/inquiries', data);
+  const response = await apiClient.post<InquiryResponse>(
+    "/api/inquiries",
+    data,
+  );
   return response.data;
 }
 
@@ -86,7 +89,7 @@ export async function createInquiry(
  * @throws ErrorResponse サーバーエラー
  */
 export async function listInquiries(
-  params?: ListInquiriesParams
+  params?: ListInquiriesParams,
 ): Promise<PaginatedResponse<InquiryResponse>> {
   // クエリパラメータの構築
   const queryParams: Record<string, string> = {};
@@ -100,7 +103,7 @@ export async function listInquiries(
   if (params?.status !== undefined) {
     // 単一ステータスまたは配列を処理
     queryParams.status = Array.isArray(params.status)
-      ? params.status.join(',')
+      ? params.status.join(",")
       : params.status;
   }
   if (params?.user_id !== undefined) {
@@ -114,8 +117,8 @@ export async function listInquiries(
   }
 
   const response = await apiClient.get<PaginatedResponse<InquiryResponse>>(
-    '/api/inquiries',
-    { params: queryParams }
+    "/api/inquiries",
+    { params: queryParams },
   );
   return response.data;
 }
@@ -142,11 +145,11 @@ export async function getInquiry(id: number): Promise<InquiryResponse> {
  */
 export async function updateInquiry(
   id: number,
-  data: UpdateInquiryRequest
+  data: UpdateInquiryRequest,
 ): Promise<InquiryResponse> {
   const response = await apiClient.put<InquiryResponse>(
     `/api/inquiries/${id}`,
-    data
+    data,
   );
   return response.data;
 }
@@ -160,7 +163,7 @@ export async function updateInquiry(
  */
 export async function approveInquiry(id: number): Promise<InquiryResponse> {
   const response = await apiClient.post<InquiryResponse>(
-    `/api/inquiries/${id}/approve`
+    `/api/inquiries/${id}/approve`,
   );
   return response.data;
 }
@@ -175,11 +178,11 @@ export async function approveInquiry(id: number): Promise<InquiryResponse> {
  */
 export async function rejectInquiry(
   id: number,
-  data?: RejectInquiryRequest
+  data?: RejectInquiryRequest,
 ): Promise<InquiryResponse> {
   const response = await apiClient.post<InquiryResponse>(
     `/api/inquiries/${id}/reject`,
-    data || {}
+    data || {},
   );
   return response.data;
 }
@@ -190,14 +193,14 @@ export async function rejectInquiry(
  * @returns ヘルスチェック結果
  */
 export async function healthCheck(): Promise<{ status: string }> {
-  const response = await apiClient.get<{ status: string }>('/health');
+  const response = await apiClient.get<{ status: string }>("/health");
   return response.data;
 }
 
 /**
  * エクスポート用APIクライアント（デフォルトエクスポート）
  */
-export default {
+const inquiryApiClient = {
   createInquiry,
   listInquiries,
   getInquiry,
@@ -206,3 +209,5 @@ export default {
   rejectInquiry,
   healthCheck,
 };
+
+export default inquiryApiClient;
