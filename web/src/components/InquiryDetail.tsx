@@ -56,7 +56,8 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
 
   // Reject mutation
   const rejectMutation = useMutation({
-    mutationFn: (reason?: string) => rejectInquiry(inquiryId, reason),
+    mutationFn: (reason?: string) =>
+      rejectInquiry(inquiryId, reason ? { reason } : undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inquiry", inquiryId] });
       setShowRejectDialog(false);
