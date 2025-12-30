@@ -266,7 +266,7 @@ describe("InquiryForm", () => {
   describe("ローディング状態", () => {
     test("送信中はボタンが無効化され、ローディング状態が表示されること", async () => {
       // onSubmitが完了しないPromiseを返すようにモック（ローディング状態を保持）
-      let resolveSubmit: () => void;
+      let resolveSubmit: () => void = () => {};
       const submitPromise = new Promise<void>((resolve) => {
         resolveSubmit = resolve;
       });
@@ -294,7 +294,7 @@ describe("InquiryForm", () => {
       expect(screen.getByText(/送信中/i)).toBeInTheDocument();
 
       // Promiseを解決してクリーンアップ
-      resolveSubmit!();
+      resolveSubmit();
     });
 
     test("isLoadingプロパティがtrueの場合、ボタンが無効化されること", () => {

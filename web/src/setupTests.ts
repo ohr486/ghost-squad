@@ -11,9 +11,6 @@ beforeAll(() => {
     if (
       typeof args[0] === "string" &&
       (args[0].includes("ReactDOMTestUtils.act") ||
-        args[0].includes(
-          "An update to InquiryForm inside a test was not wrapped in act",
-        ) ||
         (args[0].includes("Warning: An update to") &&
           args[0].includes("was not wrapped in act")))
     ) {
