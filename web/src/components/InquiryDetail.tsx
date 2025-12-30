@@ -162,13 +162,13 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
           {isEditing ? (
             <textarea
               className="w-full p-3 border rounded-md min-h-[200px]"
+              aria-label="問い合わせ内容を編集"
               value={editedContent}
               onChange={(e) => setEditedContent(e.target.value)}
             />
           ) : (
             <p className="whitespace-pre-wrap bg-gray-50 p-4 rounded-md">
               {inquiry.content}
-            </p>
           )}
         </div>
 
