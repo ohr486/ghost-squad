@@ -57,11 +57,24 @@ export interface RejectionInfo {
 }
 
 /**
+ * 明確化要求情報
+ */
+export interface ClarificationRequestInfo {
+  reason?: string; // 明確化要求理由
+  requested_at: string; // 要求日時（ISO 8601）
+  requested_by?: string; // 要求者（将来実装）
+  completed_at?: string; // 完了日時（ISO 8601）
+}
+
+/**
  * 問い合わせメタデータ構造
  */
 export interface InquiryMetadata {
   // 却下情報（要件3.6-3.7）
   rejection?: RejectionInfo;
+
+  // 明確化要求情報
+  clarification_request?: ClarificationRequestInfo;
 
   // ステータス変更履歴（要件3.12）
   status_history?: StatusHistoryEntry[];

@@ -22,6 +22,8 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 ## 現在の実装状況
 
 ### ✅ 実装済み機能
+
+**バックエンド（完全実装）**
 - **問い合わせ管理**: 日本語での問い合わせ入力・保存・履歴管理・検索
 - **バリデーション層**: InquiryValidator（入力検証、日本語エラーメッセージ、GS-xxxエラーコード体系）
 - **データアクセス層**: InquiryRepository（CRUD操作、フィルタリング、ソート、ページネーション）
@@ -34,9 +36,20 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 - **開発環境**: Docker Compose + Makefile統合
 - **テスト**: 189テスト、高カバレッジ（inquiry: 91%、database接続テスト含む）
 
+**フロントエンド（基盤完成、85%実装）**
+- **TypeScript基盤**: strict mode、型定義完備（InquiryResponse、CreateInquiryRequest等）
+- **APIクライアント**: Axios統合、エラーハンドリング、CORS対応（86.11%カバレッジ）
+- **状態管理**: TanStack React Query 5.8.4（サーバー状態管理）
+- **コンポーネント**:
+  - InquiryForm（問い合わせ入力、React Hook Form + Zod、100% statements）
+  - InquiryList（一覧表示、ページネーション、フィルタリング、84.21% statements）
+  - InquiryDetail（詳細・編集・承認/却下、94.64% statements）
+- **テスト**: 54テスト、91.02%カバレッジ（Jest + React Testing Library）
+- **コード品質**: Prettier + ESLint設定完備
+
 ### 🚧 開発中機能
+- **フロントエンド統合**: ページレイアウト、React Routerルーティング、E2Eテスト
 - **AI統合**: OpenAI APIによるストーリー生成
-- **React WebUI**: TypeScriptフロントエンド
 - **ストーリー管理**: レビュー・承認ワークフロー
 - **外部統合**: Trello、Jira、GitHub Projects連携
 

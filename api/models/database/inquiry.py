@@ -22,7 +22,7 @@ class InquiryModel(BaseModel):
     source_system: Mapped[str] = mapped_column(String(50), nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     status: Mapped[InquiryStatus] = mapped_column(
-        Enum(InquiryStatus),
+        Enum(InquiryStatus, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
         default=InquiryStatus.RECEIVED,
         server_default=InquiryStatus.RECEIVED.value,

@@ -1,10 +1,9 @@
-import React from "react";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import InquiryDetail from "./InquiryDetail";
 import * as inquiryApi from "../services/inquiryApi";
-import { InquiryResponse } from "../types/inquiry";
+import { InquiryResponse, InquiryStatus } from "../types/inquiry";
 
 // AxiosモックはsetupTests.tsで設定済み
 jest.mock("../services/inquiryApi");
@@ -361,9 +360,9 @@ describe("InquiryDetail", () => {
   // receivedステータス以外での承認・却下ボタン非表示テスト
   describe("Button visibility based on status", () => {
     test("hides approve/reject buttons when status is not RECEIVED", async () => {
-      const taskWorkingInquiry = {
+      const taskWorkingInquiry: InquiryResponse = {
         ...mockInquiry,
-        status: "task_working",
+        status: "task_working" as InquiryStatus,
       };
 
       mockInquiryApi.getInquiry.mockResolvedValueOnce(taskWorkingInquiry);
@@ -396,9 +395,9 @@ describe("InquiryDetail", () => {
     });
 
     test("hides approve/reject buttons when status is REJECTED", async () => {
-      const rejectedInquiry = {
+      const rejectedInquiry: InquiryResponse = {
         ...mockInquiry,
-        status: "rejected",
+        status: "rejected" as InquiryStatus,
       };
 
       mockInquiryApi.getInquiry.mockResolvedValueOnce(rejectedInquiry);
@@ -418,9 +417,9 @@ describe("InquiryDetail", () => {
     });
 
     test("hides approve/reject buttons when status is COMPLETED", async () => {
-      const completedInquiry = {
+      const completedInquiry: InquiryResponse = {
         ...mockInquiry,
-        status: "completed",
+        status: "completed" as InquiryStatus,
       };
 
       mockInquiryApi.getInquiry.mockResolvedValueOnce(completedInquiry);
@@ -437,6 +436,85 @@ describe("InquiryDetail", () => {
       expect(
         screen.queryByRole("button", { name: /却下/ }),
       ).not.toBeInTheDocument();
+    });
+  });
+
+  // 却下情報の表示テスト
+  describe("Rejection information display", () => {
+    test("displays rejection information when inquiry is rejected with reason", async () => {
+      const rejectedInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "rejected" as InquiryStatus,
+        inquiry_metadata: {
+          rejection: {
+            reason: "要件が不明確です",
+            rejected_at: "2025-01-02T10:30:00Z",
+          },
+        },
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(rejectedInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("却下情報")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/却下日時:/)).toBeInTheDocument();
+      expect(screen.getByText("要件が不明確です")).toBeInTheDocument();
+    });
+
+    test("displays rejection information without reason when rejected without reason", async () => {
+      const rejectedInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "rejected" as InquiryStatus,
+        inquiry_metadata: {
+          rejection: {
+            rejected_at: "2025-01-02T10:30:00Z",
+          },
+        },
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(rejectedInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("却下情報")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/却下日時:/)).toBeInTheDocument();
+      expect(screen.queryByText(/却下理由:/)).not.toBeInTheDocument();
+    });
+
+    test("does not display rejection information when inquiry is not rejected", async () => {
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(mockInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText("却下情報")).not.toBeInTheDocument();
+    });
+
+    test("does not display rejection information when status is rejected but metadata is missing", async () => {
+      const rejectedInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "rejected" as InquiryStatus,
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(rejectedInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText("却下情報")).not.toBeInTheDocument();
     });
   });
 });

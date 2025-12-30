@@ -22,7 +22,7 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
 {
   "user_id": "user123",
   "content": "ユーザーがログインできる機能が欲しい",
-  "language": "ja"
+  "source_system": "manual"
 }
 ```
 
@@ -32,10 +32,12 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
   "id": 1,
   "user_id": "user123",
   "content": "ユーザーがログインできる機能が欲しい",
-  "language": "ja",
+  "source_system": "manual",
   "status": "received",
   "timestamp": "2024-01-01T00:00:00Z",
-  "created_at": "2024-01-01T00:00:00Z"
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z",
+  "inquiry_metadata": {}
 }
 ```
 
@@ -56,8 +58,12 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
       "id": 1,
       "user_id": "user123",
       "content": "ユーザーがログインできる機能が欲しい",
+      "source_system": "manual",
       "status": "received",
-      "timestamp": "2024-01-01T00:00:00Z"
+      "timestamp": "2024-01-01T00:00:00Z",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z",
+      "inquiry_metadata": {}
     }
   ],
   "meta": {
@@ -82,12 +88,157 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
   "id": 1,
   "user_id": "user123",
   "content": "ユーザーがログインできる機能が欲しい",
-  "language": "ja",
+  "source_system": "manual",
   "status": "received",
   "timestamp": "2024-01-01T00:00:00Z",
   "created_at": "2024-01-01T00:00:00Z",
   "updated_at": "2024-01-01T00:00:00Z",
   "inquiry_metadata": {}
+}
+```
+
+#### `PUT /api/inquiries/{id}`
+問い合わせを更新します。
+
+**パスパラメータ**
+- `id`: 問い合わせID
+
+**リクエスト例**
+```json
+{
+  "content": "更新された問い合わせ内容",
+  "source_system": "email"
+}
+```
+
+**レスポンス例**
+```json
+{
+  "id": 1,
+  "user_id": "user123",
+  "content": "更新された問い合わせ内容",
+  "source_system": "email",
+  "status": "received",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:10:00Z",
+  "inquiry_metadata": {}
+}
+```
+
+#### `POST /api/inquiries/{id}/approve`
+問い合わせを承認します（ステータスを`processing`に変更）。
+
+**パスパラメータ**
+- `id`: 問い合わせID
+
+**リクエストボディ**
+なし
+
+**レスポンス例**
+```json
+{
+  "id": 1,
+  "user_id": "user123",
+  "content": "ユーザーがログインできる機能が欲しい",
+  "source_system": "manual",
+  "status": "processing",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:05:00Z",
+  "inquiry_metadata": {
+    "approved_at": "2024-01-01T00:05:00Z"
+  }
+}
+```
+
+#### `POST /api/inquiries/{id}/reject`
+問い合わせを却下します（ステータスを`failed`に変更）。
+
+**パスパラメータ**
+- `id`: 問い合わせID
+
+**リクエスト例**
+```json
+{
+  "reason": "要件が不明確です"
+}
+```
+
+**レスポンス例**
+```json
+{
+  "id": 1,
+  "user_id": "user123",
+  "content": "ユーザーがログインできる機能が欲しい",
+  "source_system": "manual",
+  "status": "failed",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:05:00Z",
+  "inquiry_metadata": {
+    "rejected_at": "2024-01-01T00:05:00Z",
+    "rejection_reason": "要件が不明確です"
+  }
+}
+```
+
+#### `POST /api/inquiries/{id}/request-clarification`
+問い合わせに明確化を要求します（ステータスを`needs_clarification`に変更）。
+
+**パスパラメータ**
+- `id`: 問い合わせID
+
+**リクエスト例**
+```json
+{
+  "reason": "具体的なユースケースを教えてください"
+}
+```
+
+**レスポンス例**
+```json
+{
+  "id": 1,
+  "user_id": "user123",
+  "content": "ユーザーがログインできる機能が欲しい",
+  "source_system": "manual",
+  "status": "needs_clarification",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:05:00Z",
+  "inquiry_metadata": {
+    "clarification_requested_at": "2024-01-01T00:05:00Z",
+    "clarification_reason": "具体的なユースケースを教えてください"
+  }
+}
+```
+
+#### `POST /api/inquiries/{id}/complete-clarification`
+明確化を完了してreceivedステータスに戻します。
+
+**パスパラメータ**
+- `id`: 問い合わせID
+
+**リクエストボディ**
+なし
+
+**レスポンス例**
+```json
+{
+  "id": 1,
+  "user_id": "user123",
+  "content": "ユーザーがログインできる機能が欲しい",
+  "source_system": "manual",
+  "status": "received",
+  "timestamp": "2024-01-01T00:00:00Z",
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:10:00Z",
+  "inquiry_metadata": {
+    "clarification_requested_at": "2024-01-01T00:05:00Z",
+    "clarification_reason": "具体的なユースケースを教えてください",
+    "clarification_completed_at": "2024-01-01T00:10:00Z"
+  }
 }
 ```
 
@@ -183,20 +334,6 @@ API情報を取得します。
 {
   "approved": true,
   "comment": "承認します"
-}
-```
-
-#### `PUT /api/inquiries/{id}`
-問い合わせを更新します（開発中）。
-
-**パスパラメータ**
-- `id`: 問い合わせID
-
-**リクエスト例**
-```json
-{
-  "content": "更新された問い合わせ内容",
-  "status": "processing"
 }
 ```
 

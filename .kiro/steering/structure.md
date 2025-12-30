@@ -77,11 +77,13 @@ src/
 │   ├── inquiryApi.ts  # 問い合わせAPIクライアント（Axios、エラーハンドリング）
 │   └── index.ts       # サービスエクスポート
 ├── components/        # 再利用可能コンポーネント（実装済み）
-│   ├── InquiryForm.tsx      # 問い合わせ入力フォーム（React Hook Form + Zod）
-│   ├── InquiryForm.test.tsx # フォームコンポーネントテスト
-│   ├── InquiryList.tsx      # 問い合わせ一覧コンポーネント（TanStack Query、ページネーション、フィルタ）
-│   ├── InquiryList.test.tsx # 一覧コンポーネントテスト
-│   └── index.ts             # コンポーネントエクスポート
+│   ├── InquiryForm.tsx       # 問い合わせ入力フォーム（React Hook Form + Zod）
+│   ├── InquiryForm.test.tsx  # フォームコンポーネントテスト
+│   ├── InquiryList.tsx       # 問い合わせ一覧コンポーネント（TanStack Query、ページネーション、フィルタ）
+│   ├── InquiryList.test.tsx  # 一覧コンポーネントテスト
+│   ├── InquiryDetail.tsx     # 問い合わせ詳細・編集コンポーネント（TanStack Query、承認/却下）
+│   ├── InquiryDetail.test.tsx # 詳細コンポーネントテスト
+│   └── index.ts              # コンポーネントエクスポート
 ├── __mocks__/         # テストモック（実装済み）
 │   └── axios.ts       # Axiosマニュアルモック
 ├── App.tsx            # メインアプリケーションコンポーネント

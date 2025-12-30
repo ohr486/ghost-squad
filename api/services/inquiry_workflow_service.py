@@ -141,6 +141,128 @@ class InquiryWorkflowService:
         # update_statusメソッドはupdated_atを自動更新し、一度のトランザクションで全変更をコミットする（要件3.7）
         return self.repository.update_status(inquiry_id, InquiryStatus.REJECTED)
 
+    def request_clarification(
+        self,
+        inquiry_id: int,
+        reason: Optional[str] = None,
+    ) -> InquiryModel:
+        """問い合わせに明確化を要求する.
+
+        Args:
+            inquiry_id: 問い合わせID
+            reason: 明確化要求理由（オプショナル）
+
+        Returns:
+            InquiryModel: 明確化要求された問い合わせエンティティ
+
+        Raises:
+            ValueError: 問い合わせが存在しない場合
+            InvalidStateTransitionError: 無効なステータス遷移の場合
+
+        Note:
+            - ステータスを「needs_clarification」に更新する
+            - 明確化要求理由の入力を許可する
+            - 明確化要求理由をメタデータに保存する
+            - updated_atタイムスタンプと明確化要求日時を記録する
+            - ステータス変更履歴をメタデータに記録する
+            - RECEIVEDステータスの問い合わせのみ明確化要求可能
+        """
+        # 問い合わせを取得
+        inquiry = self.repository.find_by_id(inquiry_id)
+        if inquiry is None:
+            raise ValueError(f"Inquiry with id {inquiry_id} not found")
+
+        # ステータス遷移検証
+        if not self.can_transition_to(
+            inquiry.status, InquiryStatus.NEEDS_CLARIFICATION
+        ):
+            raise InvalidStateTransitionError(
+                f"Cannot request clarification for inquiry with status "
+                f"'{inquiry.status.value}'. Only 'received' status inquiries "
+                "can be requested for clarification."
+            )
+
+        # 現在のステータスを記録（履歴用）
+        old_status = inquiry.status
+
+        # 明確化要求情報をメタデータに保存
+        clarification_data = {
+            "requested_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if reason is not None:
+            clarification_data["reason"] = reason
+
+        # メタデータを更新
+        if inquiry.inquiry_metadata is None:
+            inquiry.inquiry_metadata = {}
+        inquiry.inquiry_metadata["clarification_request"] = clarification_data
+
+        # ステータス変更履歴を記録
+        self._record_status_change(
+            inquiry=inquiry,
+            from_status=old_status,
+            to_status=InquiryStatus.NEEDS_CLARIFICATION,
+        )
+
+        # ステータスを更新
+        return self.repository.update_status(
+            inquiry_id, InquiryStatus.NEEDS_CLARIFICATION
+        )
+
+    def complete_clarification(self, inquiry_id: int) -> InquiryModel:
+        """明確化を完了してreceivedステータスに戻す.
+
+        Args:
+            inquiry_id: 問い合わせID
+
+        Returns:
+            InquiryModel: 明確化完了した問い合わせエンティティ
+
+        Raises:
+            ValueError: 問い合わせが存在しない場合
+            InvalidStateTransitionError: 無効なステータス遷移の場合
+
+        Note:
+            - ステータスを「received」に更新する
+            - 明確化完了日時をメタデータに記録する
+            - updated_atタイムスタンプを更新する
+            - ステータス変更履歴をメタデータに記録する
+            - NEEDS_CLARIFICATIONステータスの問い合わせのみ明確化完了可能
+        """
+        # 問い合わせを取得
+        inquiry = self.repository.find_by_id(inquiry_id)
+        if inquiry is None:
+            raise ValueError(f"Inquiry with id {inquiry_id} not found")
+
+        # ステータス遷移検証
+        if not self.can_transition_to(inquiry.status, InquiryStatus.RECEIVED):
+            raise InvalidStateTransitionError(
+                f"Cannot complete clarification for inquiry with status "
+                f"'{inquiry.status.value}'. Only 'needs_clarification' status "
+                "inquiries can be completed."
+            )
+
+        # 現在のステータスを記録（履歴用）
+        old_status = inquiry.status
+
+        # 明確化完了情報をメタデータに記録
+        if inquiry.inquiry_metadata is None:
+            inquiry.inquiry_metadata = {}
+        if "clarification_request" in inquiry.inquiry_metadata:
+            inquiry.inquiry_metadata["clarification_request"][
+                "completed_at"
+            ] = datetime.now(timezone.utc).isoformat()
+
+        # ステータス変更履歴を記録
+        self._record_status_change(
+            inquiry=inquiry,
+            from_status=old_status,
+            to_status=InquiryStatus.RECEIVED,
+        )
+
+        # ステータスを更新
+        return self.repository.update_status(inquiry_id, InquiryStatus.RECEIVED)
+
     def can_transition_to(
         self,
         current_status: InquiryStatus,
@@ -159,13 +281,17 @@ class InquiryWorkflowService:
             許可される遷移:
             - received → task_working (承認)
             - received → rejected (却下)
+            - received → needs_clarification (明確化要求)
+            - needs_clarification → received (明確化完了)
+            - needs_clarification → task_working (明確化後に承認)
+            - needs_clarification → rejected (明確化不可で却下)
             - received → processing (AI処理開始、story specで実装)
             - processing → task_working (AI処理成功、story specで実装)
             - processing → failed (AI処理失敗、story specで実装)
             - task_working → completed (タスク完了、story specで実装)
 
             要件3.10-3.11:
-            - RECEIVEDステータスの問い合わせのみ承認・却下を許可する
+            - RECEIVEDステータスの問い合わせのみ承認・却下・明確化要求を許可する
             - 承認済み・却下済みの問い合わせの再承認・再却下を禁止する
         """
         # 承認フロー（received → task_working）
@@ -178,6 +304,34 @@ class InquiryWorkflowService:
         # 却下フロー（received → rejected）
         if (
             current_status == InquiryStatus.RECEIVED
+            and new_status == InquiryStatus.REJECTED
+        ):
+            return True
+
+        # 明確化要求フロー（received → needs_clarification）
+        if (
+            current_status == InquiryStatus.RECEIVED
+            and new_status == InquiryStatus.NEEDS_CLARIFICATION
+        ):
+            return True
+
+        # 明確化完了フロー（needs_clarification → received）
+        if (
+            current_status == InquiryStatus.NEEDS_CLARIFICATION
+            and new_status == InquiryStatus.RECEIVED
+        ):
+            return True
+
+        # 明確化後の承認フロー（needs_clarification → task_working）
+        if (
+            current_status == InquiryStatus.NEEDS_CLARIFICATION
+            and new_status == InquiryStatus.TASK_WORKING
+        ):
+            return True
+
+        # 明確化不可での却下フロー（needs_clarification → rejected）
+        if (
+            current_status == InquiryStatus.NEEDS_CLARIFICATION
             and new_status == InquiryStatus.REJECTED
         ):
             return True

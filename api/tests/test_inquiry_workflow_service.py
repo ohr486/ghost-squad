@@ -357,3 +357,225 @@ class TestInquiryWorkflowService:
             result2.inquiry_metadata["status_history"][1]["to_status"]
             == InquiryStatus.REJECTED.value
         )
+
+    # 明確化要求機能のテスト
+    def test_request_clarification_with_reason_success(
+        self,
+        workflow_service: InquiryWorkflowService,
+        received_inquiry: InquiryModel,
+    ) -> None:
+        """明確化要求フローの正常系テスト（理由あり）.
+
+        明確化要求理由ありで明確化要求できることを確認する。
+        """
+        # 明確化要求前のupdated_atを記録
+        old_updated_at = received_inquiry.updated_at
+
+        # 明確化要求実行（理由あり）
+        reason = "追加情報が必要です"
+        result = workflow_service.request_clarification(
+            received_inquiry.id, reason=reason
+        )
+
+        # アサーション
+        assert result.id == received_inquiry.id
+        assert result.status == InquiryStatus.NEEDS_CLARIFICATION
+        assert result.updated_at > old_updated_at
+        assert "clarification_request" in result.inquiry_metadata
+        clarification_data = result.inquiry_metadata["clarification_request"]
+        assert clarification_data["reason"] == reason
+        assert "requested_at" in clarification_data
+
+        # requested_atが有効なISO 8601形式の日時であることを確認
+        requested_at = datetime.fromisoformat(clarification_data["requested_at"])
+        assert requested_at.tzinfo is not None  # タイムゾーン情報があることを確認
+
+    def test_request_clarification_without_reason_success(
+        self,
+        workflow_service: InquiryWorkflowService,
+        received_inquiry: InquiryModel,
+    ) -> None:
+        """明確化要求フローの正常系テスト（理由なし）.
+
+        明確化要求理由なしで明確化要求できることを確認する。
+        """
+        # 明確化要求実行（理由なし）
+        result = workflow_service.request_clarification(received_inquiry.id)
+
+        # アサーション
+        assert result.status == InquiryStatus.NEEDS_CLARIFICATION
+        assert "clarification_request" in result.inquiry_metadata
+        clarification_data = result.inquiry_metadata["clarification_request"]
+        assert "reason" not in clarification_data  # 理由が保存されていないことを確認
+        assert "requested_at" in clarification_data
+
+    def test_request_clarification_records_status_history(
+        self,
+        workflow_service: InquiryWorkflowService,
+        received_inquiry: InquiryModel,
+    ) -> None:
+        """明確化要求時にステータス変更履歴が記録されることを確認."""
+        # 明確化要求実行
+        result = workflow_service.request_clarification(
+            received_inquiry.id, reason="テスト"
+        )
+
+        # ステータス変更履歴の確認
+        assert "status_history" in result.inquiry_metadata
+        history = result.inquiry_metadata["status_history"]
+        assert len(history) == 1
+        assert history[0]["from_status"] == InquiryStatus.RECEIVED.value
+        assert history[0]["to_status"] == InquiryStatus.NEEDS_CLARIFICATION.value
+        assert "changed_at" in history[0]
+
+    def test_request_clarification_from_invalid_status_fails(
+        self,
+        workflow_service: InquiryWorkflowService,
+        repository: InquiryRepository,
+    ) -> None:
+        """無効なステータスからの明確化要求は失敗する."""
+        # TASK_WORKINGステータスの問い合わせを作成
+        data = CreateInquiryData(
+            user_id="test_user",
+            content="タスク作業中の問い合わせ",
+            source_system="manual",
+            timestamp=datetime.now(timezone.utc),
+            status=InquiryStatus.TASK_WORKING,
+        )
+        inquiry = repository.create(data)
+
+        # 明確化要求を試みる
+        with pytest.raises(InvalidStateTransitionError) as exc_info:
+            workflow_service.request_clarification(inquiry.id, reason="テスト")
+
+        assert "received" in str(exc_info.value).lower()
+
+    def test_request_clarification_nonexistent_inquiry_fails(
+        self,
+        workflow_service: InquiryWorkflowService,
+    ) -> None:
+        """存在しない問い合わせの明確化要求は失敗する."""
+        nonexistent_id = 999999
+
+        with pytest.raises(ValueError) as exc_info:
+            workflow_service.request_clarification(nonexistent_id, reason="テスト")
+
+        assert "not found" in str(exc_info.value).lower()
+
+    def test_complete_clarification_success(
+        self,
+        workflow_service: InquiryWorkflowService,
+        repository: InquiryRepository,
+    ) -> None:
+        """明確化完了フローの正常系テスト.
+
+        明確化完了でステータスがreceivedに戻ることを確認する。
+        """
+        # NEEDS_CLARIFICATIONステータスの問い合わせを作成
+        data = CreateInquiryData(
+            user_id="test_user",
+            content="明確化が必要な問い合わせ",
+            source_system="manual",
+            timestamp=datetime.now(timezone.utc),
+            status=InquiryStatus.NEEDS_CLARIFICATION,
+        )
+        inquiry = repository.create(data)
+
+        # メタデータに明確化要求情報を設定
+        inquiry.inquiry_metadata = {
+            "clarification_request": {
+                "requested_at": datetime.now(timezone.utc).isoformat(),
+                "reason": "追加情報が必要です",
+            }
+        }
+        repository.session.commit()
+
+        # 明確化完了前のupdated_atを記録
+        old_updated_at = inquiry.updated_at
+
+        # 明確化完了実行
+        result = workflow_service.complete_clarification(inquiry.id)
+
+        # アサーション
+        assert result.id == inquiry.id
+        assert result.status == InquiryStatus.RECEIVED
+        assert result.updated_at > old_updated_at
+        assert "clarification_request" in result.inquiry_metadata
+        assert "completed_at" in result.inquiry_metadata["clarification_request"]
+
+        # completed_atが有効なISO 8601形式の日時であることを確認
+        completed_at = datetime.fromisoformat(
+            result.inquiry_metadata["clarification_request"]["completed_at"]
+        )
+        assert completed_at.tzinfo is not None
+
+    def test_complete_clarification_records_status_history(
+        self,
+        workflow_service: InquiryWorkflowService,
+        repository: InquiryRepository,
+    ) -> None:
+        """明確化完了時にステータス変更履歴が記録されることを確認."""
+        # NEEDS_CLARIFICATIONステータスの問い合わせを作成
+        data = CreateInquiryData(
+            user_id="test_user",
+            content="明確化が必要な問い合わせ",
+            source_system="manual",
+            timestamp=datetime.now(timezone.utc),
+            status=InquiryStatus.NEEDS_CLARIFICATION,
+        )
+        inquiry = repository.create(data)
+
+        # 明確化完了実行
+        result = workflow_service.complete_clarification(inquiry.id)
+
+        # ステータス変更履歴の確認
+        assert "status_history" in result.inquiry_metadata
+        history = result.inquiry_metadata["status_history"]
+        assert len(history) == 1
+        assert history[0]["from_status"] == InquiryStatus.NEEDS_CLARIFICATION.value
+        assert history[0]["to_status"] == InquiryStatus.RECEIVED.value
+        assert "changed_at" in history[0]
+
+    def test_complete_clarification_from_invalid_status_fails(
+        self,
+        workflow_service: InquiryWorkflowService,
+        received_inquiry: InquiryModel,
+    ) -> None:
+        """無効なステータスからの明確化完了は失敗する."""
+        # RECEIVEDステータスの問い合わせで明確化完了を試みる
+        with pytest.raises(InvalidStateTransitionError) as exc_info:
+            workflow_service.complete_clarification(received_inquiry.id)
+
+        assert "needs_clarification" in str(exc_info.value).lower()
+
+    def test_complete_clarification_nonexistent_inquiry_fails(
+        self,
+        workflow_service: InquiryWorkflowService,
+    ) -> None:
+        """存在しない問い合わせの明確化完了は失敗する."""
+        nonexistent_id = 999999
+
+        with pytest.raises(ValueError) as exc_info:
+            workflow_service.complete_clarification(nonexistent_id)
+
+        assert "not found" in str(exc_info.value).lower()
+
+    def test_can_transition_to_received_to_needs_clarification(
+        self,
+        workflow_service: InquiryWorkflowService,
+    ) -> None:
+        """received → needs_clarificationの遷移は許可される."""
+        assert workflow_service.can_transition_to(
+            InquiryStatus.RECEIVED,
+            InquiryStatus.NEEDS_CLARIFICATION,
+        )
+
+    def test_can_transition_to_needs_clarification_to_received(
+        self,
+        workflow_service: InquiryWorkflowService,
+    ) -> None:
+        """needs_clarification → receivedの遷移は許可される."""
+        assert workflow_service.can_transition_to(
+            InquiryStatus.NEEDS_CLARIFICATION,
+            InquiryStatus.RECEIVED,
+        )
