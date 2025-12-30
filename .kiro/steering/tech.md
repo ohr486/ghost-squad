@@ -20,7 +20,7 @@ Ghost Squadプロジェクトの技術スタックと開発環境に関するガ
 - **開発支援**: rich 13.7.0 + structlog 23.2.0 + ipdb 0.13.13
 
 **フロントエンド (Node.js 18+)**
-- **フレームワーク**: React 18.2.0 + TypeScript 5.1.6
+- **フレームワーク**: React 18.2.0 + TypeScript 4.9.5
 - **ビルドツール**: Create React App (react-scripts 5.0.1) + --legacy-peer-deps
 - **ルーティング**: React Router DOM 6.18.0
 - **状態管理**: TanStack React Query 5.8.4（サーバー状態管理）
@@ -176,7 +176,7 @@ npm test -- --coverage --watchAll=false
   - InquiryList.tsx: 84.21% statements、62.5% branches、81.81% functions（25テスト）
   - inquiryApi.ts: 86.11% statements（14テスト）
   - App.tsx: 100%カバレッジ
-- **型安全性**: TypeScript 5.1 strict mode、mypy strict mode
+- **型安全性**: TypeScript 4.9 strict mode、mypy strict mode
 - **コードスタイル**: Black（Python）、Prettier（TypeScript）
 - **セキュリティ**: Bandit（Python）、ESLint security rules
 - **API設計**: RESTful、日本語エラーメッセージ、適切なHTTPステータス
