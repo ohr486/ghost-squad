@@ -41,7 +41,7 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix",
-    "format": "./node_modules/.bin/prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\" || npx prettier@3.7.4 --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format": "npx prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
