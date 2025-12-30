@@ -153,24 +153,25 @@ stateDiagram-v2
 
     received --> task_working: 承認
     received --> rejected: 却下
-    received --> processing: 処理開始（story specで実装）
     received --> needs_clarification: 明確化要求
 
     needs_clarification --> received: 明確化完了
-    needs_clarification --> rejected: 却下
 
-    processing --> task_working: 処理成功
-    processing --> failed: 処理失敗
+    task_working --> processing: AI変換開始
 
-    task_working --> completed: タスク完了
+    processing --> completed: タスク完了
 
     rejected --> [*]: 終了
-    failed --> [*]: 終了
     completed --> [*]: 終了
 
     note right of received
         編集可能
         承認・却下可能
+    end note
+
+    note right of task_working
+        承認済み
+        AI変換待ち
     end note
 
     note right of rejected
@@ -180,7 +181,7 @@ stateDiagram-v2
 
     note right of processing
         読み取り専用
-        AI処理中
+        AI処理中（story specで実装）
     end note
 ```
 
@@ -566,10 +567,10 @@ interface RejectionMetadata {
 問い合わせステータス遷移:
 - `received` → `task_working`: 承認時（要件3.1）
 - `received` → `rejected`: 却下時（要件3.4）
-- `received` → `processing`: ストーリー生成開始時（story specで実装）
-- `processing` → `task_working`: ストーリー生成成功時（story specで実装）
-- `processing` → `failed`: ストーリー生成失敗時（story specで実装）
-- `task_working` → `completed`: すべてのストーリーが完了時（story specで実装）
+- `received` → `needs_clarification`: 明確化要求時（将来実装）
+- `needs_clarification` → `received`: 明確化完了時（将来実装）
+- `task_working` → `processing`: AI変換開始時（story specで実装）
+- `processing` → `completed`: タスク完了時（story specで実装）
 
 **ステータス遷移制約（要件3.10-3.11）**:
 - `received`ステータスの問い合わせのみ承認・却下可能
