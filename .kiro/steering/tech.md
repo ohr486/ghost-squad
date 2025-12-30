@@ -20,16 +20,16 @@ Ghost Squadプロジェクトの技術スタックと開発環境に関するガ
 - **開発支援**: rich 13.7.0 + structlog 23.2.0 + ipdb 0.13.13
 
 **フロントエンド (Node.js 18+)**
-- **フレームワーク**: React 18.2.0 + TypeScript 4.9.5
-- **ビルドツール**: Create React App (react-scripts 5.0.1)
+- **フレームワーク**: React 18.2.0 + TypeScript 5.1.6
+- **ビルドツール**: Create React App (react-scripts 5.0.1) + --legacy-peer-deps
 - **ルーティング**: React Router DOM 6.18.0
 - **状態管理**: TanStack React Query 5.8.4（サーバー状態管理）
-- **フォーム**: React Hook Form 7.43.0 + Zod 3.22.4 バリデーション
+- **フォーム**: React Hook Form 7.43.0 + @hookform/resolvers 5.2.2 + Zod 3.22.4 バリデーション
 - **スタイリング**: Tailwind CSS 3.3.5 + @tailwindcss/forms 0.5.7
 - **HTTPクライアント**: Axios 1.6.2（プロキシ設定済み）
 - **UI**: Lucide React 0.294.0 + clsx 2.0.0 + react-hot-toast 2.4.1
 - **ユーティリティ**: date-fns 2.30.0
-- **テスト**: Jest + React Testing Library + fast-check 3.15.0（PBT）
+- **テスト**: Jest + React Testing Library 14.0.0 + @testing-library/dom 10.4.1 + fast-check 3.15.0（PBT）
 
 **インフラストラクチャ**
 - **コンテナ化**: Docker + Docker Compose（開発環境）
@@ -171,10 +171,11 @@ npm test -- --coverage --watchAll=false
   - InquiryRepository: 90%カバレッジ、17ユニットテスト
   - InquiryQueryService: 100%カバレッジ、12ユニットテスト
   - InquiryWorkflowService: 89%カバレッジ
-  - フロントエンド: **現在75.67%カバレッジ**（9テスト、2スイート）、新機能は80%以上
-  - inquiryApi.ts: 75%カバレッジ（エラーハンドリングテスト含む）
+  - フロントエンド: **現在91.93%カバレッジ**（27テスト、3スイート）、新機能は80%以上
+  - InquiryForm.tsx: 100% statements、94.28% branches、100% functions（13テスト）
+  - inquiryApi.ts: 86.11% statements（14テスト）
   - App.tsx: 100%カバレッジ
-- **型安全性**: TypeScript strict mode、mypy strict mode
+- **型安全性**: TypeScript 5.1 strict mode、mypy strict mode
 - **コードスタイル**: Black（Python）、Prettier（TypeScript）
 - **セキュリティ**: Bandit（Python）、ESLint security rules
 - **API設計**: RESTful、日本語エラーメッセージ、適切なHTTPステータス
