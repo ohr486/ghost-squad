@@ -6,7 +6,7 @@ inclusion: always
 
 このファイルは、Ghost Squadプロジェクトの現在の実装状況と開発優先度を明確にします。新しい機能を実装する際は、この状況を考慮してください。
 
-## 🎯 現在の実装状況（2025年12月28日時点）
+## 🎯 現在の実装状況（2025年12月30日時点）
 
 ### ✅ 実装済み機能
 
@@ -47,24 +47,32 @@ inclusion: always
 - コード品質設定（`.flake8`、`mypy.ini`）
 
 **3. フロントエンド実装（`web/`）**
-- React アプリケーション（**TypeScript実装完了** ✅）
-  - `package.json` - React 18、Testing Library設定、TypeScript 4.9.5、Axios 1.6.2
+- React アプリケーション（**TypeScript 5.1実装完了** ✅）
+  - `package.json` - React 18、Testing Library設定、TypeScript 5.1.6、Axios 1.6.2
   - `App.tsx` - メインアプリケーションコンポーネント（TypeScript化）
   - `index.tsx` - エントリーポイント（TypeScript化）
   - `App.test.tsx` - アプリケーションテスト（TypeScript化）
   - `tsconfig.json` - TypeScript strict mode設定
+  - `Dockerfile` - --legacy-peer-deps対応
 - 型定義（`src/types/`）
   - `inquiry.ts` - Inquiry関連型定義（InquiryResponse、CreateInquiryRequest、ErrorResponse等）
   - `index.ts` - 型エクスポート
+- コンポーネント（`src/components/`）
+  - `InquiryForm.tsx` - 問い合わせ入力フォーム（React Hook Form + Zod、100% statements、94.28% branches）
+  - `InquiryForm.test.tsx` - InquiryForm包括的テスト（13テスト、バリデーション・送信・エラーハンドリング）
+  - `index.ts` - コンポーネントエクスポート
 - APIクライアントサービス（`src/services/`）
-  - `inquiryApi.ts` - 問い合わせAPI呼び出し実装（Axios、エラーインターセプター、75%カバレッジ）
+  - `inquiryApi.ts` - 問い合わせAPI呼び出し実装（Axios、エラーインターセプター、86.11%カバレッジ）
   - `index.ts` - サービスエクスポート
 - テスト設定
-  - `setupTests.ts` - TypeScript化
+  - `setupTests.ts` - TypeScript化、React act()警告抑制
   - `__mocks__/axios.ts` - Axiosマニュアルモック（エラーハンドリングテスト用）
-  - `inquiryApi.test.ts` - APIクライアント包括的テスト（9テスト、エラーハンドリング含む）
+  - `inquiryApi.test.ts` - APIクライアント包括的テスト（14テスト、エラーハンドリング含む）
 - 依存関係定義（`package.json`、`package-lock.json`）
-  - TypeScript: `@types/react`, `@types/react-dom`, `@types/node`, `@types/jest`
+  - TypeScript 5.3: `@types/react`, `@types/react-dom`, `@types/node`, `@types/jest`
+  - フォーム: `@hookform/resolvers@5.2.2`, `react-hook-form@7.43.0`, `zod@3.22.4`
+  - テスト: `@testing-library/dom@10.4.1`, `@testing-library/react@14.0.0`
+  - UI: `react-hot-toast@2.4.1`
   - コード品質: `prettier`, `eslint-config-prettier`, `eslint-plugin-prettier`
 - コード品質設定
   - `.prettierrc.json` - Prettierフォーマット設定
@@ -108,17 +116,17 @@ inclusion: always
 - ❌ ストーリーモデル（`story.py` 未作成）
 
 **フロントエンド（`web/`）**
-- ✅ TypeScript設定（完了 - strict mode、tsconfig.json）
+- ✅ TypeScript 5.1設定（完了 - strict mode、tsconfig.json、--legacy-peer-deps）
 - ✅ 型定義（完了 - `src/types/inquiry.ts`、バックエンドスキーマと整合）
 - ✅ Axios設定（完了 - `src/services/inquiryApi.ts`、エラーインターセプター実装）
-- ✅ サービス層基盤（完了 - APIクライアント実装、75%カバレッジ、9テスト）
-- ✅ テスト基盤（完了 - Jest + RTL + TypeScript、Axiosマニュアルモック）
-- ✅ コード品質基盤（完了 - Prettier + ESLint設定）
+- ✅ サービス層基盤（完了 - APIクライアント実装、86.11%カバレッジ、14テスト）
+- ✅ InquiryFormコンポーネント（完了 - React Hook Form + Zod、100% statements、13テスト）
+- ✅ テスト基盤（完了 - Jest + RTL + TypeScript、27テスト、91.93%カバレッジ）
+- ✅ コード品質基盤（完了 - Prettier + ESLint設定、全チェック通過）
 - ❌ Tailwind CSS設定（未設定）
 - ❌ React Router設定（未設定）
 - ❌ TanStack React Query設定（未設定）
-- ❌ コンポーネント（UIコンポーネント未作成）
-- ❌ ページ（ページコンポーネント未作成）
+- ❌ ページコンポーネント（ページレイアウト未作成）
 
 ## 📋 次のステップ
 
@@ -133,31 +141,32 @@ inclusion: always
 6. ✅ ~~InquiryRepository実装（データアクセス層）~~ （完了）
 7. ❌ 開発環境の動作確認（`make dev`、`make db-migrate`）
 
-**Phase 2: Inquiry機能の完全実装（優先度：高）** - 🎉 **バックエンド完了**
+**Phase 2: Inquiry機能の完全実装（優先度：高）** - 🎉 **フォーム実装完了**
 - `.kiro/specs/inquiry/` の仕様に従って実装
-- Tasks: 全バックエンドタスク完了（データモデル → サービス層 → API層）
-- 進捗: データモデル → バリデーション → データアクセス層 → サービス層 → **API層完了** ✅
-- 次: フロントエンド実装 → 統合テスト
+- Tasks: 8.1, 8.2完了（InquiryFormコンポーネント + テスト）
+- 進捗: データモデル → サービス層 → API層 → **InquiryForm完了** ✅
+- 次: ページコンポーネント → 統合テスト
 - 実装状況:
   - ✅ ~~InquiryRepository（データアクセス層）~~ （完了 - 90%カバレッジ）
   - ✅ ~~InquiryWorkflowService（ワークフロー管理）~~ （完了 - 89%カバレッジ）
   - ✅ ~~InquiryQueryService（クエリサービス）~~ （完了 - 100%カバレッジ）
   - ✅ ~~問い合わせCRUD APIエンドポイント（ルーター層）~~ （完了 - 全エンドポイント実装済み）
   - ✅ ~~トランザクション管理・エラーハンドリング強化~~ （完了 - PR #80, #81, #82）
+  - ✅ ~~問い合わせ登録フォーム（React + Validation）~~ （完了 - Tasks 8.1, 8.2、91.93%カバレッジ）
   - ❌ 問い合わせ一覧・詳細画面（React）
-  - ❌ 問い合わせ登録フォーム（React + Validation）
   - ❌ E2Eテスト・統合テスト
 
-**Phase 3: フロントエンド基盤の完成（優先度：中）** - 🎉 **基盤完了**
+**Phase 3: フロントエンド基盤の完成（優先度：中）** - 🎉 **基盤 + InquiryForm完了**
 1. ✅ ~~`web/package.json` の作成~~ （完了）
-2. ✅ ~~TypeScriptへの移行（`.tsx`、`tsconfig.json`）~~ （完了）
+2. ✅ ~~TypeScriptへの移行（`.tsx`、`tsconfig.json`）~~ （完了 - TypeScript 5.1.6）
 3. ✅ ~~型定義作成（`src/types/inquiry.ts`）~~ （完了）
 4. ✅ ~~Axios設定（API通信、エラーハンドリング）~~ （完了）
-5. ✅ ~~テスト基盤（Jest + RTL + TypeScript）~~ （完了）
+5. ✅ ~~テスト基盤（Jest + RTL + TypeScript）~~ （完了 - 27テスト、91.93%カバレッジ）
 6. ✅ ~~コード品質設定（Prettier + ESLint）~~ （完了）
-7. ❌ Tailwind CSS設定
-8. ❌ React Router設定
-9. ❌ TanStack React Query設定
+7. ✅ ~~InquiryFormコンポーネント実装~~ （完了 - Tasks 8.1, 8.2）
+8. ❌ Tailwind CSS設定
+9. ❌ React Router設定
+10. ❌ TanStack React Query設定
 
 **Phase 4: Story機能の実装（優先度：中）**
 - `.kiro/specs/story/` の設計・タスク生成から開始
@@ -181,11 +190,12 @@ inclusion: always
 - **CORS**: localhost:3000、Docker内部通信対応
 
 ### フロントエンド
-- **技術スタック**: React 18+ + TypeScript 4.9+ + Tailwind CSS 3.3+
+- **技術スタック**: React 18+ + TypeScript 5.1+ + Tailwind CSS 3.3+
 - **状態管理**: TanStack React Query（サーバー状態管理）
-- **フォーム**: React Hook Form + Zod バリデーション
-- **API通信**: Axios（プロキシ設定）
+- **フォーム**: React Hook Form 7.43 + @hookform/resolvers 5.2.2 + Zod 3.22.4 バリデーション
+- **API通信**: Axios 1.6.2（プロキシ設定）
 - **型安全性**: strict モード、バックエンドと型定義を統一
+- **ビルド**: --legacy-peer-deps対応（react-scripts 5.0.1との互換性）
 
 ### 開発環境
 - **コンテナ化**: Docker Compose
@@ -239,7 +249,7 @@ inclusion: always
 
 ## 📈 開発進捗追跡
 
-### 完了済み（65%） - 🚀 フロントエンド基盤完成
+### 完了済み（70%） - 🚀 InquiryForm実装完了
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
 - ✅ 仕様定義（Inquiry: implementation phase、Story: requirements-generated）
 - ✅ ステアリングドキュメント
@@ -252,18 +262,19 @@ inclusion: always
 - ✅ **Inquiry API層完全実装**（CRUD + ワークフロー全エンドポイント）
 - ✅ **トランザクション管理・エラーハンドリング**（PR #80, #81, #82で強化）
 - ✅ 包括的バックエンドテスト（189テスト、高カバレッジ）
-- ✅ **TypeScript完全移行**（strict mode、tsconfig.json）
+- ✅ **TypeScript 5.1完全移行**（strict mode、tsconfig.json、--legacy-peer-deps、ESLint互換）
 - ✅ **型定義基盤**（InquiryResponse、CreateInquiryRequest、ErrorResponse等）
-- ✅ **APIクライアントサービス**（Axios、エラーインターセプター、75%カバレッジ）
-- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、9テスト）
-- ✅ **コード品質基盤**（Prettier + ESLint設定）
+- ✅ **APIクライアントサービス**（Axios、エラーインターセプター、86.11%カバレッジ）
+- ✅ **InquiryFormコンポーネント**（React Hook Form + Zod、100% statements、94.28% branches）
+- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、27テスト、91.93%カバレッジ）
+- ✅ **コード品質基盤**（Prettier + ESLint設定、全チェック通過）
 
 ### 進行中（5%）
-- 🔄 Inquiry UI実装（一覧・詳細・登録フォーム）
+- 🔄 Inquiry UI実装（一覧・詳細ページ）
 - 🔄 フロントエンド高度機能（Tailwind、Router、Query）
 
-### 未着手（30%）
-- ❌ Inquiry機能のUIコンポーネント実装
+### 未着手（25%）
+- ❌ Inquiry機能の一覧・詳細ページ実装
 - ❌ Story機能の設計・実装
 - ❌ AI統合（OpenAI API）
 - ❌ 外部システム統合（Trello、Jira、GitHub Projects）
@@ -272,4 +283,4 @@ inclusion: always
 ---
 
 **最終更新**: 2025年12月30日
-**更新理由**: フロントエンド基盤完成 - TypeScript完全移行、型定義・APIクライアント実装、テスト基盤・コード品質基盤整備（Tasks 7.1, 7.2完了）
+**更新理由**: InquiryForm実装完了 - TypeScript 5.1.6アップグレード（ESLint互換）、React Hook Form + Zod統合、包括的テスト（Tasks 8.1, 8.2完了、91.93%カバレッジ達成）
