@@ -5,34 +5,24 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from database import get_db
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi import status as http_status
-from models.enums.inquiry_status import InquiryStatus
-from models.schemas.inquiry import (
-    CreateInquiryRequest,
-    ErrorResponse,
-    InquiryResponse,
-    UpdateInquiryRequest,
-    ValidationErrorDetail,
-)
 from pydantic import BaseModel, Field
-from services.inquiry_query_service import (
-    InquiryNotFoundError,
-    InquiryQueryService,
-    InvalidPaginationError,
-    ListInquiriesRequest,
-)
-from services.inquiry_repository import (
-    CreateInquiryData,
-    InquiryRepository,
-    UpdateInquiryData,
-)
-from services.inquiry_workflow_service import (
-    InquiryWorkflowService,
-    InvalidStateTransitionError,
-)
 from sqlalchemy.orm import Session
+
+from database import get_db
+from models.enums.inquiry_status import InquiryStatus
+from models.schemas.inquiry import (CreateInquiryRequest, ErrorResponse,
+                                    InquiryResponse, UpdateInquiryRequest,
+                                    ValidationErrorDetail)
+from services.inquiry_query_service import (InquiryNotFoundError,
+                                            InquiryQueryService,
+                                            InvalidPaginationError,
+                                            ListInquiriesRequest)
+from services.inquiry_repository import (CreateInquiryData, InquiryRepository,
+                                         UpdateInquiryData)
+from services.inquiry_workflow_service import (InquiryWorkflowService,
+                                               InvalidStateTransitionError)
 
 router = APIRouter(prefix="/api/inquiries", tags=["inquiries"])
 

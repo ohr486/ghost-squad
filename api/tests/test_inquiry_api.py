@@ -11,15 +11,16 @@
 from datetime import datetime, timezone
 
 import pytest
-from database import get_db
 from fastapi import status
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from database import get_db
 from main import app
 from models.database.base import BaseModel
 from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
 
 # テスト用データベースの設定
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_inquiry_api.db"
