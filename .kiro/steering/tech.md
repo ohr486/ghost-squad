@@ -178,9 +178,10 @@ npm test -- --coverage --watchAll=false
   - InquiryRepository: 90%カバレッジ、17ユニットテスト
   - InquiryQueryService: 100%カバレッジ、12ユニットテスト
   - InquiryWorkflowService: 89%カバレッジ
-  - フロントエンド: **現在89%カバレッジ**（38テスト、4スイート）、新機能は80%以上
+  - フロントエンド: **現在91.02%カバレッジ**（54テスト、5スイート）、新機能は80%以上
   - InquiryForm.tsx: 100% statements、94.28% branches、100% functions（13テスト）
   - InquiryList.tsx: 84.21% statements、62.5% branches、81.81% functions（25テスト）
+  - InquiryDetail.tsx: 94.64% statements、86.36% branches、95% functions（16テスト）
   - inquiryApi.ts: 86.11% statements（14テスト）
   - App.tsx: 100%カバレッジ
 - **型安全性**: TypeScript 4.9 strict mode、mypy strict mode
