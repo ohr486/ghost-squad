@@ -6,9 +6,13 @@ import pytest
 from pydantic import ValidationError
 
 from models.enums.inquiry_status import InquiryStatus
-from models.schemas.inquiry import (CreateInquiryRequest, ErrorResponse,
-                                    InquiryResponse, UpdateInquiryRequest,
-                                    ValidationErrorDetail)
+from models.schemas.inquiry import (
+    CreateInquiryRequest,
+    ErrorResponse,
+    InquiryResponse,
+    UpdateInquiryRequest,
+    ValidationErrorDetail,
+)
 
 
 class TestCreateInquiryRequest:

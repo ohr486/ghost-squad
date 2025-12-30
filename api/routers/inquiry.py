@@ -14,17 +14,28 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models.enums.inquiry_status import InquiryStatus
-from models.schemas.inquiry import (CreateInquiryRequest, ErrorResponse,
-                                    InquiryResponse, UpdateInquiryRequest,
-                                    ValidationErrorDetail)
-from services.inquiry_query_service import (InquiryNotFoundError,
-                                            InquiryQueryService,
-                                            InvalidPaginationError,
-                                            ListInquiriesRequest)
-from services.inquiry_repository import (CreateInquiryData, InquiryRepository,
-                                         UpdateInquiryData)
-from services.inquiry_workflow_service import (InquiryWorkflowService,
-                                               InvalidStateTransitionError)
+from models.schemas.inquiry import (
+    CreateInquiryRequest,
+    ErrorResponse,
+    InquiryResponse,
+    UpdateInquiryRequest,
+    ValidationErrorDetail,
+)
+from services.inquiry_query_service import (
+    InquiryNotFoundError,
+    InquiryQueryService,
+    InvalidPaginationError,
+    ListInquiriesRequest,
+)
+from services.inquiry_repository import (
+    CreateInquiryData,
+    InquiryRepository,
+    UpdateInquiryData,
+)
+from services.inquiry_workflow_service import (
+    InquiryWorkflowService,
+    InvalidStateTransitionError,
+)
 
 router = APIRouter(prefix="/api/inquiries", tags=["inquiries"])
 
@@ -439,6 +450,133 @@ async def reject_inquiry(
         reason = request.reason
         inquiry = workflow_service.reject_inquiry(inquiry_id, reason)
         # Repository already commits internally, no need for explicit commit
+        return InquiryResponse.model_validate(inquiry)
+    except ValueError as e:
+        error_response = _create_error_response("GS-005", str(e))
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail=error_response.model_dump(),
+        )
+    except InvalidStateTransitionError as e:
+        error_response = _create_error_response("GS-007", str(e))
+        raise HTTPException(
+            status_code=http_status.HTTP_409_CONFLICT,
+            detail=error_response.model_dump(),
+        )
+    except Exception as e:
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_response.model_dump(),
+        )
+
+
+# POST /api/inquiries/{id}/request-clarification - 問い合わせ明確化要求
+class RequestClarificationRequest(BaseModel):
+    """問い合わせ明確化要求リクエスト."""
+
+    reason: Optional[str] = Field(
+        None,
+        max_length=1000,
+        description="明確化要求理由（任意、最大1,000文字）",
+    )
+
+
+@router.post(
+    "/{inquiry_id}/request-clarification",
+    response_model=InquiryResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "問い合わせが見つかりません"},
+        409: {
+            "model": ErrorResponse,
+            "description": "無効なステータス遷移",
+        },
+        500: {"model": ErrorResponse, "description": "サーバーエラー"},
+    },
+)
+async def request_clarification(
+    inquiry_id: int,
+    request: RequestClarificationRequest = Body(
+        default=RequestClarificationRequest(reason=None)
+    ),
+    db: Session = Depends(get_db),
+) -> InquiryResponse:
+    """問い合わせに明確化を要求する.
+
+    問い合わせ内容が不明確で追加情報が必要な場合にステータスを「needs_clarification」に変更する。
+
+    Args:
+        inquiry_id: 問い合わせID
+        request: 明確化要求リクエスト（明確化要求理由を含む、オプション）
+        db: データベースセッション
+
+    Returns:
+        InquiryResponse: 明確化要求された問い合わせ
+
+    Raises:
+        HTTPException: 問い合わせが見つからない、無効なステータス遷移、またはサーバーエラー
+    """
+    try:
+        repository = InquiryRepository(db)
+        workflow_service = InquiryWorkflowService(repository)
+        reason = request.reason
+        inquiry = workflow_service.request_clarification(inquiry_id, reason)
+        return InquiryResponse.model_validate(inquiry)
+    except ValueError as e:
+        error_response = _create_error_response("GS-005", str(e))
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail=error_response.model_dump(),
+        )
+    except InvalidStateTransitionError as e:
+        error_response = _create_error_response("GS-007", str(e))
+        raise HTTPException(
+            status_code=http_status.HTTP_409_CONFLICT,
+            detail=error_response.model_dump(),
+        )
+    except Exception as e:
+        error_response = _create_error_response("GS-010", f"データベース操作に失敗しました: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_response.model_dump(),
+        )
+
+
+# POST /api/inquiries/{id}/complete-clarification - 明確化完了
+@router.post(
+    "/{inquiry_id}/complete-clarification",
+    response_model=InquiryResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "問い合わせが見つかりません"},
+        409: {
+            "model": ErrorResponse,
+            "description": "無効なステータス遷移",
+        },
+        500: {"model": ErrorResponse, "description": "サーバーエラー"},
+    },
+)
+async def complete_clarification(
+    inquiry_id: int,
+    db: Session = Depends(get_db),
+) -> InquiryResponse:
+    """明確化を完了してreceivedステータスに戻す.
+
+    明確化要求に対してユーザーが回答し、問い合わせ内容が明確になった場合にステータスを「received」に戻す。
+
+    Args:
+        inquiry_id: 問い合わせID
+        db: データベースセッション
+
+    Returns:
+        InquiryResponse: 明確化完了した問い合わせ（ステータス: received）
+
+    Raises:
+        HTTPException: 問い合わせが見つからない、無効なステータス遷移、またはサーバーエラー
+    """
+    try:
+        repository = InquiryRepository(db)
+        workflow_service = InquiryWorkflowService(repository)
+        inquiry = workflow_service.complete_clarification(inquiry_id)
         return InquiryResponse.model_validate(inquiry)
     except ValueError as e:
         error_response = _create_error_response("GS-005", str(e))

@@ -6,6 +6,8 @@ import {
   updateInquiry,
   approveInquiry,
   rejectInquiry,
+  requestClarification,
+  completeClarification,
 } from "../services/inquiryApi";
 
 export interface InquiryDetailProps {
@@ -38,6 +40,8 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
   const [editedContent, setEditedContent] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [showClarificationDialog, setShowClarificationDialog] = useState(false);
+  const [clarificationReason, setClarificationReason] = useState("");
 
   // Fetch inquiry details
   const {
@@ -89,6 +93,33 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
     },
   });
 
+  // Request clarification mutation
+  const clarificationMutation = useMutation({
+    mutationFn: (reason?: string) =>
+      requestClarification(inquiryId, reason ? { reason } : undefined),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inquiry", inquiryId] });
+      setShowClarificationDialog(false);
+      setClarificationReason("");
+      toast.success("明確化を要求しました");
+    },
+    onError: () => {
+      toast.error("明確化要求に失敗しました");
+    },
+  });
+
+  // Complete clarification mutation
+  const completeClarificationMutation = useMutation({
+    mutationFn: () => completeClarification(inquiryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inquiry", inquiryId] });
+      toast.success("明確化を完了しました");
+    },
+    onError: () => {
+      toast.error("明確化完了に失敗しました");
+    },
+  });
+
   const handleEdit = () => {
     if (inquiry) {
       setEditedContent(inquiry.content);
@@ -125,6 +156,24 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
     setRejectReason("");
   };
 
+  const handleRequestClarification = () => {
+    setShowClarificationDialog(true);
+  };
+
+  const handleConfirmClarification = () => {
+    const reason = clarificationReason.trim() || undefined;
+    clarificationMutation.mutate(reason);
+  };
+
+  const handleCancelClarification = () => {
+    setShowClarificationDialog(false);
+    setClarificationReason("");
+  };
+
+  const handleCompleteClarification = () => {
+    completeClarificationMutation.mutate();
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -146,6 +195,8 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
   }
 
   const canEdit = inquiry.status === "received";
+  const canApproveOrReject =
+    inquiry.status === "received" || inquiry.status === "needs_clarification";
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -193,6 +244,58 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
           )}
         </div>
 
+        {/* Rejection Information */}
+        {inquiry.status === "rejected" &&
+          inquiry.inquiry_metadata?.rejection && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+              <h2 className="text-lg font-semibold mb-2 text-red-800">
+                却下情報
+              </h2>
+              <div className="text-sm text-gray-700">
+                <p>
+                  <span className="font-semibold">却下日時:</span>{" "}
+                  {new Date(
+                    inquiry.inquiry_metadata.rejection.rejected_at,
+                  ).toLocaleString("ja-JP")}
+                </p>
+                {inquiry.inquiry_metadata.rejection.reason && (
+                  <div className="mt-2">
+                    <span className="font-semibold">却下理由:</span>
+                    <p className="mt-1 whitespace-pre-wrap bg-white p-3 rounded border border-red-200">
+                      {inquiry.inquiry_metadata.rejection.reason}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+        {/* Clarification Request Information */}
+        {inquiry.status === "needs_clarification" &&
+          inquiry.inquiry_metadata?.clarification_request && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <h2 className="text-lg font-semibold mb-2 text-yellow-800">
+                明確化要求情報
+              </h2>
+              <div className="text-sm text-gray-700">
+                <p>
+                  <span className="font-semibold">要求日時:</span>{" "}
+                  {new Date(
+                    inquiry.inquiry_metadata.clarification_request.requested_at,
+                  ).toLocaleString("ja-JP")}
+                </p>
+                {inquiry.inquiry_metadata.clarification_request.reason && (
+                  <div className="mt-2">
+                    <span className="font-semibold">要求理由:</span>
+                    <p className="mt-1 whitespace-pre-wrap bg-white p-3 rounded border border-yellow-200">
+                      {inquiry.inquiry_metadata.clarification_request.reason}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         {/* Actions */}
         <div className="flex gap-2">
           {isEditing ? (
@@ -220,7 +323,7 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
               >
                 編集
               </button>
-              {canEdit && (
+              {canApproveOrReject && (
                 <>
                   <button
                     onClick={handleApprove}
@@ -237,6 +340,24 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
                     却下
                   </button>
                 </>
+              )}
+              {canEdit && (
+                <button
+                  onClick={handleRequestClarification}
+                  disabled={clarificationMutation.isPending}
+                  className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:opacity-50"
+                >
+                  明確化要求
+                </button>
+              )}
+              {inquiry.status === "needs_clarification" && (
+                <button
+                  onClick={handleCompleteClarification}
+                  disabled={completeClarificationMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                  明確化完了
+                </button>
               )}
             </>
           )}
@@ -281,6 +402,55 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
                 onClick={handleConfirmReject}
                 disabled={rejectMutation.isPending}
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+              >
+                確認
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clarification Dialog */}
+      {showClarificationDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div
+            className="bg-white rounded-lg p-6 max-w-md w-full"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="clarificationDialogTitle"
+          >
+            <h3
+              id="clarificationDialogTitle"
+              className="text-lg font-semibold mb-4"
+            >
+              明確化要求
+            </h3>
+            <div className="mb-4">
+              <label
+                htmlFor="clarificationReason"
+                className="block text-sm font-medium mb-2"
+              >
+                明確化要求理由（任意）
+              </label>
+              <textarea
+                id="clarificationReason"
+                className="w-full p-2 border rounded-md min-h-[100px]"
+                value={clarificationReason}
+                onChange={(e) => setClarificationReason(e.target.value)}
+                placeholder="明確化が必要な理由を入力してください（任意）"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={handleCancelClarification}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleConfirmClarification}
+                disabled={clarificationMutation.isPending}
+                className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 disabled:opacity-50"
               >
                 確認
               </button>

@@ -438,4 +438,83 @@ describe("InquiryDetail", () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  // 却下情報の表示テスト
+  describe("Rejection information display", () => {
+    test("displays rejection information when inquiry is rejected with reason", async () => {
+      const rejectedInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "rejected" as InquiryStatus,
+        inquiry_metadata: {
+          rejection: {
+            reason: "要件が不明確です",
+            rejected_at: "2025-01-02T10:30:00Z",
+          },
+        },
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(rejectedInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("却下情報")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/却下日時:/)).toBeInTheDocument();
+      expect(screen.getByText("要件が不明確です")).toBeInTheDocument();
+    });
+
+    test("displays rejection information without reason when rejected without reason", async () => {
+      const rejectedInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "rejected" as InquiryStatus,
+        inquiry_metadata: {
+          rejection: {
+            rejected_at: "2025-01-02T10:30:00Z",
+          },
+        },
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(rejectedInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("却下情報")).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/却下日時:/)).toBeInTheDocument();
+      expect(screen.queryByText(/却下理由:/)).not.toBeInTheDocument();
+    });
+
+    test("does not display rejection information when inquiry is not rejected", async () => {
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(mockInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText("却下情報")).not.toBeInTheDocument();
+    });
+
+    test("does not display rejection information when status is rejected but metadata is missing", async () => {
+      const rejectedInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "rejected" as InquiryStatus,
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(rejectedInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText("却下情報")).not.toBeInTheDocument();
+    });
+  });
 });

@@ -188,6 +188,41 @@ export async function rejectInquiry(
 }
 
 /**
+ * 問い合わせ明確化要求API呼び出し
+ *
+ * @param id 問い合わせID
+ * @param data 明確化要求理由（任意）
+ * @returns 明確化要求された問い合わせ（ステータス: needs_clarification）
+ * @throws ErrorResponse 404 Not Found、409 Conflict（無効なステータス遷移）、またはサーバーエラー
+ */
+export async function requestClarification(
+  id: number,
+  data?: { reason?: string },
+): Promise<InquiryResponse> {
+  const response = await apiClient.post<InquiryResponse>(
+    `/api/inquiries/${id}/request-clarification`,
+    data || {},
+  );
+  return response.data;
+}
+
+/**
+ * 明確化完了API呼び出し
+ *
+ * @param id 問い合わせID
+ * @returns 明確化完了した問い合わせ（ステータス: received）
+ * @throws ErrorResponse 404 Not Found、409 Conflict（無効なステータス遷移）、またはサーバーエラー
+ */
+export async function completeClarification(
+  id: number,
+): Promise<InquiryResponse> {
+  const response = await apiClient.post<InquiryResponse>(
+    `/api/inquiries/${id}/complete-clarification`,
+  );
+  return response.data;
+}
+
+/**
  * ヘルスチェックAPI呼び出し
  *
  * @returns ヘルスチェック結果
@@ -207,6 +242,8 @@ const inquiryApiClient = {
   updateInquiry,
   approveInquiry,
   rejectInquiry,
+  requestClarification,
+  completeClarification,
   healthCheck,
 };
 

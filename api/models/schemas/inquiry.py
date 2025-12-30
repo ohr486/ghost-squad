@@ -4,7 +4,7 @@ APIリクエスト/レスポンスのシリアライゼーションとバリデ�
 """
 
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated, Any, Dict, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic.functional_serializers import PlainSerializer
@@ -104,6 +104,7 @@ class InquiryResponse(BaseModel):
     """問い合わせレスポンス.
 
     要件2.4: 各問い合わせについて ID、内容、ステータス、タイムスタンプを含む情報を返す
+    要件3.6-3.7: 却下理由をメタデータとして含む
     タイムスタンプはISO 8601形式でシリアライズされる。
     """
 
@@ -115,6 +116,9 @@ class InquiryResponse(BaseModel):
     status: InquiryStatus = Field(..., description="問い合わせステータス")
     created_at: IsoDatetime = Field(..., description="作成日時")
     updated_at: IsoDatetime = Field(..., description="更新日時")
+    inquiry_metadata: Optional[Dict[str, Any]] = Field(
+        default=None, description="問い合わせメタデータ（却下情報、ステータス履歴など）"
+    )
 
     model_config = ConfigDict(
         from_attributes=True,  # ORMモデルからの変換を許可
@@ -128,6 +132,7 @@ class InquiryResponse(BaseModel):
                 "status": "received",
                 "created_at": "2025-12-27T00:00:00Z",
                 "updated_at": "2025-12-27T00:00:00Z",
+                "inquiry_metadata": {},
             }
         },
     )
