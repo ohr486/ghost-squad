@@ -43,10 +43,7 @@ const InquiryList: React.FC<InquiryListProps> = ({ onInquiryClick }) => {
     }
   };
 
-  const handleRowClick = (inquiryId: number) => {
-    onInquiryClick(inquiryId);
-  };
-
+  const handleRowClick = onInquiryClick;
   const handleStatusFilterChange = (
     event: React.ChangeEvent<HTMLSelectElement>,
   ) => {
