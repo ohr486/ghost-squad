@@ -8,7 +8,7 @@ import {
   rejectInquiry,
 } from "../services/inquiryApi";
 
-interface InquiryDetailProps {
+export interface InquiryDetailProps {
   inquiryId: number;
 }
 
