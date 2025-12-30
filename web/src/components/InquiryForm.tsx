@@ -204,7 +204,7 @@ export const InquiryForm: React.FC<InquiryFormProps> = ({
         </div>
 
         {/* 送信元システム（hidden field） */}
-        <input type="hidden" {...register("source_system")} value="manual" />
+        <input type="hidden" name="source_system" value="manual" />
 
         {/* ボタン */}
         <div className="flex gap-4">
