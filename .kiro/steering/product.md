@@ -10,7 +10,7 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 
 **コアバリュー**
 - **効率性**: 非構造化要件から構造化ストーリーへの高速変換
-- **品質**: AI生成コンテンツの人間によるレビュー・編集機能
+- **品質**: ストーリー変換コンテンツの人間によるレビュー・編集機能
 - **統合性**: 既存開発ワークフローとの seamless な統合
 - **国際化**: 日本語ファーストの設計思想
 
@@ -94,7 +94,7 @@ GET    /health                     # ヘルスチェック
 
 # 開発中（Story API）
 GET    /api/stories                # ストーリー一覧
-POST   /api/stories/generate       # AI生成エンドポイント
+POST   /api/stories/generate       # ストーリー変換エンドポイント
 PUT    /api/stories/{id}           # ストーリー編集
 POST   /api/stories/batch          # 一括操作
 
@@ -234,7 +234,7 @@ STORY_GENERATION_PROMPT = """
     wait=wait_exponential(multiplier=1, min=4, max=10)
 )
 async def generate_story(inquiry: str, template: Optional[str] = None):
-    # AI生成ロジック
+    # ストーリー変換ロジック
     pass
 ```
 
@@ -313,7 +313,7 @@ async def generate_story(inquiry: str, template: Optional[str] = None):
 
 **レスポンス時間目標**
 - 問い合わせ登録: < 500ms
-- AI生成処理: < 30秒（通常 < 10秒）
+- ストーリー変換処理: < 30秒（通常 < 10秒）
 - ストーリー一覧表示: < 1秒
 - エクスポート処理: < 5秒
 
