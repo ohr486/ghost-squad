@@ -253,7 +253,6 @@ inclusion: always
 ### 長期目標（1-3ヶ月）
 - [ ] Story機能の実装
 - [ ] AI統合（OpenAI API）
-- [ ] 外部システム統合（Trello、Jira、GitHub Projects）
 - [ ] 通知システム
 - [ ] 高度な検索・フィルタリング
 
@@ -290,7 +289,6 @@ inclusion: always
 - ❌ Inquiry機能のページレイアウト・ルーティング統合
 - ❌ Story機能の設計・実装
 - ❌ AI統合（OpenAI API）
-- ❌ 外部システム統合（Trello、Jira、GitHub Projects）
 - ❌ E2Eテスト・統合テスト
 
 ---
