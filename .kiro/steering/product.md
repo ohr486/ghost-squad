@@ -10,7 +10,7 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 
 **コアバリュー**
 - **効率性**: 非構造化要件から構造化ストーリーへの高速変換
-- **品質**: AI生成コンテンツの人間によるレビュー・編集機能
+- **品質**: ストーリー変換コンテンツの人間によるレビュー・編集機能
 - **統合性**: 既存開発ワークフローとの seamless な統合
 - **国際化**: 日本語ファーストの設計思想
 
@@ -51,7 +51,6 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 - **フロントエンド統合**: ページレイアウト、React Routerルーティング、E2Eテスト
 - **AI統合**: OpenAI APIによるストーリー生成
 - **ストーリー管理**: レビュー・承認ワークフロー
-- **外部統合**: Trello、Jira、GitHub Projects連携
 
 ## ドメインモデル
 
@@ -62,18 +61,14 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
   - 添付ファイル対応（画像、文書）
 - **Story（ストーリー）**: 構造化されたユーザーストーリー
   - タイトル、説明、受け入れ基準を含む
-  - 優先度・カテゴリ分類
+  - 優先度分類
   - 工数見積もり（ストーリーポイント）
 - **Template（テンプレート）**: 再利用可能なストーリーパターン
   - 業界別・機能別テンプレート
   - カスタムテンプレート作成機能
-- **Export（エクスポート）**: 外部システム連携データ
-  - Trello、Jira、GitHub Projects対応
-  - カスタムフォーマット対応
 
 **ビジネスルール**
 - すべてのストーリーは生成後にレビュー状態になる
-- エクスポート前に必ず人間による承認が必要
 - テンプレートは組織内で共有可能
 - 問い合わせ履歴は監査ログとして保持
 
@@ -94,16 +89,13 @@ GET    /health                     # ヘルスチェック
 
 # 開発中（Story API）
 GET    /api/stories                # ストーリー一覧
-POST   /api/stories/generate       # AI生成エンドポイント
+POST   /api/stories/generate       # ストーリー変換エンドポイント
 PUT    /api/stories/{id}           # ストーリー編集
 POST   /api/stories/batch          # 一括操作
 
 # 将来実装
 GET    /api/templates          # テンプレート一覧
 POST   /api/templates          # カスタムテンプレート作成
-POST   /api/export/trello      # Trelloエクスポート
-POST   /api/export/jira        # Jiraエクスポート
-POST   /api/export/github      # GitHub Projectsエクスポート
 ```
 
 **レスポンス標準化**
@@ -134,17 +126,16 @@ POST   /api/export/github      # GitHub Projectsエクスポート
 # 問い合わせステータス（実装済み）
 class InquiryStatus(Enum):
     RECEIVED = "received"                    # 受付済み
-    PROCESSING = "processing"                # AI処理中
-    NEEDS_CLARIFICATION = "needs_clarification"  # 明確化要求
-    TASK_WORKING = "task_working"           # タスク作業中
-    COMPLETED = "completed"                  # 完了
-    FAILED = "failed"                       # 失敗
+    TASK_WORKING = "task_working"           # タスク作業中（承認済み、AI変換待ち）
+    PROCESSING = "processing"                # AI処理中（ストーリー生成中）
+    COMPLETED = "completed"                  # 完了（タスク作業完了）
+    REJECTED = "rejected"                    # 却下済み
+    NEEDS_CLARIFICATION = "needs_clarification"  # 明確化要求（将来実装）
 
 # ストーリーステータス（実装済み）
 class StoryStatus(Enum):
     PENDING_REVIEW = "pending_review"        # レビュー待ち
     APPROVED = "approved"                    # 承認済み
-    EXPORTED = "exported"                    # エクスポート済み
     REJECTED = "rejected"                    # 拒否
 
 # 優先度（実装済み）
@@ -153,16 +144,17 @@ class Priority(Enum):
     MEDIUM = "medium"                       # 中
     HIGH = "high"                          # 高
     URGENT = "urgent"                      # 緊急
-
-# ストーリーカテゴリ（実装済み）
-class StoryCategory(Enum):
-    DEVELOPMENT = "development"              # 開発
-    TESTING = "testing"                     # テスト
-    DOCUMENTATION = "documentation"          # ドキュメント
-    RESEARCH = "research"                   # 調査
-    MAINTENANCE = "maintenance"             # メンテナンス
-    CUSTOM = "custom"                      # カスタム
 ```
+
+**問い合わせワークフロー（実装済み）**
+
+問い合わせのステータス遷移は以下の通り：
+- `received` → `task_working`: 承認操作
+- `received` → `rejected`: 却下操作
+- `received` → `needs_clarification`: 明確化要求（将来実装）
+- `needs_clarification` → `received`: 明確化完了（将来実装）
+- `task_working` → `processing`: AI変換開始（story specで実装予定）
+- `processing` → `completed`: タスク完了（story specで実装予定）
 
 **実装済みフィールド設計**
 ```python
@@ -178,12 +170,13 @@ language: str = "ja"          # 言語（デフォルト日本語）
 timestamp: datetime           # タイムスタンプ
 status: InquiryStatus         # ステータス
 inquiry_metadata: dict        # メタデータ（JSON）
+                              # - rejection: 却下情報（rejected_at、reason）
+                              # - status_history: ステータス変更履歴
 
 # ストーリー固有（実装済み）
 inquiry_id: int               # 問い合わせID（外部キー）
 title: str                    # タイトル（必須、最大500文字）
 description: str              # 説明（必須）
-category: StoryCategory       # カテゴリ
 priority: Priority            # 優先度
 estimated_effort: float       # 推定工数
 deadline: datetime           # 期限（オプション）
@@ -222,7 +215,7 @@ STORY_GENERATION_PROMPT = """
     wait=wait_exponential(multiplier=1, min=4, max=10)
 )
 async def generate_story(inquiry: str, template: Optional[str] = None):
-    # AI生成ロジック
+    # ストーリー変換ロジック
     pass
 ```
 
@@ -232,38 +225,6 @@ async def generate_story(inquiry: str, template: Optional[str] = None):
 - 生成時間監視（タイムアウト設定）
 - 使用量追跡・コスト管理
 
-## 外部システム統合
-
-**エクスポート形式標準**
-```python
-# Trello形式
-{
-    "name": "ストーリータイトル",
-    "desc": "説明\n\n受け入れ基準:\n- 基準1\n- 基準2",
-    "labels": [{"name": "優先度:高", "color": "red"}],
-    "due": "2024-12-31",
-    "pos": "top"
-}
-
-# Jira形式
-{
-    "fields": {
-        "project": {"key": "PROJ"},
-        "summary": "ストーリータイトル",
-        "description": "説明と受け入れ基準",
-        "issuetype": {"name": "Story"},
-        "priority": {"name": "High"},
-        "customfield_10016": 5  # ストーリーポイント
-    }
-}
-```
-
-**統合パターン**
-- アダプターパターンによる外部システム抽象化
-- Webhook対応（双方向同期）
-- バッチエクスポート機能
-- エクスポート履歴・ロールバック機能
-
 ## ユーザー体験設計
 
 **ワークフロー最適化**
@@ -271,7 +232,6 @@ async def generate_story(inquiry: str, template: Optional[str] = None):
 2. **AI処理**: リアルタイム進捗表示 + 推定完了時間
 3. **レビュー・編集**: インライン編集 + 変更履歴
 4. **承認**: ワンクリック承認 + 一括承認
-5. **エクスポート**: 複数システム同時エクスポート
 
 **レスポンシブ設計**
 - モバイルファースト（スマートフォン対応）
@@ -301,9 +261,8 @@ async def generate_story(inquiry: str, template: Optional[str] = None):
 
 **レスポンス時間目標**
 - 問い合わせ登録: < 500ms
-- AI生成処理: < 30秒（通常 < 10秒）
+- ストーリー変換処理: < 30秒（通常 < 10秒）
 - ストーリー一覧表示: < 1秒
-- エクスポート処理: < 5秒
 
 **スケーラビリティ設計**
 - 同時ユーザー数: 100人（初期）→ 1000人（目標）

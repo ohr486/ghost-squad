@@ -283,12 +283,8 @@ class InquiryWorkflowService:
             - received → rejected (却下)
             - received → needs_clarification (明確化要求)
             - needs_clarification → received (明確化完了)
-            - needs_clarification → task_working (明確化後に承認)
-            - needs_clarification → rejected (明確化不可で却下)
-            - received → processing (AI処理開始、story specで実装)
-            - processing → task_working (AI処理成功、story specで実装)
-            - processing → failed (AI処理失敗、story specで実装)
-            - task_working → completed (タスク完了、story specで実装)
+            - task_working → processing (AI変換開始、story specで実装)
+            - processing → completed (タスク完了、story specで実装)
 
             要件3.10-3.11:
             - RECEIVEDステータスの問い合わせのみ承認・却下・明確化要求を許可する
@@ -322,44 +318,16 @@ class InquiryWorkflowService:
         ):
             return True
 
-        # 明確化後の承認フロー（needs_clarification → task_working）
+        # 将来実装: AI変換開始フロー（task_working → processing）
         if (
-            current_status == InquiryStatus.NEEDS_CLARIFICATION
-            and new_status == InquiryStatus.TASK_WORKING
-        ):
-            return True
-
-        # 明確化不可での却下フロー（needs_clarification → rejected）
-        if (
-            current_status == InquiryStatus.NEEDS_CLARIFICATION
-            and new_status == InquiryStatus.REJECTED
-        ):
-            return True
-
-        # 将来実装: AI処理開始フロー（received → processing）
-        if (
-            current_status == InquiryStatus.RECEIVED
+            current_status == InquiryStatus.TASK_WORKING
             and new_status == InquiryStatus.PROCESSING
         ):
             return True
 
-        # 将来実装: AI処理成功フロー（processing → task_working）
+        # 将来実装: タスク完了フロー（processing → completed）
         if (
             current_status == InquiryStatus.PROCESSING
-            and new_status == InquiryStatus.TASK_WORKING
-        ):
-            return True
-
-        # 将来実装: AI処理失敗フロー（processing → failed）
-        if (
-            current_status == InquiryStatus.PROCESSING
-            and new_status == InquiryStatus.FAILED
-        ):
-            return True
-
-        # 将来実装: タスク完了フロー（task_working → completed）
-        if (
-            current_status == InquiryStatus.TASK_WORKING
             and new_status == InquiryStatus.COMPLETED
         ):
             return True

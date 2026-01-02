@@ -43,7 +43,6 @@ models/
 ├── enums/           # 列挙型定義
 │   └── inquiry_status.py  # InquiryStatus列挙型（実装済み）
 ├── api/             # APIリクエスト・レスポンスモデル
-├── export/          # エクスポート形式モデル
 └── protocols/       # サービス用プロトコル定義
 ```
 
@@ -53,7 +52,7 @@ models/
 - データアクセス（`inquiry_repository.py` - CRUD操作、フィルタリング、ソート、ページネーション）
 - クエリサービス（`inquiry_query_service.py` - 問い合わせ検索・一覧取得、100%カバレッジ）
 - ワークフローサービス（`inquiry_workflow_service.py` - 承認・却下処理、ステータス遷移管理）
-- 外部API統合（OpenAI、エクスポートサービス - 将来実装）
+- 外部API統合（OpenAI - 将来実装）
 
 **API層** (`api/`) - 将来実装
 - FastAPIルーター定義
@@ -124,7 +123,6 @@ src/
 - **将来実装**:
   - `storyApi.ts` - ストーリーAPIクライアント
   - `authService.ts` - 認証サービス
-  - `exportService.ts` - エクスポートサービス
 
 **コンポーネント組織化** (`src/components/`)
 - **実装済み**:
