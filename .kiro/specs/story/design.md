@@ -147,7 +147,7 @@ sequenceDiagram
     participant DB as PostgreSQL
 
     User->>UI: ストーリー生成リクエスト（inquiry_id）
-    UI->>API: POST /api/stories/generate
+    UI->>API: POST /api/inquiries/{inquiry_id}/stories<br/>(空ボディ = AI自動生成)
 
     API->>InquiryRepo: getInquiry(inquiry_id)
     InquiryRepo->>DB: SELECT inquiry
@@ -168,7 +168,7 @@ sequenceDiagram
         Validator-->>GenService: 検証済みStoryData
 
         GenService->>StoryRepo: createStory(data)
-        StoryRepo->>DB: INSERT story (status=pending_review)
+        StoryRepo->>DB: INSERT story (status=waiting_review)
         DB-->>StoryRepo: Story
         StoryRepo-->>GenService: Story
         GenService-->>API: Story
@@ -194,19 +194,19 @@ sequenceDiagram
 - Inquiryステータス検証をAPI層で実施（`task_working`のみ許可）
 - AI処理中はInquiryステータスを`processing`に変更
 - リトライ戦略: 3回、指数バックオフ（1秒、2秒、4秒）、タイムアウト30秒
-- 生成成功後、Storyステータスは`pending_review`（人間レビュー必須）
+- 生成成功後、Storyステータスは`waiting_review`（人間レビュー必須）
 
 ### ストーリー承認ワークフロー
 
 ```mermaid
 stateDiagram-v2
-    [*] --> pending_review: AI生成 or 手動作成
-    pending_review --> approved: 承認操作
-    pending_review --> rejected: 却下操作（理由必須）
+    [*] --> waiting_review: AI生成 or 手動作成
+    waiting_review --> approved: 承認操作
+    waiting_review --> rejected: 却下操作（理由必須）
     approved --> [*]
     rejected --> [*]
 
-    note right of pending_review
+    note right of waiting_review
         ステータス遷移可能な操作:
         - 承認（approveStory）
         - 却下（rejectStory）
@@ -226,19 +226,71 @@ stateDiagram-v2
 ```
 
 **フローレベル決定**:
-- ステータス遷移は一方向（pending_review → approved/rejected）
+- ステータス遷移は一方向（waiting_review → approved/rejected）
 - 承認・却下時にメタデータ記録（承認者、承認日時、却下理由）
 - `approved`後も編集可能（更新日時のみ記録）
+
+### ストーリー手動作成フロー
+
+```mermaid
+sequenceDiagram
+    participant User as ユーザー
+    participant UI as Story UI
+    participant API as Story API
+    participant Validator as Story Validator
+    participant StoryRepo as Story Repository
+    participant DB as PostgreSQL
+
+    User->>UI: 「新規ストーリー作成」ボタンクリック
+    UI->>User: ストーリー作成フォームモーダル表示
+
+    User->>UI: フォーム入力（タイトル、説明、優先度、推定工数、担当者、期限、問い合わせID）
+
+    Note over UI: 問い合わせID選択<br/>（必須）<br/>既存問い合わせリスト表示
+
+    Note over UI: クライアントサイド<br/>バリデーション<br/>（リアルタイム）
+
+    User->>UI: 「作成」ボタンクリック
+    UI->>API: POST /api/inquiries/{inquiry_id}/stories<br/>(CreateStoryRequest)
+
+    API->>Validator: validateCreateRequest(request)
+
+    alt バリデーション成功
+        Validator-->>API: 検証成功（inquiry_id存在確認済み）
+
+        API->>StoryRepo: createStory(data with inquiry_id)
+        StoryRepo->>DB: INSERT story<br/>(status=waiting_review, inquiry_id=指定値)
+        DB-->>StoryRepo: Story
+        StoryRepo-->>API: Story
+
+        API-->>UI: StoryResponse (201 Created)
+        UI->>UI: フォームを閉じる
+        UI->>UI: 作成されたストーリー詳細ページに遷移
+        UI-->>User: 成功メッセージ表示
+
+    else バリデーション失敗
+        Validator-->>API: ValidationError
+        API-->>UI: ErrorResponse (400 Bad Request)
+        UI-->>User: エラーメッセージをフォーム内表示
+    end
+```
+
+**フローレベル決定**:
+- 手動作成時、`inquiry_id`は必須（すべてのストーリーは問い合わせと関連付けられる）
+- inquiry_id指定時は既存問い合わせの存在確認が必須（バリデーション層で検証）
+- 作成時のステータスは`waiting_review`（AI生成と同じ初期ステータス）
+- クライアントサイドとサーバーサイドの2段階バリデーション
+- 作成成功後、詳細ページに自動遷移してすぐに内容確認・編集可能
 
 ## 要件トレーサビリティ
 
 | 要件ID | 要件概要 | コンポーネント | インターフェース | フロー |
 |-------|---------|--------------|----------------|--------|
 | 1.1-1.10 | AI変換（Inquiry → Story） | StoryGenerationService, StoryValidator, StoryRepository | generateStory, validateGeneratedStory, createStory | ストーリー生成フロー |
-| 2.1-2.17 | ストーリーレビュー・編集 | StoryQueryService, StoryRepository | listStories, getStory, updateStory, deleteStory | ストーリー管理フロー |
+| 2.1-2.17 | ストーリーレビュー・編集・手動作成（inquiry_id必須） | StoryQueryService, StoryRepository, StoryValidator | listStories, getStory, updateStory, deleteStory, createStory | ストーリー管理フロー、手動作成フロー |
 | 3.1-3.11 | 承認ワークフロー | StoryWorkflowService | approveStory, rejectStory, batchApprove | ステータス変更フロー |
 | 4.1-4.13 | データモデル・バリデーション | StoryModel, StoryValidator, Pydanticスキーマ | CreateStoryRequest, UpdateStoryRequest, StoryResponse | 全フロー |
-| 5.1-5.14 | Web UI | StoryForm, StoryList, StoryDetail | すべてのUI関連インターフェース | 全UIフロー |
+| 5.1-5.22 | Web UI（一覧・詳細・新規作成・inquiry_id選択） | StoryForm, StoryList, StoryDetail | すべてのUI関連インターフェース | 全UIフロー |
 
 ## コンポーネントとインターフェース
 
@@ -285,9 +337,9 @@ stateDiagram-v2
 class StoryModel(BaseModel):
     __tablename__ = "stories"
 
-    # 外部キー（nullable=True、手動作成ストーリーはNULL）
-    inquiry_id: Mapped[Optional[int]] = mapped_column(
-        BigInteger, ForeignKey("inquiries.id"), nullable=True, index=True
+    # 外部キー（必須、すべてのストーリーは問い合わせと関連付けられる）
+    inquiry_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("inquiries.id"), nullable=False, index=True
     )
 
     # 必須フィールド
@@ -298,7 +350,7 @@ class StoryModel(BaseModel):
     )
     status: Mapped[StoryStatus] = mapped_column(
         Enum(StoryStatus), nullable=False,
-        default=StoryStatus.PENDING_REVIEW, index=True
+        default=StoryStatus.WAITING_REVIEW, index=True
     )
 
     # オプショナルフィールド
@@ -366,7 +418,7 @@ class StoryRepository:
 
         Postconditions:
         - storiesテーブルに新規レコード挿入
-        - status=pending_review
+        - status=waiting_review
         - created_at、updated_at自動設定
 
         Returns:
@@ -556,7 +608,7 @@ class StoryGenerationService:
 
         Postconditions:
         - Inquiryステータスをprocessingに変更
-        - AI生成成功時、Storyをpending_reviewで作成
+        - AI生成成功時、Storyをwaiting_reviewで作成
         - Inquiryステータスをcompletedに変更
 
         Returns:
@@ -604,7 +656,7 @@ OpenAI API統合の詳細調査（レート制限、プロンプト最適化、�
 | 要件 | 3.1-3.11 |
 
 **責任と制約**:
-- ステータス遷移検証（pending_review → approved/rejected）
+- ステータス遷移検証（waiting_review → approved/rejected）
 - 承認・却下時のメタデータ記録（承認者、日時、理由）
 - 一括承認処理
 - ステータス履歴の記録
@@ -627,7 +679,7 @@ class StoryWorkflowService:
         """ストーリーを承認する.
 
         Preconditions:
-        - ストーリーが存在し、status=pending_review
+        - ストーリーが存在し、status=waiting_review
 
         Postconditions:
         - status=approved
@@ -639,7 +691,7 @@ class StoryWorkflowService:
 
         Raises:
             StoryNotFoundError: Story不存在
-            InvalidStatusTransitionError: pending_review以外
+            InvalidStatusTransitionError: waiting_review以外
         """
         pass
 
@@ -653,7 +705,7 @@ class StoryWorkflowService:
         """ストーリーを却下する.
 
         Preconditions:
-        - ストーリーが存在し、status=pending_review
+        - ストーリーが存在し、status=waiting_review
         - reasonが空でない
 
         Postconditions:
@@ -666,7 +718,7 @@ class StoryWorkflowService:
 
         Raises:
             StoryNotFoundError: Story不存在
-            InvalidStatusTransitionError: pending_review以外
+            InvalidStatusTransitionError: waiting_review以外
             ValueError: reason空
         """
         pass
@@ -762,7 +814,8 @@ class StoryQueryService:
 
 | Method | Endpoint | Request | Response | Errors |
 |--------|----------|---------|----------|--------|
-| POST | /api/stories/generate | `{"inquiry_id": int}` | StoryResponse | 400 (Inquiry不正), 404 (Inquiry不存在), 422 (ステータス不正), 500 (AI生成失敗) |
+| POST | /api/inquiries/{inquiry_id}/stories | `{}` (空 = AI自動生成) or CreateStoryRequest (手動作成) | StoryResponse | 400 (Inquiry不正), 404 (Inquiry不存在), 422 (ステータス不正), 500 (AI生成失敗/バリデーション失敗) |
+| GET | /api/inquiries/{inquiry_id}/stories | Query: status, priority, sort_by, sort_order, limit, offset | `{"stories": [StoryResponse], "total": int}` | 404 (Inquiry不存在), 400 (パラメータ不正), 500 |
 | GET | /api/stories | Query: status, priority, inquiry_id, sort_by, sort_order, limit, offset | `{"stories": [StoryResponse], "total": int}` | 400 (パラメータ不正), 500 |
 | GET | /api/stories/{id} | - | StoryResponse | 404 (Story不存在), 500 |
 | PUT | /api/stories/{id} | UpdateStoryRequest | StoryResponse | 400 (バリデーション失敗), 404 (Story不存在), 500 |
@@ -770,9 +823,12 @@ class StoryQueryService:
 | POST | /api/stories/{id}/approve | `{"approver": str}` | StoryResponse | 400 (バリデーション失敗), 404 (Story不存在), 422 (ステータス遷移不正), 500 |
 | POST | /api/stories/{id}/reject | `{"rejector": str, "reason": str}` | StoryResponse | 400 (理由空), 404 (Story不存在), 422 (ステータス遷移不正), 500 |
 | POST | /api/stories/batch-approve | `{"story_ids": [int], "approver": str}` | `{"results": [{"id": int, "success": bool, "error": str}]}` | 400 (パラメータ不正), 500 |
-| POST | /api/stories | CreateStoryRequest | StoryResponse | 400 (バリデーション失敗), 500 |
 
 **実装ノート**:
+- **ハイブリッドアプローチ**: ネストされたURLとトップレベルURLの両方をサポート
+  - **ネストされたURL**: 作成と問い合わせ配下の一覧取得 (`/api/inquiries/{inquiry_id}/stories`)
+  - **トップレベルURL**: 個別操作と全体一覧 (`/api/stories`, `/api/stories/{id}`)
+  - **理由**: ストーリーは問い合わせに依存するが、独自のIDで直接アクセス可能。両方のアクセスパターンで柔軟性を提供
 - **統合**: FastAPI Routerパターン、InquiryAPIと同様の構造
 - **検証**: Pydanticスキーマによる自動バリデーション
 - **リスク**: 認証・認可の実装は将来フェーズ
@@ -792,15 +848,30 @@ class StoryQueryService:
 #### StoryForm（ストーリー入力コンポーネント）
 
 **実装ノート**:
+- **モード対応**: 新規作成モードと編集モードの両対応
+  - 新規作成モード: モーダルダイアログで表示、`POST /api/inquiries/{inquiry_id}/stories`を使用
+  - 編集モード: StoryDetail内でインライン表示、`PUT /api/stories/{id}`を使用
 - **統合**: InquiryFormパターンを踏襲、React Hook Form + Zodバリデーション
-- **検証**: タイトル500文字制限、必須フィールド検証、リアルタイムエラー表示
-- **リスク**: 受入基準入力UI（配列形式）の使いやすさ
+- **検証**: タイトル500文字制限、必須フィールド検証、inquiry_id存在確認、リアルタイムエラー表示
+- **フィールド**:
+  - inquiry_id（必須、フォーム外で選択）: ドロップダウンまたは検索可能セレクトで既存問い合わせを選択、選択後にストーリー作成フォームを表示
+  - title（必須）
+  - description（必須）
+  - priority（必須、デフォルト=MEDIUM）
+  - estimated_effort（オプショナル）
+  - deadline（オプショナル）
+  - assignee（オプショナル）
+- **ボタン配置**:
+  - 新規作成モード: ストーリー一覧ページのヘッダーに「新規ストーリー作成」ボタン
+  - 編集モード: StoryDetail内の「編集」ボタンでフォーム表示
+- **リスク**: 受入基準入力UI（配列形式）の使いやすさ、inquiry_id選択UIのユーザビリティ
 
 #### StoryList（ストーリー一覧コンポーネント）
 
 **実装ノート**:
 - **統合**: InquiryListパターンを踏襲、TanStack Query + ページネーション + フィルタリング
 - **検証**: ステータス・優先度フィルタ、ソート機能（作成日時、更新日時、優先度、推定工数）
+- **UI要素**: ページヘッダーに「新規ストーリー作成」ボタンを配置（クリックでStoryFormモーダル表示）
 - **リスク**: 大量ストーリー表示時のパフォーマンス最適化
 
 #### StoryDetail（ストーリー詳細・編集コンポーネント）
@@ -824,7 +895,7 @@ class StoryQueryService:
 
 **Value Objects（値オブジェクト）**:
 - **Priority**: Enum（LOW、MEDIUM、HIGH、URGENT）
-- **StoryStatus**: Enum（PENDING_REVIEW、APPROVED、REJECTED）
+- **StoryStatus**: Enum（WAITING_REVIEW、APPROVED、REJECTED）
 
 **Domain Events（ドメインイベント）**:
 - StoryGenerated: AI変換完了時
@@ -835,7 +906,7 @@ class StoryQueryService:
 **ビジネスルール・不変条件**:
 - タイトルは1-500文字
 - 説明は必須
-- ステータス遷移はpending_review → approved/rejected（一方向）
+- ステータス遷移はwaiting_review → approved/rejected（一方向）
 - 却下時は理由必須
 - inquiry_idが設定されている場合、Inquiryが存在する（参照整合性）
 
@@ -844,18 +915,18 @@ class StoryQueryService:
 **構造定義**:
 
 ```
-Story (1) --* (0..1) Inquiry
-  - カーディナリティ: Story 0..N : Inquiry 0..1（AI生成ストーリーは1:1、手動作成は0:1）
+Story (1) --* (1) Inquiry
+  - カーディナリティ: Story 0..N : Inquiry 1（すべてのストーリーは1つの問い合わせに関連付けられる）
   - 参照整合性: FOREIGN KEY (inquiry_id) REFERENCES inquiries(id)
 ```
 
 **属性と型**:
 - id: BigInteger（主キー、自動インクリメント）
-- inquiry_id: BigInteger（外部キー、nullable）
+- inquiry_id: BigInteger（外部キー、NOT NULL）
 - title: String(500)（必須）
 - description: Text（必須）
 - priority: Enum（LOW/MEDIUM/HIGH/URGENT、デフォルト=MEDIUM）
-- status: Enum（PENDING_REVIEW/APPROVED/REJECTED、デフォルト=PENDING_REVIEW）
+- status: Enum（WAITING_REVIEW/APPROVED/REJECTED、デフォルト=WAITING_REVIEW）
 - estimated_effort: Float（オプショナル）
 - deadline: DateTime with timezone（オプショナル）
 - assignee: String(50)（オプショナル）
@@ -865,7 +936,7 @@ Story (1) --* (0..1) Inquiry
 
 **一貫性と整合性**:
 - トランザクション境界: Story単位（Repository層で管理）
-- カスケードルール: Inquiry削除時、関連Storyのinquiry_idをNULLに設定（ON DELETE SET NULL）
+- カスケードルール: Inquiry削除時、関連Storyも削除（ON DELETE CASCADE）
 - 時間的側面: updated_at自動更新、status_historyをmetadataに記録
 
 ### 物理データモデル
@@ -875,11 +946,11 @@ Story (1) --* (0..1) Inquiry
 ```sql
 CREATE TABLE stories (
     id BIGSERIAL PRIMARY KEY,
-    inquiry_id BIGINT REFERENCES inquiries(id) ON DELETE SET NULL,
+    inquiry_id BIGINT NOT NULL REFERENCES inquiries(id) ON DELETE CASCADE,
     title VARCHAR(500) NOT NULL,
     description TEXT NOT NULL,
     priority VARCHAR(20) NOT NULL DEFAULT 'medium',
-    status VARCHAR(50) NOT NULL DEFAULT 'pending_review',
+    status VARCHAR(50) NOT NULL DEFAULT 'waiting_review',
     estimated_effort DOUBLE PRECISION,
     deadline TIMESTAMP WITH TIME ZONE,
     assignee VARCHAR(50),
@@ -914,6 +985,7 @@ CREATE INDEX ix_stories_updated_at ON stories(updated_at DESC);
 
 ```typescript
 // CreateStoryRequest（手動作成）
+// inquiry_idはパスパラメータ (/api/inquiries/{inquiry_id}/stories) で指定
 interface CreateStoryRequest {
   title: string;              // 1-500文字
   description: string;        // 必須
@@ -936,7 +1008,7 @@ interface UpdateStoryRequest {
 // StoryResponse
 interface StoryResponse {
   id: number;
-  inquiry_id: number | null;
+  inquiry_id: number;
   title: string;
   description: string;
   priority: Priority;
@@ -954,7 +1026,8 @@ interface StoryResponse {
 - titleは1-500文字、空白のみ不可
 - descriptionは必須、空白のみ不可
 - priorityはEnum値（LOW/MEDIUM/HIGH/URGENT）
-- statusはEnum値（PENDING_REVIEW/APPROVED/REJECTED）
+- statusはEnum値（WAITING_REVIEW/APPROVED/REJECTED）
+- inquiry_id（パスパラメータ）は既存問い合わせの存在確認が必須
 - シリアライゼーション: JSON、日時はISO 8601形式
 
 **イベントスキーマ**（将来実装）:
@@ -983,7 +1056,7 @@ interface StoryResponse {
 - 503 Service Unavailable: OpenAI APIダウン → リトライ促進メッセージ
 
 **ビジネスロジックエラー（422）**:
-- InvalidStatusTransitionError: ステータス遷移不正 → 「pending_review状態のみ承認・却下可能」
+- InvalidStatusTransitionError: ステータス遷移不正 → 「waiting_review状態のみ承認・却下可能」
 - InvalidInquiryStatusError: Inquiryステータス不正 → 「task_working状態の問い合わせのみ変換可能」
 
 ### エラーレスポンス標準化
@@ -1070,7 +1143,7 @@ interface StoryResponse {
 
 **AI倫理**:
 - 生成コンテンツの偏見チェック: 将来実装（初期バージョンでは人間レビュー必須で対応）
-- 人間による最終承認: pending_reviewステータスで強制
+- 人間による最終承認: waiting_reviewステータスで強制
 - AI判断の透明性: 生成プロンプトとレスポンスのログ記録
 
 ## パフォーマンス・スケーラビリティ
