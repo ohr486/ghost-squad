@@ -563,12 +563,34 @@ class StoryValidator:
             ValidationError: 構造検証失敗
         """
         pass
+
+    def validate_inquiry_exists(
+        self,
+        session: Session,
+        inquiry_id: int
+    ) -> bool:
+        """問い合わせIDの存在を検証する.
+
+        Preconditions:
+        - inquiry_idが指定されている
+
+        Postconditions:
+        - Inquiryが存在する場合True、存在しない場合ValidationErrorを発生
+
+        Returns:
+            True（検証成功）
+
+        Raises:
+            ValidationError: Inquiry不存在（エラーコード: GS-204）
+        """
+        pass
 ```
 
 **実装ノート**:
 - **統合**: Pydantic 2.xバリデーションを活用、InquiryValidatorパターンを踏襲
 - **検証**: エラーコード（GS-xxx）体系を使用
 - **リスク**: AI生成結果の多様性に対応するため、柔軟なスキーマ設計が必要
+- **inquiry_id検証**: `validate_inquiry_exists`はRepository層を呼び出す前にAPI層またはService層で実行し、参照整合性エラーを事前に防ぐ。InquiryRepositoryへの依存が必要（循環依存に注意）
 
 #### StoryGenerationService
 
@@ -639,12 +661,46 @@ class StoryGenerationService:
             AIGenerationError: リトライ後も失敗
         """
         pass
+
+    def _rollback_inquiry_status(
+        self,
+        session: Session,
+        inquiry_id: int,
+        original_status: InquiryStatus = InquiryStatus.TASK_WORKING
+    ) -> None:
+        """AI生成失敗時にInquiryステータスをロールバックする（内部メソッド）.
+
+        Preconditions:
+        - inquiry_idのInquiryが存在する
+        - AI生成処理が失敗した
+
+        Postconditions:
+        - Inquiryステータスをoriginal_status（デフォルト: task_working）に戻す
+        - ロールバック処理をログ記録（WARNING）
+
+        Args:
+            session: データベースセッション
+            inquiry_id: 問い合わせID
+            original_status: ロールバック先のステータス
+
+        Raises:
+            InquiryNotFoundError: Inquiry不存在
+        """
+        pass
 ```
 
 **実装ノート**:
 - **統合**: OpenAI Python SDK 1.3.7を使用、環境変数OPENAI_API_KEYから認証情報取得
 - **検証**: プロンプトテンプレートは設定ファイルまたはコード内定数で管理
 - **リスク**: APIレート制限、コスト管理、生成品質のばらつき → `research.md`参照
+- **トランザクション境界**: `generate_story`メソッドは以下のトランザクション戦略を採用
+  - `session.begin()`でトランザクション開始
+  - Inquiryステータス更新（task_working → processing）
+  - AI生成実行
+  - AI生成成功時: Story作成 + Inquiryステータス更新（processing → completed）
+  - AI生成失敗時: `_rollback_inquiry_status`でInquiryステータスを元に戻す（processing → task_working）
+  - トランザクションコミット（成功時）またはロールバック（例外時）
+- **エラーリカバリー**: リトライ失敗後も`_rollback_inquiry_status`を実行し、ユーザーが問い合わせを再利用可能にする
 
 OpenAI API統合の詳細調査（レート制限、プロンプト最適化、コスト見積もり）は`research.md`を参照。
 
@@ -979,6 +1035,86 @@ CREATE INDEX ix_stories_updated_at ON stories(updated_at DESC);
 - created_at/updated_atインデックス: ソート処理の高速化
 - JSONB型使用: story_metadataのクエリ性能向上
 
+### マイグレーション戦略
+
+**Alembicマイグレーション手順**:
+
+1. **マイグレーションファイル生成**:
+   ```bash
+   make db-revision m="Add stories table"
+   ```
+
+2. **マイグレーションスクリプト内容**（`alembic/versions/xxxx_add_stories_table.py`）:
+   ```python
+   def upgrade() -> None:
+       # 1. storiesテーブル作成（inquiry_id NOT NULL制約付き）
+       op.create_table(
+           'stories',
+           sa.Column('id', sa.BigInteger(), nullable=False),
+           sa.Column('inquiry_id', sa.BigInteger(), nullable=False),
+           sa.Column('title', sa.String(500), nullable=False),
+           sa.Column('description', sa.Text(), nullable=False),
+           sa.Column('priority', sa.String(20), nullable=False, server_default='medium'),
+           sa.Column('status', sa.String(50), nullable=False, server_default='waiting_review'),
+           sa.Column('estimated_effort', sa.Float(), nullable=True),
+           sa.Column('deadline', sa.DateTime(timezone=True), nullable=True),
+           sa.Column('assignee', sa.String(50), nullable=True),
+           sa.Column('story_metadata', postgresql.JSONB(), nullable=False, server_default='{}'),
+           sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('NOW()')),
+           sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.text('NOW()')),
+           sa.PrimaryKeyConstraint('id'),
+           sa.ForeignKeyConstraint(['inquiry_id'], ['inquiries.id'], ondelete='CASCADE'),
+           sa.CheckConstraint("length(trim(title)) > 0 AND length(title) <= 500", name='chk_stories_title'),
+           sa.CheckConstraint("length(trim(description)) > 0", name='chk_stories_description')
+       )
+
+       # 2. インデックス作成
+       op.create_index('ix_stories_inquiry_id', 'stories', ['inquiry_id'])
+       op.create_index('ix_stories_status', 'stories', ['status'])
+       op.create_index('ix_stories_priority', 'stories', ['priority'])
+       op.create_index('ix_stories_created_at', 'stories', ['created_at'], postgresql_ops={'created_at': 'DESC'})
+       op.create_index('ix_stories_updated_at', 'stories', ['updated_at'], postgresql_ops={'updated_at': 'DESC'})
+
+   def downgrade() -> None:
+       # インデックス削除
+       op.drop_index('ix_stories_updated_at', 'stories')
+       op.drop_index('ix_stories_created_at', 'stories')
+       op.drop_index('ix_stories_priority', 'stories')
+       op.drop_index('ix_stories_status', 'stories')
+       op.drop_index('ix_stories_inquiry_id', 'stories')
+
+       # テーブル削除
+       op.drop_table('stories')
+   ```
+
+3. **マイグレーション実行**:
+   ```bash
+   make db-migrate  # Alembic upgrade head
+   ```
+
+4. **マイグレーション検証**:
+   ```bash
+   make db-status  # マイグレーション状態確認
+   docker-compose exec db psql -U gs_user -d gs_db -c "\d stories"  # テーブル構造確認
+   ```
+
+**inquiry_id NOT NULL制約の考慮事項**:
+- **初期実装**: storiesテーブル作成時から`inquiry_id NOT NULL`制約を設定（既存データなし）
+- **将来的な制約緩和が必要な場合**: 以下の手順でマイグレーション
+  1. `inquiry_id`をNULLABLEに変更するマイグレーション作成
+  2. 既存データのinquiry_id=NULLレコードを処理（削除またはデフォルト値設定）
+  3. NOT NULL制約を追加するマイグレーション作成
+  4. 段階的にマイグレーション実行
+
+**参照整合性の保証**:
+- `FOREIGN KEY (inquiry_id) REFERENCES inquiries(id) ON DELETE CASCADE`により、Inquiry削除時に関連Storyも自動削除
+- StoryValidator.validate_inquiry_existsでアプリケーション層でも事前検証（DB制約エラーの回避）
+
+**ロールバック戦略**:
+- `make db-downgrade`でマイグレーションのロールバックが可能
+- ダウングレード時はstoriesテーブルとインデックスがすべて削除される（データ消失に注意）
+- 本番環境ではロールバック前にバックアップ必須
+
 ### データ契約と統合
 
 **APIデータ転送**:
@@ -1058,6 +1194,45 @@ interface StoryResponse {
 **ビジネスロジックエラー（422）**:
 - InvalidStatusTransitionError: ステータス遷移不正 → 「waiting_review状態のみ承認・却下可能」
 - InvalidInquiryStatusError: Inquiryステータス不正 → 「task_working状態の問い合わせのみ変換可能」
+
+### AI生成失敗時のリカバリー戦略
+
+**リカバリーフロー**:
+1. **AI生成開始時**: Inquiryステータスを`task_working` → `processing`に変更
+2. **AI API呼び出し**: OpenAI APIを呼び出し（リトライ戦略: 3回、指数バックオフ）
+3. **AI生成成功時**:
+   - Story作成（status=`waiting_review`）
+   - Inquiryステータスを`processing` → `completed`に変更
+   - トランザクションコミット
+4. **AI生成失敗時（リトライ後も失敗）**:
+   - `_rollback_inquiry_status`を実行してInquiryステータスを`processing` → `task_working`に戻す
+   - エラーログ記録（ERROR、エラーコード: GS-206）
+   - ユーザーに「AI生成に失敗しました。しばらく経ってから再度お試しください」メッセージ表示
+   - トランザクションロールバック（Storyは作成されない）
+5. **リカバリー完了**: ユーザーは問い合わせを再利用してストーリー生成を再試行可能
+
+**トランザクション境界**:
+- `generate_story`メソッド全体を1つのトランザクションで囲む（`session.begin()`）
+- AI生成失敗時はロールバックでInquiryステータス変更も取り消す
+- ただし、ロールバック前に`_rollback_inquiry_status`でステータスを明示的に戻す（監査ログ記録のため）
+
+**エラーハンドリング詳細**:
+- **AIGenerationError**: OpenAI API呼び出し失敗（レート制限、タイムアウト、認証エラー）
+  - HTTPステータス: 500
+  - ユーザーメッセージ: 「AI生成に失敗しました。しばらく経ってから再度お試しください」
+  - リカバリー: Inquiryステータスを`task_working`に戻す
+- **ValidationError（AI生成結果検証失敗）**:
+  - HTTPステータス: 500
+  - ユーザーメッセージ: 「生成されたストーリーの形式が不正です。管理者に連絡してください」
+  - リカバリー: Inquiryステータスを`task_working`に戻す
+- **InquiryNotFoundError**:
+  - HTTPステータス: 404
+  - ユーザーメッセージ: 「指定された問い合わせが見つかりません」
+  - リカバリー: 不要（Inquiryが存在しない）
+- **InvalidInquiryStatusError**:
+  - HTTPステータス: 422
+  - ユーザーメッセージ: 「この問い合わせはストーリー生成できません（ステータス: {current_status}）」
+  - リカバリー: 不要（ステータス不正）
 
 ### エラーレスポンス標準化
 
