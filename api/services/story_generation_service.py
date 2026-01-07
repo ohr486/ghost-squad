@@ -70,6 +70,9 @@ class StoryGenerationService:
             AIGenerationError: AI生成失敗（リトライ後も失敗）
             ValueError: 生成結果の構造検証失敗
         """
+        # 入力検証: inquiry_id は正の整数でなければならない
+        if not isinstance(inquiry_id, int) or inquiry_id <= 0:
+            raise ValueError("inquiry_id must be a positive integer")
         # トランザクション境界を設定し、InquiryとStoryの更新を一括管理する
         with self.session.begin():
             # 1. 問い合わせの取得と検証（要件1.1）
