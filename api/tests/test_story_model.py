@@ -438,8 +438,9 @@ class TestStoryModelCRUDOperations:
         # PostgreSQL and other full-featured RDBMS will properly cascade delete
         engine = db_session.get_bind()
         if engine.dialect.name == "sqlite":
-            # In this test configuration, SQLite may leave related stories undeleted.
-            # Explicitly assert that both stories still exist to keep the test meaningful.
+            # In this test configuration, SQLite may leave related stories
+            # undeleted. Explicitly assert both stories still exist to keep
+            # the test meaningful.
             assert remaining_story1 is not None and remaining_story2 is not None
         else:
             # On databases with proper CASCADE enforcement, both related stories
