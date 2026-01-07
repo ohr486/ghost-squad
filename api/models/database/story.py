@@ -2,8 +2,8 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from sqlalchemy import (JSON, BigInteger, CheckConstraint, DateTime, Enum,
-                        Float, ForeignKey, String, Text)
+from sqlalchemy import (JSON, CheckConstraint, DateTime, Enum, Float,
+                        ForeignKey, Integer, String, Text)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.database.base import BaseModel
@@ -21,7 +21,7 @@ class StoryModel(BaseModel):
 
     # 外部キー（必須、すべてのストーリーは問い合わせと関連付けられる）
     inquiry_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("inquiries.id"), nullable=False, index=True
+        Integer, ForeignKey("inquiries.id"), nullable=False, index=True
     )
 
     # 必須フィールド
@@ -32,6 +32,7 @@ class StoryModel(BaseModel):
         nullable=False,
         default=Priority.MEDIUM,
         server_default=Priority.MEDIUM.value,
+        index=True,
     )
     status: Mapped[StoryStatus] = mapped_column(
         Enum(StoryStatus, values_callable=lambda x: [e.value for e in x]),
