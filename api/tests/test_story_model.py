@@ -2,7 +2,7 @@
 from datetime import UTC, datetime
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
@@ -18,6 +18,14 @@ from models.enums.story_status import StoryStatus
 def db_engine():
     """テスト用データベースエンジン."""
     engine = create_engine("sqlite:///:memory:")
+
+    # Enable foreign key constraints in SQLite for proper CASCADE testing
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_conn, connection_record):
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
     Base.metadata.create_all(engine)
     yield engine
     engine.dispose()
@@ -189,6 +197,25 @@ class TestStoryModel:
         # Assert
         assert len(story.title) == 500
 
+    def test_story_title_exceeds_max_length(self, db_session, sample_inquiry):
+        """タイトルが500文字を超えると拒否される（CheckConstraint）."""
+        # Arrange
+        too_long_title = "あ" * 501  # 501文字のタイトル
+
+        # Act & Assert
+        story = StoryModel(
+            inquiry_id=sample_inquiry.id,
+            title=too_long_title,
+            description="テスト説明",
+        )
+        db_session.add(story)
+
+        with pytest.raises(
+            IntegrityError, match=r"(chk_stories_title|CHECK constraint failed)"
+        ):
+            db_session.commit()
+        db_session.rollback()
+
     def test_story_title_empty_fails(self, db_session, sample_inquiry):
         """空文字列のタイトルは拒否される（CheckConstraint）."""
         # Arrange & Act & Assert
@@ -246,10 +273,8 @@ class TestStoryModel:
         assert "chk_stories_description" in str(exc_info.value)
 
     def test_story_foreign_key_constraint(self, db_session):
-        """存在しないinquiry_idを指定するとエラー（PostgreSQLでは外部キー制約違反）."""
-        # Note: SQLiteのインメモリDBでは外部キー制約がデフォルトで無効のため、
-        # このテストはPostgreSQLでのみ完全に動作します。
-        # SQLiteでもモデル定義の正当性は確認済み（他テストでinquiry_idリレーション動作確認）
+        """存在しないinquiry_idを指定するとエラー（外部キー制約違反）."""
+        # With PRAGMA foreign_keys=ON, SQLite now enforces foreign key constraints
         # Arrange & Act & Assert
         story = StoryModel(
             inquiry_id=99999,  # 存在しないID
@@ -258,15 +283,13 @@ class TestStoryModel:
         )
         db_session.add(story)
 
-        # SQLiteではエラーが発生しないため、commitが成功することを許容
-        # PostgreSQLでは外部キー制約によりIntegrityErrorが発生する
-        try:
+        # Both SQLite (with PRAGMA foreign_keys=ON) and PostgreSQL enforce foreign keys
+        with pytest.raises(
+            IntegrityError,
+            match=r"(FOREIGN KEY constraint failed|violates foreign key constraint)",
+        ):
             db_session.commit()
-            # SQLiteの場合はここを通過
-            db_session.rollback()
-        except IntegrityError:
-            # PostgreSQLの場合はここを通過
-            db_session.rollback()
+        db_session.rollback()
 
     def test_story_optional_fields_can_be_null(self, db_session, sample_inquiry):
         """オプショナルフィールドはNULLでも可能."""
@@ -430,19 +453,14 @@ class TestStoryModelCRUDOperations:
         db_session.commit()
 
         # Assert - All related stories should be deleted (CASCADE)
+        # With PRAGMA foreign_keys=ON, SQLite now properly enforces CASCADE
         remaining_story1 = db_session.query(StoryModel).filter_by(id=story1_id).first()
         remaining_story2 = db_session.query(StoryModel).filter_by(id=story2_id).first()
 
-        # Note: CASCADE behavior depends on database engine
-        # SQLite may not enforce CASCADE in in-memory DB without PRAGMA
-        # PostgreSQL and other full-featured RDBMS will properly cascade delete
-        engine = db_session.get_bind()
-        if engine.dialect.name == "sqlite":
-            # In this test configuration, SQLite may leave related stories
-            # undeleted. Explicitly assert both stories still exist to keep
-            # the test meaningful.
-            assert remaining_story1 is not None and remaining_story2 is not None
-        else:
-            # On databases with proper CASCADE enforcement, both related stories
-            # should be deleted when the parent Inquiry is deleted.
-            assert remaining_story1 is None and remaining_story2 is None
+        # Both PostgreSQL and SQLite (with PRAGMA foreign_keys=ON) will cascade delete
+        assert (
+            remaining_story1 is None
+        ), "Story 1 should be deleted when parent inquiry is deleted"
+        assert (
+            remaining_story2 is None
+        ), "Story 2 should be deleted when parent inquiry is deleted"

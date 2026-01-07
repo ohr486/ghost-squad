@@ -23,7 +23,10 @@ class StoryModel(BaseModel):
     # Note: Using Integer for SQLite compatibility in tests,
     # following BaseModel pattern. Migration uses BigInteger for PostgreSQL.
     inquiry_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("inquiries.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer,
+        ForeignKey("inquiries.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     # 必須フィールド
@@ -58,7 +61,7 @@ class StoryModel(BaseModel):
 
     __table_args__ = (
         CheckConstraint(
-            "length(trim(title)) > 0 AND length(title) <= 500",
+            "length(title) <= 500 AND length(trim(title)) > 0",
             name="chk_stories_title",
         ),
         CheckConstraint(
