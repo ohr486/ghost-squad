@@ -136,6 +136,12 @@ class StoryGenerationService:
                 "OPENAI_API_KEY environment variable not set"
             )
 
+        # Basic format validation to catch obvious configuration errors early
+        # OpenAI API keys typically start with "sk-" and have sufficient length.
+        if not (api_key.startswith("sk-") and len(api_key) >= 20):
+            raise AIGenerationError(
+                "OPENAI_API_KEY is set but does not appear to be a valid OpenAI API key format"
+            )
         client = OpenAI(api_key=api_key)
 
         # Prompt for story generation
