@@ -18,7 +18,7 @@
   - デフォルト値（MEDIUM、WAITING_REVIEW）を設定する
   - _Requirements: 4.7, 4.8_
 
-- [ ] 1.3 Alembicマイグレーションでstoriesテーブルを作成する
+- [x] 1.3 Alembicマイグレーションでstoriesテーブルを作成する
   - storiesテーブルのマイグレーションスクリプトを生成する
   - 外部キー制約（inquiry_id REFERENCES inquiries(id) ON DELETE CASCADE）を設定する
   - インデックス（inquiry_id、status、priority、created_at、updated_at）を作成する
