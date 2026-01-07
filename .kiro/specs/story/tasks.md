@@ -52,7 +52,7 @@
 
 ### 3. バックエンド - バリデーション層
 
-- [ ] 3.1 (P) Pydanticスキーマを定義する
+- [x] 3.1 (P) Pydanticスキーマを定義する
   - CreateStoryRequest（手動作成用、inquiry_idはパスパラメータ）スキーマを実装する
   - UpdateStoryRequest（編集用、すべてオプショナル）スキーマを実装する
   - StoryResponse（API応答用）スキーマを実装する
