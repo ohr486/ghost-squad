@@ -13,10 +13,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from models.database.base import BaseModel
 from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
-from services.inquiry_query_service import (InquiryNotFoundError,
-                                            InquiryQueryService,
-                                            InvalidPaginationError,
-                                            ListInquiriesRequest)
+from services.inquiry_query_service import (
+    InquiryNotFoundError,
+    InquiryQueryService,
+    InvalidPaginationError,
+    ListInquiriesRequest,
+)
 
 
 @pytest.fixture

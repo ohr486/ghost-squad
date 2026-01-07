@@ -52,21 +52,17 @@ class StoryGenerationService:
         self.session = session
         self.validator = StoryValidator()
         self.repository = StoryRepository(session)
-        
+
         # Initialize OpenAI client once for better performance
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise AIGenerationError(
-                "OPENAI_API_KEY environment variable not set"
-            )
-        
+            raise AIGenerationError("OPENAI_API_KEY environment variable not set")
+
         # Basic format validation to catch obvious configuration errors early
         # OpenAI API keys typically start with "sk-" and have sufficient length.
         if not (api_key.startswith("sk-") and len(api_key) >= 20):
-            raise AIGenerationError(
-                "OPENAI_API_KEY is set but does not appear to be a valid OpenAI API key format"
-            )
-        
+            raise AIGenerationError("OPENAI_API_KEY does not appear to be valid format")
+
         self.openai_client = OpenAI(api_key=api_key)
         self.model_name = os.getenv("OPENAI_MODEL", "gpt-4")
 
@@ -91,9 +87,7 @@ class StoryGenerationService:
         # トランザクション境界を設定し、InquiryとStoryの更新を一括管理する
         with self.session.begin():
             # 1. 問い合わせの取得と検証（要件1.1）
-            inquiry = (
-                self.session.query(InquiryModel).filter_by(id=inquiry_id).first()
-            )
+            inquiry = self.session.query(InquiryModel).filter_by(id=inquiry_id).first()
 
             if inquiry is None:
                 raise InquiryNotFoundError(f"Inquiry with id {inquiry_id} not found")
@@ -131,7 +125,7 @@ class StoryGenerationService:
 
                 return story
 
-            except (AIGenerationError, ValueError) as e:
+            except (AIGenerationError, ValueError):
                 # AI生成失敗時はトランザクション全体をロールバックすることで
                 # Inquiryステータスも元に戻す（要件1.7）
                 inquiry.status = original_status
@@ -162,13 +156,12 @@ class StoryGenerationService:
         """
         if not content or not content.strip():
             raise ValueError("Inquiry content cannot be empty")
-        
+
         # 制御文字を除去（タブ、改行、復帰は許可）
         sanitized = "".join(
-            char for char in content 
-            if char.isprintable() or char in ['\n', '\r', '\t']
+            char for char in content if char.isprintable() or char in ["\n", "\r", "\t"]
         )
-        
+
         # 最大長を制限（5000文字 = 約1250トークン）
         max_length = 5000
         if len(sanitized) > max_length:
@@ -176,7 +169,7 @@ class StoryGenerationService:
                 f"Inquiry content too long: {len(sanitized)} characters "
                 f"(maximum: {max_length})"
             )
-        
+
         return sanitized.strip()
 
     def _call_openai_api(
@@ -219,9 +212,7 @@ JSON形式のみで応答してください（説明文は不要）。"""
                         {
                             "role": "system",
                             "content": (
-                                "あなたはアジャイル開発の専門家です。"
-                                "問い合わせから適切なユーザーストーリーを"
-                                "生成してください。"
+                                "あなたはアジャイル開発の専門家です。" "問い合わせから適切なユーザーストーリーを" "生成してください。"
                             ),
                         },
                         {"role": "user", "content": prompt},
@@ -242,17 +233,13 @@ JSON形式のみで応答してください（説明文は不要）。"""
                 if attempt < retry_count - 1:
                     self._wait_with_exponential_backoff(attempt)
                     continue
-                raise AIGenerationError(
-                    f"JSONパースエラー（リトライ後も失敗）: {str(e)}"
-                )
+                raise AIGenerationError(f"JSONパースエラー（リトライ後も失敗）: {str(e)}")
 
             except Exception as e:
                 if attempt < retry_count - 1:
                     self._wait_with_exponential_backoff(attempt)
                     continue
-                raise AIGenerationError(
-                    f"OpenAI APIエラー（リトライ後も失敗）: {str(e)}"
-                )
+                raise AIGenerationError(f"OpenAI APIエラー（リトライ後も失敗）: {str(e)}")
 
         # この行には到達しないはずですが、型チェックのために追加
         raise AIGenerationError("予期しないエラー: 最大リトライ回数に到達")

@@ -6,9 +6,10 @@ Test-Driven Development (TDD) approach:
 2. GREEN: Implement minimal code to pass tests
 3. REFACTOR: Clean up code
 """
-import pytest
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
+
+import pytest
 from sqlalchemy.orm import Session
 
 from models.database.inquiry import InquiryModel
@@ -37,8 +38,11 @@ class TestStoryGenerationService:
     def service(self, mock_session: MagicMock) -> StoryGenerationService:
         """Create StoryGenerationService instance."""
         # Mock OpenAI client initialization
-        with patch("services.story_generation_service.OpenAI") as mock_openai, \
-             patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key-1234567890abcdef"}):
+        with patch(
+            "services.story_generation_service.OpenAI"
+        ) as mock_openai, patch.dict(
+            "os.environ", {"OPENAI_API_KEY": "sk-test-key-1234567890abcdef"}
+        ):
             mock_client = MagicMock()
             mock_openai.return_value = mock_client
             service = StoryGenerationService(mock_session)
@@ -220,8 +224,11 @@ class TestCallOpenAIAPI:
     def service(self, mock_session: MagicMock) -> StoryGenerationService:
         """Create StoryGenerationService instance."""
         # Mock OpenAI client initialization
-        with patch("services.story_generation_service.OpenAI") as mock_openai, \
-             patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key-1234567890abcdef"}):
+        with patch(
+            "services.story_generation_service.OpenAI"
+        ) as mock_openai, patch.dict(
+            "os.environ", {"OPENAI_API_KEY": "sk-test-key-1234567890abcdef"}
+        ):
             mock_client = MagicMock()
             mock_openai.return_value = mock_client
             service = StoryGenerationService(mock_session)
@@ -272,9 +279,7 @@ class TestCallOpenAIAPI:
                 Exception("Rate limit exceeded"),
                 Exception("Rate limit exceeded"),
                 MagicMock(
-                    choices=[
-                        MagicMock(message=MagicMock(content=retry_response))
-                    ]
+                    choices=[MagicMock(message=MagicMock(content=retry_response))]
                 ),
             ]
 
@@ -284,7 +289,7 @@ class TestCallOpenAIAPI:
             # Assert: Should succeed after retries
             assert result["title"] == "Retry Success"
             assert mock_create.call_count == 3
-            
+
             # Assert: Verify exponential backoff timing (1s, 2s for first 2 retries)
             assert mock_sleep.call_count == 2
             mock_sleep.assert_any_call(1)  # 2^0 = 1s for first retry
@@ -323,8 +328,11 @@ class TestSanitizeInquiryContent:
     def service(self, mock_session: MagicMock) -> StoryGenerationService:
         """Create StoryGenerationService instance."""
         # Mock OpenAI client initialization
-        with patch("services.story_generation_service.OpenAI") as mock_openai, \
-             patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key-1234567890abcdef"}):
+        with patch(
+            "services.story_generation_service.OpenAI"
+        ) as mock_openai, patch.dict(
+            "os.environ", {"OPENAI_API_KEY": "sk-test-key-1234567890abcdef"}
+        ):
             mock_client = MagicMock()
             mock_openai.return_value = mock_client
             service = StoryGenerationService(mock_session)
