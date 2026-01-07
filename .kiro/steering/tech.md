@@ -12,7 +12,7 @@ Ghost Squadプロジェクトの技術スタックと開発環境に関するガ
 - **フレームワーク**: FastAPI 0.104.1 + Uvicorn 0.24.0 ASGIサーバー
 - **データベース**: PostgreSQL 15 + SQLAlchemy 2.0.23 ORM
 - **マイグレーション**: Alembic 1.12.1によるスキーマ管理
-- **AI統合**: OpenAI API 1.3.7（GPT-4使用推奨、StoryGenerationServiceで使用予定）
+- **AI統合**: OpenAI API 1.3.7（GPT-4、StoryGenerationServiceで実装済み）
 - **認証**: python-jose[cryptography] 3.3.0 + passlib[bcrypt] 1.7.4
 - **バリデーション**: Pydantic 2.5.0 + pydantic-settings 2.1.0
 - **テスト**: pytest 7.4.3 + pytest-asyncio + pytest-cov 4.1.0 + hypothesis 6.92.1（PBT） + httpx 0.25.2（TestClient）

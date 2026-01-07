@@ -76,7 +76,7 @@
 
 ### 4. バックエンド - AI生成サービス
 
-- [ ] 4.1 StoryGenerationServiceを実装する
+- [x] 4.1 StoryGenerationServiceを実装する
   - 問い合わせからストーリーを生成（generate_story）する機能を実装する
   - Inquiryステータス検証（task_working）を実装する
   - Inquiryステータス更新（task_working → processing → completed）を実装する
@@ -87,7 +87,7 @@
   - トランザクション境界管理（Inquiry + Story）を実装する
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9_
 
-- [ ] 4.2* AI生成サービスの動作を検証する
+- [x] 4.2* AI生成サービスの動作を検証する
   - OpenAI APIモックを使用したストーリー生成フローをテストする
   - Inquiryステータス遷移の正常系・異常系をテストする
   - リトライ処理とタイムアウトの動作を確認する
