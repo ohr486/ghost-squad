@@ -121,7 +121,7 @@ Inquiry機能（完全実装）:
   - POST /api/inquiries/{id}/approve - 承認処理
   - POST /api/inquiries/{id}/reject - 却下処理
 
-Story機能（部分実装 - データモデル・リポジトリ完了）:
+Story機能（部分実装 - データモデル・リポジトリ・バリデーション層完了）:
 - ✅ **データモデル実装**（`models/database/story.py` 実装済み）
   - StoryModel（BaseModel継承、inquiry_id外部キー、title/description/priority/status等）
   - CheckConstraint（title 500文字制限、description必須）
@@ -139,8 +139,17 @@ Story機能（部分実装 - データモデル・リポジトリ完了）:
   - ソート（created_at, updated_at, priority, estimated_effort, assignee, deadline）
   - ページネーション（page, limit）
   - カウント機能（count）
-- ❌ Pydanticスキーマ（`models/schemas/story.py` 未作成）
-- ❌ StoryValidator（`services/story_validator.py` 未作成）
+- ✅ **Pydanticスキーマ**（`models/schemas/story.py` 実装済み - 100%カバレッジ）
+  - CreateStoryRequest（手動作成用、inquiry_idはパスパラメータ）
+  - UpdateStoryRequest（編集用、すべてオプショナル）
+  - StoryResponse（API応答用、ISO 8601 datetime シリアライゼーション）
+  - StoryMetadata（ApprovalMetadata、RejectionMetadata、StatusHistoryEntry）
+- ✅ **StoryValidator**（`services/story_validator.py` 実装済み - 95%カバレッジ）
+  - 作成リクエストの検証（validate_create_request）
+  - 更新リクエストの検証（validate_update_request）
+  - AI生成ストーリーの構造検証（validate_generated_story）
+  - 問い合わせID存在確認（validate_inquiry_exists）
+  - エラーコード体系（GS-201～GS-204、日本語エラーメッセージ）
 - ❌ StoryQueryService（`services/story_query_service.py` 未作成）
 - ❌ StoryWorkflowService（`services/story_workflow_service.py` 未作成）
 - ❌ StoryGenerationService（`services/story_generation_service.py` 未作成）
@@ -203,7 +212,7 @@ Story機能（部分実装 - データモデル・リポジトリ完了）:
 10. ❌ Tailwind CSS設定
 11. ❌ React Router設定
 
-**Phase 4: Story機能の実装（優先度：中）** - 🎯 **データモデル・リポジトリ実装完了**
+**Phase 4: Story機能の実装（優先度：中）** - 🎯 **データモデル・リポジトリ・バリデーション層完了**
 - `.kiro/specs/story/` の設計・タスクに従って実装中
 - Inquiry機能への依存関係を満たすため、Inquiry完了後に着手
 - 実装状況:
@@ -214,8 +223,8 @@ Story機能（部分実装 - データモデル・リポジトリ完了）:
   - ✅ ~~StoryStatus/Priority列挙型~~ （完了 - tests/test_story_enums.py、8テスト）
   - ✅ ~~Alembic マイグレーション（storiesテーブル）~~ （完了）
   - ✅ ~~StoryRepository（データアクセス層）~~ （完了 - tests/test_story_repository.py、37テスト、86%カバレッジ）
-  - ❌ Pydanticスキーマ（CreateStoryRequest、UpdateStoryRequest、StoryResponse）
-  - ❌ StoryValidator（バリデーション層）
+  - ✅ ~~Pydanticスキーマ（CreateStoryRequest、UpdateStoryRequest、StoryResponse）~~ （完了 - tests/test_story_schemas.py、29テスト、100%カバレッジ）
+  - ✅ ~~StoryValidator（バリデーション層）~~ （完了 - tests/test_story_validator.py、26テスト、95%カバレッジ）
   - ❌ StoryQueryService（クエリサービス）
   - ❌ StoryWorkflowService（ワークフロー層）
   - ❌ StoryGenerationService（AI統合層）
@@ -300,9 +309,9 @@ Story機能（部分実装 - データモデル・リポジトリ完了）:
 
 ## 📈 開発進捗追跡
 
-### 完了済み（82%） - 🎉 Inquiry完全実装 + Story基盤完了
+### 完了済み（84%） - 🎉 Inquiry完全実装 + Story基盤・バリデーション層完了
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
-- ✅ 仕様定義（Inquiry: implementation phase、Story: requirements-generated）
+- ✅ 仕様定義（Inquiry: implementation phase、Story: tasks-generated）
 - ✅ ステアリングドキュメント
 - ✅ バックエンド基本構成（FastAPI、モデル、テスト設定）
 - ✅ フロントエンド基本構成（React、テスト設定）
@@ -325,24 +334,27 @@ Story機能（部分実装 - データモデル・リポジトリ完了）:
 - ✅ **Storyデータモデル**（StoryModel、StoryStatus/Priority列挙型、26+8テスト）
 - ✅ **Story Alembicマイグレーション**（storiesテーブル、外部キー、インデックス）
 - ✅ **StoryRepository**（CRUD・フィルタリング・ソート・ページネーション、37テスト、86%カバレッジ）
+- ✅ **Story Pydanticスキーマ**（CreateStoryRequest、UpdateStoryRequest、StoryResponse、29テスト、100%カバレッジ）
+- ✅ **StoryValidator**（バリデーション層、26テスト、95%カバレッジ、GS-2xxエラーコード体系）
 
-### 進行中（5%）
-- 🔄 Story機能実装（Pydanticスキーマ、Validator、Services、API、フロントエンド）
+### 進行中（3%）
+- 🔄 Story機能実装（QueryService、WorkflowService、GenerationService、API、フロントエンド）
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
 ### 未着手（13%）
 - ❌ Inquiry機能のページレイアウト・ルーティング統合
-- ❌ Story機能のサービス層・API層・フロントエンド実装
+- ❌ Story機能のサービス層（Query/Workflow/Generation）・API層・フロントエンド実装
 - ❌ AI統合（OpenAI API - StoryGenerationService）
 - ❌ E2Eテスト・統合テスト
 
 ---
 
 **最終更新**: 2026年1月8日
-**更新理由**: Story機能の実装進捗を反映
-- Story spec phase更新: requirements-generated → tasks-generated（Requirements/Design/Tasks承認済み）
-- Storyデータモデル実装完了（StoryModel、StoryStatus/Priority列挙型、26+8テスト）
-- Story Alembicマイグレーション実装完了（storiesテーブル、外部キー、インデックス）
-- StoryRepository実装完了（CRUD・フィルタリング・ソート・ページネーション、37テスト、86%カバレッジ）
-- 次のステップ: Pydanticスキーマ、Validator、Services（Query/Workflow/Generation）、API層、フロントエンド
+**更新理由**: Story機能バリデーション層実装完了
+- Story Pydanticスキーマ実装完了（CreateStoryRequest、UpdateStoryRequest、StoryResponse、StoryMetadata、29テスト、100%カバレッジ）
+- StoryValidator実装完了（validate_create_request、validate_update_request、validate_generated_story、validate_inquiry_exists、26テスト、95%カバレッジ）
+- エラーコード体系実装（GS-201～GS-204、日本語エラーメッセージ）
+- バリデーション層テスト完全カバー（タイトル長、必須フィールド、型、問い合わせID存在確認）
+- 進捗率更新: 82% → 84%（完了済み）、5% → 3%（進行中）
+- 次のステップ: StoryQueryService、StoryWorkflowService、StoryGenerationService、API層、フロントエンド
