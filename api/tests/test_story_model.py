@@ -2,7 +2,7 @@
 from datetime import UTC, datetime
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
@@ -20,8 +20,6 @@ def db_engine():
     engine = create_engine("sqlite:///:memory:")
 
     # Enable foreign key constraints in SQLite for proper CASCADE testing
-    from sqlalchemy import event
-
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_conn, connection_record):
         cursor = dbapi_conn.cursor()
@@ -213,7 +211,7 @@ class TestStoryModel:
         db_session.add(story)
 
         with pytest.raises(
-            IntegrityError, match="chk_stories_title|CHECK constraint failed"
+            IntegrityError, match=r"(chk_stories_title|CHECK constraint failed)"
         ):
             db_session.commit()
         db_session.rollback()
@@ -288,7 +286,7 @@ class TestStoryModel:
         # Both SQLite (with PRAGMA foreign_keys=ON) and PostgreSQL enforce foreign keys
         with pytest.raises(
             IntegrityError,
-            match="FOREIGN KEY constraint failed|violates foreign key constraint",
+            match=r"(FOREIGN KEY constraint failed|violates foreign key constraint)",
         ):
             db_session.commit()
         db_session.rollback()
