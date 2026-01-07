@@ -41,24 +41,37 @@ def db_session() -> Generator[Session, None, None]:
         session.close()
 
 
+@pytest.fixture
+def inquiry(db_session):
+    """テスト用問い合わせ作成フィクスチャ."""
+    inquiry = InquiryModel(
+        user_id="test_user",
+        content="Test inquiry content",
+        source_system="manual",
+        timestamp=datetime.now(timezone.utc),
+        status=InquiryStatus.TASK_WORKING,
+        inquiry_metadata={},
+    )
+    db_session.add(inquiry)
+    db_session.commit()
+    db_session.refresh(inquiry)
+    return inquiry
+
+
+@pytest.fixture
+def repository(db_session):
+    """StoryRepositoryフィクスチャ."""
+    return StoryRepository(db_session)
+
+
+@pytest.fixture
+def service(repository):
+    """StoryWorkflowServiceフィクスチャ."""
+    return StoryWorkflowService(repository)
+
+
 class TestStoryWorkflowService:
     """StoryWorkflowServiceのテストクラス."""
-
-    @pytest.fixture
-    def inquiry(self, db_session):
-        """テスト用問い合わせ作成フィクスチャ."""
-        inquiry = InquiryModel(
-            user_id="test_user",
-            content="Test inquiry content",
-            source_system="manual",
-            timestamp=datetime.now(timezone.utc),
-            status=InquiryStatus.TASK_WORKING,
-            inquiry_metadata={},
-        )
-        db_session.add(inquiry)
-        db_session.commit()
-        db_session.refresh(inquiry)
-        return inquiry
 
     @pytest.fixture
     def story(self, db_session, inquiry):
@@ -75,16 +88,6 @@ class TestStoryWorkflowService:
         db_session.commit()
         db_session.refresh(story)
         return story
-
-    @pytest.fixture
-    def repository(self, db_session):
-        """StoryRepositoryフィクスチャ."""
-        return StoryRepository(db_session)
-
-    @pytest.fixture
-    def service(self, repository):
-        """StoryWorkflowServiceフィクスチャ."""
-        return StoryWorkflowService(repository)
 
     # ===== approve_story メソッドのテスト =====
 
@@ -359,32 +362,6 @@ class TestStoryWorkflowService:
 class TestStoryWorkflowServiceEdgeCases:
     """StoryWorkflowServiceのエッジケーステスト."""
 
-    @pytest.fixture
-    def inquiry(self, db_session):
-        """テスト用問い合わせ作成フィクスチャ."""
-        inquiry = InquiryModel(
-            user_id="test_user",
-            content="Test inquiry content",
-            source_system="manual",
-            timestamp=datetime.now(timezone.utc),
-            status=InquiryStatus.TASK_WORKING,
-            inquiry_metadata={},
-        )
-        db_session.add(inquiry)
-        db_session.commit()
-        db_session.refresh(inquiry)
-        return inquiry
-
-    @pytest.fixture
-    def repository(self, db_session):
-        """StoryRepositoryフィクスチャ."""
-        return StoryRepository(db_session)
-
-    @pytest.fixture
-    def service(self, repository):
-        """StoryWorkflowServiceフィクスチャ."""
-        return StoryWorkflowService(repository)
-
     def test_approve_story_preserves_existing_metadata(
         self, service, db_session, inquiry
     ):
@@ -435,29 +412,27 @@ class TestStoryWorkflowServiceEdgeCases:
         assert rejected_story.story_metadata["custom_field"] == "custom_value"
         assert "rejection" in rejected_story.story_metadata
 
-    def test_multiple_status_changes_accumulate_history(
+    def test_status_change_creates_history_entry(
         self, service, db_session, inquiry
     ):
-        """複数のステータス変更で履歴が蓄積される."""
-        # ストーリーを作成
-        story = StoryModel(
+        """ステータス変更時に履歴エントリが作成される."""
+        # 承認用のストーリーを作成
+        story1 = StoryModel(
             inquiry_id=inquiry.id,
-            title="Test Story",
-            description="Test description",
+            title="Test Story 1",
+            description="Test description 1",
             priority=Priority.MEDIUM,
             status=StoryStatus.WAITING_REVIEW,
             story_metadata={},
         )
-        db_session.add(story)
+        db_session.add(story1)
         db_session.commit()
-        story_id = story.id
 
-        # 1. 承認 → 却下の流れをシミュレート（実際には許可されないが、メタデータ蓄積を確認）
-        # 承認
-        approved_story = service.approve_story(story_id, approver="approver1")
+        # 承認して履歴を確認
+        approved_story = service.approve_story(story1.id, approver="approver1")
         assert len(approved_story.story_metadata["status_history"]) == 1
 
-        # 別のストーリーで却下（実際のワークフローに沿う）
+        # 却下用のストーリーを作成
         story2 = StoryModel(
             inquiry_id=inquiry.id,
             title="Test Story 2",
@@ -469,6 +444,7 @@ class TestStoryWorkflowServiceEdgeCases:
         db_session.add(story2)
         db_session.commit()
 
+        # 却下して履歴を確認
         rejected_story = service.reject_story(
             story2.id, rejector="rejector1", reason="Test"
         )
