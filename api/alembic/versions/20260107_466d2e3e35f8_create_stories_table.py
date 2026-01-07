@@ -97,13 +97,11 @@ def upgrade() -> None:
     op.create_index("ix_stories_status", "stories", ["status"])
     op.create_index("ix_stories_priority", "stories", ["priority"])
     op.create_index("ix_stories_created_at", "stories", ["created_at"])
-    op.create_index("ix_stories_updated_at", "stories", ["updated_at"])
 
 
 def downgrade() -> None:
     """Drop stories table, indexes, and enum types."""
     # Drop indexes first
-    op.drop_index("ix_stories_updated_at", table_name="stories")
     op.drop_index("ix_stories_created_at", table_name="stories")
     op.drop_index("ix_stories_priority", table_name="stories")
     op.drop_index("ix_stories_status", table_name="stories")
