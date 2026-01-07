@@ -36,7 +36,15 @@ class TestStoryGenerationService:
     @pytest.fixture
     def service(self, mock_session: MagicMock) -> StoryGenerationService:
         """Create StoryGenerationService instance."""
-        return StoryGenerationService(mock_session)
+        # Mock OpenAI client initialization
+        with patch("services.story_generation_service.OpenAI") as mock_openai, \
+             patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key-1234567890abcdef"}):
+            mock_client = MagicMock()
+            mock_openai.return_value = mock_client
+            service = StoryGenerationService(mock_session)
+            # Store mock client for test use
+            service._test_mock_client = mock_client
+            return service
 
     @pytest.fixture
     def valid_inquiry(self) -> InquiryModel:
@@ -209,34 +217,37 @@ class TestCallOpenAIAPI:
     @pytest.fixture
     def service(self, mock_session: MagicMock) -> StoryGenerationService:
         """Create StoryGenerationService instance."""
-        return StoryGenerationService(mock_session)
+        # Mock OpenAI client initialization
+        with patch("services.story_generation_service.OpenAI") as mock_openai, \
+             patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key-1234567890abcdef"}):
+            mock_client = MagicMock()
+            mock_openai.return_value = mock_client
+            service = StoryGenerationService(mock_session)
+            return service
 
     def test_call_openai_api_success(self, service: StoryGenerationService):
         """Test successful OpenAI API call.
 
         要件1.3: AI APIによるストーリー生成
         """
-        with patch("services.story_generation_service.OpenAI") as mock_openai:
-            # Mock OpenAI response
-            mock_response = (
-                '{"title": "Test Story", '
-                '"description": "Test description", '
-                '"priority": "high", "estimated_effort": 3.0}'
-            )
-            mock_client = MagicMock()
-            mock_openai.return_value = mock_client
-            mock_client.chat.completions.create.return_value.choices = [
-                MagicMock(message=MagicMock(content=mock_response))
-            ]
+        # Mock OpenAI response using the service's client
+        mock_response = (
+            '{"title": "Test Story", '
+            '"description": "Test description", '
+            '"priority": "high", "estimated_effort": 3.0}'
+        )
+        service.openai_client.chat.completions.create.return_value.choices = [
+            MagicMock(message=MagicMock(content=mock_response))
+        ]
 
-            # Act
-            result = service._call_openai_api("Test inquiry content")
+        # Act
+        result = service._call_openai_api("Test inquiry content")
 
-            # Assert
-            assert result["title"] == "Test Story"
-            assert result["description"] == "Test description"
-            assert result["priority"] == "high"
-            assert result["estimated_effort"] == 3.0
+        # Assert
+        assert result["title"] == "Test Story"
+        assert result["description"] == "Test description"
+        assert result["priority"] == "high"
+        assert result["estimated_effort"] == 3.0
 
     def test_call_openai_api_retries_on_rate_limit(
         self, service: StoryGenerationService
@@ -244,17 +255,17 @@ class TestCallOpenAIAPI:
         """Test retry logic on rate limit error.
 
         要件1.7: AI APIエラー時のリトライ処理
+        指数バックオフのタイミングを検証
         """
-        with patch("services.story_generation_service.OpenAI") as mock_openai:
+        with patch("services.story_generation_service.time.sleep") as mock_sleep:
             # Mock first 2 calls fail with rate limit, 3rd succeeds
             retry_response = (
                 '{"title": "Retry Success", '
                 '"description": "After retries", '
-                '"priority": "medium"}'
+                '"priority": "medium", '
+                '"estimated_effort": 2.5}'
             )
-            mock_client = MagicMock()
-            mock_openai.return_value = mock_client
-            mock_create = mock_client.chat.completions.create
+            mock_create = service.openai_client.chat.completions.create
             mock_create.side_effect = [
                 Exception("Rate limit exceeded"),
                 Exception("Rate limit exceeded"),
@@ -271,6 +282,11 @@ class TestCallOpenAIAPI:
             # Assert: Should succeed after retries
             assert result["title"] == "Retry Success"
             assert mock_create.call_count == 3
+            
+            # Assert: Verify exponential backoff timing (1s, 2s for first 2 retries)
+            assert mock_sleep.call_count == 2
+            mock_sleep.assert_any_call(1)  # 2^0 = 1s for first retry
+            mock_sleep.assert_any_call(2)  # 2^1 = 2s for second retry
 
     def test_call_openai_api_fails_after_max_retries(
         self, service: StoryGenerationService
@@ -279,17 +295,95 @@ class TestCallOpenAIAPI:
 
         要件1.7: リトライ後も失敗した場合のエラー
         """
-        with patch("services.story_generation_service.OpenAI") as mock_openai:
-            # Mock all calls fail
+        # Mock all calls to fail
+        mock_create = service.openai_client.chat.completions.create
+        mock_create.side_effect = Exception("Persistent error")
+
+        # Act & Assert
+        with pytest.raises(AIGenerationError) as exc_info:
+            service._call_openai_api("Test content")
+
+        # Assert: Should have tried 3 times
+        assert mock_create.call_count == 3
+        assert "リトライ後も失敗" in str(exc_info.value)
+
+
+class TestSanitizeInquiryContent:
+    """Test _sanitize_inquiry_content method."""
+
+    @pytest.fixture
+    def mock_session(self) -> MagicMock:
+        """Create mock database session."""
+        session = MagicMock(spec=Session)
+        return session
+
+    @pytest.fixture
+    def service(self, mock_session: MagicMock) -> StoryGenerationService:
+        """Create StoryGenerationService instance."""
+        # Mock OpenAI client initialization
+        with patch("services.story_generation_service.OpenAI") as mock_openai, \
+             patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test-key-1234567890abcdef"}):
             mock_client = MagicMock()
             mock_openai.return_value = mock_client
-            mock_create = mock_client.chat.completions.create
-            mock_create.side_effect = Exception("Persistent error")
+            service = StoryGenerationService(mock_session)
+            return service
 
-            # Act & Assert
-            with pytest.raises(AIGenerationError) as exc_info:
-                service._call_openai_api("Test content")
+    def test_sanitize_inquiry_content_success(self, service: StoryGenerationService):
+        """Test successful sanitization of inquiry content."""
+        # Arrange
+        content = "  ログイン機能を追加してください  "
 
-            # Assert: Should have tried 3 times
-            assert mock_create.call_count == 3
-            assert "リトライ後も失敗" in str(exc_info.value)
+        # Act
+        result = service._sanitize_inquiry_content(content)
+
+        # Assert
+        assert result == "ログイン機能を追加してください"
+
+    def test_sanitize_inquiry_content_removes_control_characters(
+        self, service: StoryGenerationService
+    ):
+        """Test that control characters are removed (except newlines, tabs)."""
+        # Arrange
+        content = "テキスト\x00\x01\x02with\ncontrol\tchars"
+
+        # Act
+        result = service._sanitize_inquiry_content(content)
+
+        # Assert
+        assert "\x00" not in result
+        assert "\x01" not in result
+        assert "\x02" not in result
+        assert "\n" in result  # Newlines should be preserved
+        assert "\t" in result  # Tabs should be preserved
+
+    def test_sanitize_inquiry_content_empty_raises_error(
+        self, service: StoryGenerationService
+    ):
+        """Test that empty content raises ValueError."""
+        # Act & Assert
+        with pytest.raises(ValueError) as exc_info:
+            service._sanitize_inquiry_content("")
+        assert "cannot be empty" in str(exc_info.value)
+
+    def test_sanitize_inquiry_content_whitespace_only_raises_error(
+        self, service: StoryGenerationService
+    ):
+        """Test that whitespace-only content raises ValueError."""
+        # Act & Assert
+        with pytest.raises(ValueError) as exc_info:
+            service._sanitize_inquiry_content("   \n\t  ")
+        assert "cannot be empty" in str(exc_info.value)
+
+    def test_sanitize_inquiry_content_too_long_raises_error(
+        self, service: StoryGenerationService
+    ):
+        """Test that content exceeding max length raises ValueError."""
+        # Arrange: Create content longer than 5000 characters
+        content = "あ" * 5001
+
+        # Act & Assert
+        with pytest.raises(ValueError) as exc_info:
+            service._sanitize_inquiry_content(content)
+        assert "too long" in str(exc_info.value)
+        assert "5001" in str(exc_info.value)
+        assert "5000" in str(exc_info.value)

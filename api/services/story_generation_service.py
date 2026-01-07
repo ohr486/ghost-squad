@@ -29,10 +29,8 @@ class InquiryNotFoundError(Exception):
     """問い合わせが見つからない場合のエラー."""
 
 
-
 class InvalidInquiryStatusError(Exception):
     """問い合わせのステータスが不正な場合のエラー."""
-
 
 
 class AIGenerationError(Exception):
@@ -54,6 +52,23 @@ class StoryGenerationService:
         self.session = session
         self.validator = StoryValidator()
         self.repository = StoryRepository(session)
+        
+        # Initialize OpenAI client once for better performance
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise AIGenerationError(
+                "OPENAI_API_KEY environment variable not set"
+            )
+        
+        # Basic format validation to catch obvious configuration errors early
+        # OpenAI API keys typically start with "sk-" and have sufficient length.
+        if not (api_key.startswith("sk-") and len(api_key) >= 20):
+            raise AIGenerationError(
+                "OPENAI_API_KEY is set but does not appear to be a valid OpenAI API key format"
+            )
+        
+        self.openai_client = OpenAI(api_key=api_key)
+        self.model_name = os.getenv("OPENAI_MODEL", "gpt-4")
 
     def generate_story(self, inquiry_id: int) -> StoryModel:
         """問い合わせからストーリーを生成する（要件1.1-1.9）.
@@ -94,7 +109,9 @@ class StoryGenerationService:
 
             try:
                 # 3. AI APIを呼び出してストーリーを生成（要件1.3）
-                ai_response = self._call_openai_api(inquiry.content)
+                # セキュリティ: 入力内容を検証・サニタイズ
+                sanitized_content = self._sanitize_inquiry_content(inquiry.content)
+                ai_response = self._call_openai_api(sanitized_content)
 
                 # 4. AI生成結果を検証（要件1.8）
                 validated_data = self.validator.validate_generated_story(ai_response)
@@ -114,11 +131,53 @@ class StoryGenerationService:
 
                 return story
 
-            except (AIGenerationError, ValueError, Exception):
+            except (AIGenerationError, ValueError) as e:
                 # AI生成失敗時はトランザクション全体をロールバックすることで
                 # Inquiryステータスも元に戻す（要件1.7）
                 inquiry.status = original_status
                 raise
+            except Exception as e:
+                # 予期しないエラーの場合はログに記録してロールバック
+                inquiry.status = original_status
+                # 元の例外を再送出して上位で処理
+                raise AIGenerationError(
+                    f"予期しないエラーが発生しました: {type(e).__name__}: {str(e)}"
+                ) from e
+
+    def _sanitize_inquiry_content(self, content: str) -> str:
+        """問い合わせ内容をサニタイズする.
+
+        セキュリティ対策として以下を実施:
+        - 最大長を制限（5000文字）してAPIコストとプロンプトインジェクションを防ぐ
+        - 制御文字を除去
+
+        Args:
+            content: 問い合わせ内容
+
+        Returns:
+            str: サニタイズされた内容
+
+        Raises:
+            ValueError: 内容が空または長すぎる場合
+        """
+        if not content or not content.strip():
+            raise ValueError("Inquiry content cannot be empty")
+        
+        # 制御文字を除去（タブ、改行、復帰は許可）
+        sanitized = "".join(
+            char for char in content 
+            if char.isprintable() or char in ['\n', '\r', '\t']
+        )
+        
+        # 最大長を制限（5000文字 = 約1250トークン）
+        max_length = 5000
+        if len(sanitized) > max_length:
+            raise ValueError(
+                f"Inquiry content too long: {len(sanitized)} characters "
+                f"(maximum: {max_length})"
+            )
+        
+        return sanitized.strip()
 
     def _call_openai_api(
         self, inquiry_content: str, retry_count: int = 3
@@ -126,7 +185,7 @@ class StoryGenerationService:
         """OpenAI APIを呼び出す（要件1.3, 1.7）.
 
         Args:
-            inquiry_content: 問い合わせ内容
+            inquiry_content: 問い合わせ内容（サニタイズ済み）
             retry_count: リトライ回数（デフォルト3回）
 
         Returns:
@@ -135,21 +194,6 @@ class StoryGenerationService:
         Raises:
             AIGenerationError: リトライ後も失敗
         """
-        # OpenAI API key configuration
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise AIGenerationError(
-                "OPENAI_API_KEY environment variable not set"
-            )
-
-        # Basic format validation to catch obvious configuration errors early
-        # OpenAI API keys typically start with "sk-" and have sufficient length.
-        if not (api_key.startswith("sk-") and len(api_key) >= 20):
-            raise AIGenerationError(
-                "OPENAI_API_KEY is set but does not appear to be a valid OpenAI API key format"
-            )
-        client = OpenAI(api_key=api_key)
-
         # Prompt for story generation
         prompt = f"""以下の問い合わせから、アジャイル開発で使用するユーザーストーリーを生成してください。
 
@@ -169,9 +213,8 @@ JSON形式のみで応答してください（説明文は不要）。"""
         # Retry logic with exponential backoff
         for attempt in range(retry_count):
             try:
-                model_name = os.getenv("OPENAI_MODEL", "gpt-4")
-                response = client.chat.completions.create(
-                    model=model_name,
+                response = self.openai_client.chat.completions.create(
+                    model=self.model_name,
                     messages=[
                         {
                             "role": "system",
@@ -197,8 +240,7 @@ JSON形式のみで応答してください（説明文は不要）。"""
 
             except json.JSONDecodeError as e:
                 if attempt < retry_count - 1:
-                    wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
-                    time.sleep(wait_time)
+                    self._wait_with_exponential_backoff(attempt)
                     continue
                 raise AIGenerationError(
                     f"JSONパースエラー（リトライ後も失敗）: {str(e)}"
@@ -206,8 +248,7 @@ JSON形式のみで応答してください（説明文は不要）。"""
 
             except Exception as e:
                 if attempt < retry_count - 1:
-                    wait_time = 2**attempt  # Exponential backoff: 1s, 2s, 4s
-                    time.sleep(wait_time)
+                    self._wait_with_exponential_backoff(attempt)
                     continue
                 raise AIGenerationError(
                     f"OpenAI APIエラー（リトライ後も失敗）: {str(e)}"
@@ -215,6 +256,20 @@ JSON形式のみで応答してください（説明文は不要）。"""
 
         # この行には到達しないはずですが、型チェックのために追加
         raise AIGenerationError("予期しないエラー: 最大リトライ回数に到達")
+
+    def _wait_with_exponential_backoff(self, attempt: int) -> None:
+        """指数バックオフで待機する.
+
+        リトライ間の待機時間を指数的に増加させる。
+        - 1回目のリトライ前: 2^0 = 1秒
+        - 2回目のリトライ前: 2^1 = 2秒
+        - 3回目のリトライ前: 2^2 = 4秒
+
+        Args:
+            attempt: 現在の試行回数（0から開始）
+        """
+        wait_time = 2**attempt
+        time.sleep(wait_time)
 
     def _rollback_inquiry_status(
         self,
