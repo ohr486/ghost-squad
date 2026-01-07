@@ -435,6 +435,13 @@ class TestStoryModelCRUDOperations:
 
         # Note: CASCADE behavior depends on database engine
         # SQLite may not enforce CASCADE in in-memory DB without PRAGMA
-        # PostgreSQL will properly cascade delete
-        # We accept both behaviors for cross-platform compatibility
-        assert remaining_story1 is None or remaining_story2 is None or True
+        # PostgreSQL and other full-featured RDBMS will properly cascade delete
+        engine = db_session.get_bind()
+        if engine.dialect.name == "sqlite":
+            # In this test configuration, SQLite may leave related stories undeleted.
+            # Explicitly assert that both stories still exist to keep the test meaningful.
+            assert remaining_story1 is not None and remaining_story2 is not None
+        else:
+            # On databases with proper CASCADE enforcement, both related stories
+            # should be deleted when the parent Inquiry is deleted.
+            assert remaining_story1 is None and remaining_story2 is None
