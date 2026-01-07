@@ -60,7 +60,7 @@
   - バリデーションルール（タイトル500文字以内、必須フィールド）を設定する
   - _Requirements: 2.7, 2.11, 2.12, 4.5, 4.6, 4.12_
 
-- [ ] 3.2 (P) StoryValidatorを実装する
+- [x] 3.2 (P) StoryValidatorを実装する
   - 作成リクエストの検証（validate_create_request）を実装する
   - 更新リクエストの検証（validate_update_request）を実装する
   - AI生成ストーリーの構造検証（validate_generated_story）を実装する
