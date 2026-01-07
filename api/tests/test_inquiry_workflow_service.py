@@ -13,10 +13,8 @@ from models.database.base import BaseModel
 from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
 from services.inquiry_repository import CreateInquiryData, InquiryRepository
-from services.inquiry_workflow_service import (
-    InquiryWorkflowService,
-    InvalidStateTransitionError,
-)
+from services.inquiry_workflow_service import (InquiryWorkflowService,
+                                               InvalidStateTransitionError)
 
 
 @pytest.fixture

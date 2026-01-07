@@ -20,12 +20,8 @@ from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
 from models.enums.priority import Priority
 from models.schemas.story import CreateStoryRequest, UpdateStoryRequest
-from services.story_validator import (
-    GeneratedStoryData,
-    StoryValidator,
-    ValidationError,
-    ValidationResult,
-)
+from services.story_validator import (GeneratedStoryData, StoryValidator,
+                                      ValidationError, ValidationResult)
 
 
 @pytest.fixture

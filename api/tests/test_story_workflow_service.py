@@ -16,10 +16,8 @@ from models.enums.inquiry_status import InquiryStatus
 from models.enums.priority import Priority
 from models.enums.story_status import StoryStatus
 from services.story_repository import StoryRepository
-from services.story_workflow_service import (
-    InvalidStatusTransitionError,
-    StoryWorkflowService,
-)
+from services.story_workflow_service import (InvalidStatusTransitionError,
+                                             StoryWorkflowService)
 
 
 @pytest.fixture
@@ -323,18 +321,14 @@ class TestStoryWorkflowService:
     def test_can_transition_to_approve(self, service):
         """waiting_review → approved遷移は許可される."""
         assert (
-            service.can_transition_to(
-                StoryStatus.WAITING_REVIEW, StoryStatus.APPROVED
-            )
+            service.can_transition_to(StoryStatus.WAITING_REVIEW, StoryStatus.APPROVED)
             is True
         )
 
     def test_can_transition_to_reject(self, service):
         """waiting_review → rejected遷移は許可される."""
         assert (
-            service.can_transition_to(
-                StoryStatus.WAITING_REVIEW, StoryStatus.REJECTED
-            )
+            service.can_transition_to(StoryStatus.WAITING_REVIEW, StoryStatus.REJECTED)
             is True
         )
 

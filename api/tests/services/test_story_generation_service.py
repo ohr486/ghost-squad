@@ -17,12 +17,10 @@ from models.database.story import StoryModel
 from models.enums.inquiry_status import InquiryStatus
 from models.enums.priority import Priority
 from models.enums.story_status import StoryStatus
-from services.story_generation_service import (
-    AIGenerationError,
-    InquiryNotFoundError,
-    InvalidInquiryStatusError,
-    StoryGenerationService,
-)
+from services.story_generation_service import (AIGenerationError,
+                                               InquiryNotFoundError,
+                                               InvalidInquiryStatusError,
+                                               StoryGenerationService)
 
 
 class TestStoryGenerationService:
