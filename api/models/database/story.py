@@ -23,7 +23,7 @@ class StoryModel(BaseModel):
     # Note: Using Integer for SQLite compatibility in tests,
     # following BaseModel pattern. Migration uses BigInteger for PostgreSQL.
     inquiry_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("inquiries.id"), nullable=False, index=True
+        Integer, ForeignKey("inquiries.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     # 必須フィールド
