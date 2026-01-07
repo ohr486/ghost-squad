@@ -101,8 +101,8 @@ class TestStoryGenerationService:
             # Assert: Verify inquiry status was updated to completed
             assert valid_inquiry.status == InquiryStatus.COMPLETED
 
-            # Assert: Verify session commit was called
-            assert mock_session.commit.call_count >= 2  # status update + story creation
+            # Assert: Verify session commit was called exactly twice
+            assert mock_session.commit.call_count == 2  # status update + story creation
 
     def test_generate_story_inquiry_not_found(
         self, service: StoryGenerationService, mock_session: MagicMock
