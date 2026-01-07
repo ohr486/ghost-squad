@@ -53,7 +53,7 @@ class StoryModel(BaseModel):
 
     # JSON拡張フィールド
     story_metadata: Mapped[Dict[str, Any]] = mapped_column(
-        JSON, nullable=False, default=lambda: {}
+        JSON, nullable=False, default=lambda: {}, server_default="{}"
     )
 
     __table_args__ = (
