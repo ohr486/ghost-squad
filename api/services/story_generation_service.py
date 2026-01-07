@@ -161,8 +161,9 @@ JSON形式のみで応答してください（説明文は不要）。"""
         # Retry logic with exponential backoff
         for attempt in range(retry_count):
             try:
+                model_name = os.getenv("OPENAI_MODEL", "gpt-4")
                 response = client.chat.completions.create(
-                    model="gpt-4",
+                    model=model_name,
                     messages=[
                         {
                             "role": "system",
