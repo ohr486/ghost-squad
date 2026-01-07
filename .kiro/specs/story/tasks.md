@@ -4,7 +4,7 @@
 
 ### 1. データモデルとマイグレーション
 
-- [ ] 1.1 (P) ストーリーエンティティのデータモデルを定義する
+- [x] 1.1 (P) ストーリーエンティティのデータモデルを定義する
   - BaseModelを継承したStoryModelをORMとして実装する
   - inquiry_idをNOT NULL外部キーとして設定し、Inquiryとの関連を確立する
   - タイトル（最大500文字）、説明、優先度、ステータス、推定工数、期限、担当者のフィールドを定義する
@@ -12,7 +12,7 @@
   - CheckConstraint（タイトル長、説明必須）を設定する
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11_
 
-- [ ] 1.2 (P) 優先度とステータスの列挙型を定義する
+- [x] 1.2 (P) 優先度とステータスの列挙型を定義する
   - Priority列挙型（LOW/MEDIUM/HIGH/URGENT）を実装する
   - StoryStatus列挙型（WAITING_REVIEW/APPROVED/REJECTED）を実装する
   - デフォルト値（MEDIUM、WAITING_REVIEW）を設定する
