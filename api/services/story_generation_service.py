@@ -78,11 +78,11 @@ class StoryGenerationService:
         inquiry = self.session.query(InquiryModel).filter_by(id=inquiry_id).first()
 
         if inquiry is None:
-            raise InquiryNotFoundError(f"Inquiry with id {inquiry_id} not found")
+            raise InquiryNotFoundError(f"問い合わせID {inquiry_id} が見つかりません")
 
         if inquiry.status != InquiryStatus.TASK_WORKING:
             raise InvalidInquiryStatusError(
-                f"Inquiry status must be task_working, got {inquiry.status.value}"
+                f"問い合わせステータスが不正です。期待値: task_working, 実際の値: {inquiry.status.value}"
             )
 
         # 2. Inquiryステータスを processing に変更（要件1.2）
