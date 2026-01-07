@@ -70,49 +70,52 @@ class StoryGenerationService:
             AIGenerationError: AI生成失敗（リトライ後も失敗）
             ValueError: 生成結果の構造検証失敗
         """
-        # 1. 問い合わせの取得と検証（要件1.1）
-        inquiry = self.session.query(InquiryModel).filter_by(id=inquiry_id).first()
-
-        if inquiry is None:
-            raise InquiryNotFoundError(f"問い合わせID {inquiry_id} が見つかりません")
-
-        if inquiry.status != InquiryStatus.TASK_WORKING:
-            raise InvalidInquiryStatusError(
-                f"問い合わせステータスが不正です。期待値: task_working, 実際の値: {inquiry.status.value}"
+        # トランザクション境界を設定し、InquiryとStoryの更新を一括管理する
+        with self.session.begin():
+            # 1. 問い合わせの取得と検証（要件1.1）
+            inquiry = (
+                self.session.query(InquiryModel).filter_by(id=inquiry_id).first()
             )
 
-        # 2. Inquiryステータスを processing に変更（要件1.2）
-        original_status = inquiry.status
-        inquiry.status = InquiryStatus.PROCESSING
-        self.session.commit()
+            if inquiry is None:
+                raise InquiryNotFoundError(f"Inquiry with id {inquiry_id} not found")
 
-        try:
-            # 3. AI APIを呼び出してストーリーを生成（要件1.3）
-            ai_response = self._call_openai_api(inquiry.content)
+            if inquiry.status != InquiryStatus.TASK_WORKING:
+                raise InvalidInquiryStatusError(
+                    f"Inquiry status must be task_working, got {inquiry.status.value}"
+                )
 
-            # 4. AI生成結果を検証（要件1.8）
-            validated_data = self.validator.validate_generated_story(ai_response)
+            # 2. Inquiryステータスを processing に変更（要件1.2）
+            original_status = inquiry.status
+            inquiry.status = InquiryStatus.PROCESSING
 
-            # 5. ストーリーを作成（要件1.4, 1.5, 1.6）
-            story_data = CreateStoryData(
-                inquiry_id=inquiry_id,
-                title=validated_data.title,
-                description=validated_data.description,
-                priority=validated_data.priority,
-                estimated_effort=validated_data.estimated_effort,
-            )
-            story = self.repository.create(story_data)
+            try:
+                # 3. AI APIを呼び出してストーリーを生成（要件1.3）
+                ai_response = self._call_openai_api(inquiry.content)
 
-            # 6. Inquiryステータスを completed に変更
-            inquiry.status = InquiryStatus.COMPLETED
-            self.session.commit()
+                # 4. AI生成結果を検証（要件1.8）
+                validated_data = self.validator.validate_generated_story(ai_response)
 
-            return story
+                # 5. ストーリーを作成（要件1.4, 1.5, 1.6）
+                story_data = CreateStoryData(
+                    inquiry_id=inquiry_id,
+                    title=validated_data.title,
+                    description=validated_data.description,
+                    priority=validated_data.priority,
+                    estimated_effort=validated_data.estimated_effort,
+                )
+                story = self.repository.create(story_data)
 
-        except (AIGenerationError, ValueError, Exception):
-            # AI生成失敗時、Inquiryステータスをロールバック（要件1.7）
-            self._rollback_inquiry_status(inquiry_id, original_status)
-            raise
+                # 6. Inquiryステータスを completed に変更
+                inquiry.status = InquiryStatus.COMPLETED
+
+                return story
+
+            except (AIGenerationError, ValueError, Exception):
+                # AI生成失敗時はトランザクション全体をロールバックすることで
+                # Inquiryステータスも元に戻す（要件1.7）
+                inquiry.status = original_status
+                raise
 
     def _call_openai_api(
         self, inquiry_content: str, retry_count: int = 3
