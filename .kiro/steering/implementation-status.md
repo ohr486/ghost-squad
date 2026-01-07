@@ -317,7 +317,7 @@ Story機能（部分実装 - データモデル・リポジトリ・バリデー
 
 ## 📈 開発進捗追跡
 
-### 完了済み（86%） - 🎉 Inquiry完全実装 + Story基盤・バリデーション・AI生成層完了
+### 完了済み - 🎉 Inquiry完全実装 + Story基盤・バリデーション・AI生成層完了
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
 - ✅ 仕様定義（Inquiry: implementation phase、Story: tasks-generated）
 - ✅ ステアリングドキュメント
