@@ -1,6 +1,4 @@
 """ストーリー関連列挙型のテスト."""
-import pytest
-
 from models.enums.priority import Priority
 from models.enums.story_status import StoryStatus
 

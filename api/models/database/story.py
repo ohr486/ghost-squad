@@ -2,17 +2,8 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
 
-from sqlalchemy import (
-    JSON,
-    BigInteger,
-    CheckConstraint,
-    DateTime,
-    Enum,
-    Float,
-    ForeignKey,
-    String,
-    Text,
-)
+from sqlalchemy import (JSON, BigInteger, CheckConstraint, DateTime, Enum,
+                        Float, ForeignKey, String, Text)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.database.base import BaseModel
