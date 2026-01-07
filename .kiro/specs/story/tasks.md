@@ -4,7 +4,7 @@
 
 ### 1. データモデルとマイグレーション
 
-- [ ] 1.1 (P) ストーリーエンティティのデータモデルを定義する
+- [x] 1.1 (P) ストーリーエンティティのデータモデルを定義する
   - BaseModelを継承したStoryModelをORMとして実装する
   - inquiry_idをNOT NULL外部キーとして設定し、Inquiryとの関連を確立する
   - タイトル（最大500文字）、説明、優先度、ステータス、推定工数、期限、担当者のフィールドを定義する
@@ -12,20 +12,20 @@
   - CheckConstraint（タイトル長、説明必須）を設定する
   - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 4.10, 4.11_
 
-- [ ] 1.2 (P) 優先度とステータスの列挙型を定義する
+- [x] 1.2 (P) 優先度とステータスの列挙型を定義する
   - Priority列挙型（LOW/MEDIUM/HIGH/URGENT）を実装する
   - StoryStatus列挙型（WAITING_REVIEW/APPROVED/REJECTED）を実装する
   - デフォルト値（MEDIUM、WAITING_REVIEW）を設定する
   - _Requirements: 4.7, 4.8_
 
-- [ ] 1.3 Alembicマイグレーションでstoriesテーブルを作成する
+- [x] 1.3 Alembicマイグレーションでstoriesテーブルを作成する
   - storiesテーブルのマイグレーションスクリプトを生成する
   - 外部キー制約（inquiry_id REFERENCES inquiries(id) ON DELETE CASCADE）を設定する
   - インデックス（inquiry_id、status、priority、created_at、updated_at）を作成する
   - マイグレーションを実行してデータベーススキーマを更新する
   - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-- [ ] 1.4* データモデルの基本的な動作を検証する
+- [x] 1.4* データモデルの基本的な動作を検証する
   - StoryModelの作成・取得・更新・削除の基本操作をテストする
   - 外部キー制約（Inquiry削除時のCASCADE）を検証する
   - CheckConstraint（タイトル長、説明必須）の動作を確認する
