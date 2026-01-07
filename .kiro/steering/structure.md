@@ -34,30 +34,41 @@ ghost-squad/
 ```
 models/
 ├── database/          # SQLAlchemy ORMモデル
-│   ├── base.py       # ベースモデルクラス
+│   ├── base.py       # ベースモデルクラス（実装済み）
 │   ├── inquiry.py    # 問い合わせモデル（実装済み）
-│   ├── story.py      # ストーリーモデル
-│   └── story_template.py  # テンプレートモデル
+│   ├── story.py      # ストーリーモデル（実装済み）
+│   └── story_template.py  # テンプレートモデル（未実装）
 ├── schemas/          # Pydanticスキーマ（APIシリアライゼーション）
-│   └── inquiry.py    # 問い合わせスキーマ（実装済み）
+│   ├── inquiry.py    # 問い合わせスキーマ（実装済み）
+│   └── story.py      # ストーリースキーマ（未実装）
 ├── enums/           # 列挙型定義
-│   └── inquiry_status.py  # InquiryStatus列挙型（実装済み）
+│   ├── inquiry_status.py  # InquiryStatus列挙型（実装済み）
+│   ├── story_status.py    # StoryStatus列挙型（実装済み）
+│   └── priority.py        # Priority列挙型（実装済み）
 ├── api/             # APIリクエスト・レスポンスモデル
 └── protocols/       # サービス用プロトコル定義
 ```
 
 **サービス層** (`services/`)
 - ビジネスロジックを含むサービスクラス
-- バリデーション（`inquiry_validator.py` - 問い合わせデータ検証）
-- データアクセス（`inquiry_repository.py` - CRUD操作、フィルタリング、ソート、ページネーション）
-- クエリサービス（`inquiry_query_service.py` - 問い合わせ検索・一覧取得、100%カバレッジ）
-- ワークフローサービス（`inquiry_workflow_service.py` - 承認・却下処理、ステータス遷移管理）
-- 外部API統合（OpenAI - 将来実装）
+- **Inquiry関連（実装済み）**:
+  - バリデーション（`inquiry_validator.py` - 問い合わせデータ検証、97%カバレッジ）
+  - データアクセス（`inquiry_repository.py` - CRUD操作、フィルタリング、ソート、ページネーション、90%カバレッジ）
+  - クエリサービス（`inquiry_query_service.py` - 問い合わせ検索・一覧取得、100%カバレッジ）
+  - ワークフローサービス（`inquiry_workflow_service.py` - 承認・却下処理、ステータス遷移管理、89%カバレッジ）
+- **Story関連（部分実装）**:
+  - データアクセス（`story_repository.py` - CRUD操作、フィルタリング、ソート、ページネーション、86%カバレッジ）
+  - バリデーション（`story_validator.py` - 未実装）
+  - クエリサービス（`story_query_service.py` - 未実装）
+  - ワークフローサービス（`story_workflow_service.py` - 未実装）
+  - AI統合（`story_generation_service.py` - 未実装、OpenAI API使用予定）
 
-**API層** (`api/`) - 将来実装
+**API層** (`routers/`)
 - FastAPIルーター定義
 - エンドポイント実装
 - 依存性注入
+- **Inquiry API（実装済み）**: `inquiry.py` - CRUD + ワークフロー全エンドポイント
+- **Story API（未実装）**: `story.py` - CRUD + ワークフロー + AI変換エンドポイント
 
 **テスト** (`tests/`)
 - `conftest.py` - pytest設定・フィクスチャ
@@ -96,7 +107,10 @@ src/
 src/
 ├── components/       # 追加の再利用可能コンポーネント
 │   ├── ui/          # 基本UIコンポーネント（未実装）
-│   └── layout/      # レイアウトコンポーネント（未実装）
+│   ├── layout/      # レイアウトコンポーネント（未実装）
+│   ├── StoryForm.tsx       # ストーリー入力フォーム（未実装）
+│   ├── StoryList.tsx       # ストーリー一覧コンポーネント（未実装）
+│   └── StoryDetail.tsx     # ストーリー詳細・編集コンポーネント（未実装）
 ├── pages/           # ページコンポーネント（未実装）
 ├── hooks/           # カスタムReactフック（未実装）
 ├── utils/           # ユーティリティ関数（未実装）
@@ -105,16 +119,19 @@ src/
 
 **型定義組織化** (`src/types/`)
 - **実装済み**: `inquiry.ts` - Inquiry関連型定義（バックエンドPydanticスキーマと整合）
-  - InquiryStatus, Priority, StoryCategory（列挙型）
+  - InquiryStatus（列挙型）
   - InquiryResponse, CreateInquiryRequest, UpdateInquiryRequest（API型）
   - PaginatedResponse, ErrorResponse（共通型）
 - **将来実装**:
   - `story.ts` - Story関連型定義
+    - StoryStatus（WAITING_REVIEW/APPROVED/REJECTED）
+    - Priority（LOW/MEDIUM/HIGH/URGENT）
+    - StoryResponse, CreateStoryRequest, UpdateStoryRequest（API型）
   - `api/` - 追加のAPI関連型定義
   - `components/` - コンポーネントプロパティ型
 
 **サービス層組織化** (`src/services/`)
-- **実装済み**: `inquiryApi.ts` - 問い合わせAPIクライアント
+- **実装済み**: `inquiryApi.ts` - 問い合わせAPIクライアント（86.11%カバレッジ）
   - Axiosインスタンス作成（30秒タイムアウト、CORS設定）
   - エラーレスポンスインターセプター（ErrorResponse標準化）
   - CRUD操作（createInquiry、listInquiries、getInquiry、updateInquiry）
@@ -122,6 +139,9 @@ src/
   - ヘルスチェック（healthCheck）
 - **将来実装**:
   - `storyApi.ts` - ストーリーAPIクライアント
+    - CRUD操作（createStory、listStories、getStory、updateStory、deleteStory）
+    - ワークフロー操作（approveStory、rejectStory、batchApproveStories）
+    - AI変換（generateStory）
   - `authService.ts` - 認証サービス
 
 **コンポーネント組織化** (`src/components/`)

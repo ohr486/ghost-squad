@@ -49,8 +49,7 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 
 ### 🚧 開発中機能
 - **フロントエンド統合**: ページレイアウト、React Routerルーティング、E2Eテスト
-- **AI統合**: OpenAI APIによるストーリー生成
-- **ストーリー管理**: レビュー・承認ワークフロー
+- **ストーリー管理**: データモデル・リポジトリ実装完了、AI変換・ワークフロー・API層の実装が進行中
 
 ## ドメインモデル
 
@@ -68,8 +67,10 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
   - カスタムテンプレート作成機能
 
 **ビジネスルール**
-- すべてのストーリーは生成後にレビュー状態になる
-- テンプレートは組織内で共有可能
+- すべてのストーリーは生成後にレビュー状態（waiting_review）になる
+- ストーリーは必ず問い合わせ（inquiry_id）に関連付けられる
+- ステータス遷移は一方向（waiting_review → approved/rejected）
+- 却下時は理由（reason）が必須
 - 問い合わせ履歴は監査ログとして保持
 
 **API設計原則**
@@ -87,11 +88,15 @@ POST   /api/inquiries/{id}/reject  # 却下処理
 # システムエンドポイント
 GET    /health                     # ヘルスチェック
 
-# 開発中（Story API）
-GET    /api/stories                # ストーリー一覧
-POST   /api/stories/generate       # ストーリー変換エンドポイント
-PUT    /api/stories/{id}           # ストーリー編集
-POST   /api/stories/batch          # 一括操作
+# 開発中（Story API - データモデル・リポジトリ実装完了）
+GET    /api/stories                # ストーリー一覧（未実装）
+GET    /api/stories/{id}           # ストーリー詳細（未実装）
+POST   /api/inquiries/{id}/stories # ストーリー生成（AI or 手動）（未実装）
+PUT    /api/stories/{id}           # ストーリー編集（未実装）
+POST   /api/stories/{id}/approve   # ストーリー承認（未実装）
+POST   /api/stories/{id}/reject    # ストーリー却下（未実装）
+DELETE /api/stories/{id}           # ストーリー削除（未実装）
+POST   /api/stories/batch-approve  # 一括承認（未実装）
 
 # 将来実装
 GET    /api/templates          # テンプレート一覧
@@ -173,17 +178,16 @@ inquiry_metadata: dict        # メタデータ（JSON）
                               # - rejection: 却下情報（rejected_at、reason）
                               # - status_history: ステータス変更履歴
 
-# ストーリー固有（実装済み）
-inquiry_id: int               # 問い合わせID（外部キー）
+# ストーリー固有（実装済み: データモデル・リポジトリ）
+inquiry_id: int               # 問い合わせID（外部キー、必須）
 title: str                    # タイトル（必須、最大500文字）
 description: str              # 説明（必須）
 priority: Priority            # 優先度
-estimated_effort: float       # 推定工数
-deadline: datetime           # 期限（オプション）
-assignee: str                # 担当者（オプション）
-tags: List[str]              # タグ（JSON配列）
-dependencies: List[int]       # 依存関係（JSON配列）
-story_metadata: dict         # メタデータ（JSON）
+status: StoryStatus           # ステータス
+estimated_effort: float       # 推定工数（オプショナル）
+deadline: datetime           # 期限（オプショナル）
+assignee: str                # 担当者（オプショナル、最大50文字）
+story_metadata: dict         # メタデータ（JSON、approval/rejection/status_history記録用）
 ```
 
 ## AI統合ガイドライン

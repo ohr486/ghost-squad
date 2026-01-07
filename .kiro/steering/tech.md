@@ -12,7 +12,7 @@ Ghost Squadプロジェクトの技術スタックと開発環境に関するガ
 - **フレームワーク**: FastAPI 0.104.1 + Uvicorn 0.24.0 ASGIサーバー
 - **データベース**: PostgreSQL 15 + SQLAlchemy 2.0.23 ORM
 - **マイグレーション**: Alembic 1.12.1によるスキーマ管理
-- **AI統合**: OpenAI API 1.3.7（GPT-4使用推奨）
+- **AI統合**: OpenAI API 1.3.7（GPT-4使用推奨、StoryGenerationServiceで使用予定）
 - **認証**: python-jose[cryptography] 3.3.0 + passlib[bcrypt] 1.7.4
 - **バリデーション**: Pydantic 2.5.0 + pydantic-settings 2.1.0
 - **テスト**: pytest 7.4.3 + pytest-asyncio + pytest-cov 4.1.0 + hypothesis 6.92.1（PBT） + httpx 0.25.2（TestClient）
@@ -174,10 +174,15 @@ npm test -- --coverage --watchAll=false
 
 **品質基準**
 - **テストカバレッジ**:
-  - バックエンド: 現在189テスト、高カバレッジ（inquiry: 91%、database接続テスト含む）、新機能は80%以上
+  - バックエンド: 現在317テスト、高カバレッジ（inquiry: 91%、story schemas: 100%、story validator: 95%、database接続テスト含む）、新機能は80%以上
   - InquiryRepository: 90%カバレッジ、17ユニットテスト
   - InquiryQueryService: 100%カバレッジ、12ユニットテスト
   - InquiryWorkflowService: 89%カバレッジ
+  - StoryRepository: 86%カバレッジ、37ユニットテスト
+  - StoryModel: 26ユニットテスト（CheckConstraint、外部キー、JSON metadata）
+  - StoryStatus/Priority列挙型: 8ユニットテスト
+  - Story Pydanticスキーマ: 100%カバレッジ、29ユニットテスト（CreateStoryRequest、UpdateStoryRequest、StoryResponse、StoryMetadata）
+  - StoryValidator: 95%カバレッジ、26ユニットテスト（validate_create_request、validate_update_request、validate_generated_story、validate_inquiry_exists、GS-2xxエラーコード）
   - フロントエンド: **現在91.02%カバレッジ**（54テスト、5スイート）、新機能は80%以上
   - InquiryForm.tsx: 100% statements、94.28% branches、100% functions（13テスト）
   - InquiryList.tsx: 84.21% statements、62.5% branches、81.81% functions（25テスト）

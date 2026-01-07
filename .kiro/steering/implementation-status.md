@@ -86,12 +86,14 @@ inclusion: always
   - Phase: tasks-generated
   - Requirements（生成済み・承認済み）
   - Design（生成済み・承認済み）
-  - Tasks（生成済み）
+  - Tasks（生成済み・承認済み）
   - Gap Analysis（生成済み）
   - Dependencies: なし
 - `.kiro/specs/story/` - ストーリー機能仕様
-  - Phase: requirements-generated
-  - Requirements（生成済み）
+  - Phase: tasks-generated
+  - Requirements（生成済み・承認済み）
+  - Design（生成済み・承認済み）
+  - Tasks（生成済み・承認済み）
   - Dependencies: inquiry
 
 **5. ステアリングドキュメント（`.kiro/steering/`）**
@@ -103,6 +105,8 @@ inclusion: always
 ### 🚧 部分実装・未実装機能
 
 **バックエンド（`api/`）**
+
+Inquiry機能（完全実装）:
 - ✅ Alembic マイグレーションファイル（作成済み）
 - ✅ データベース接続設定（`database.py` 作成済み）
 - ✅ Pydanticスキーマ（`models/schemas/inquiry.py` 実装済み）
@@ -116,7 +120,40 @@ inclusion: always
   - PUT /api/inquiries/{id} - 問い合わせ更新
   - POST /api/inquiries/{id}/approve - 承認処理
   - POST /api/inquiries/{id}/reject - 却下処理
-- ❌ ストーリーモデル（`story.py` 未作成）
+
+Story機能（部分実装 - データモデル・リポジトリ・バリデーション層完了）:
+- ✅ **データモデル実装**（`models/database/story.py` 実装済み）
+  - StoryModel（BaseModel継承、inquiry_id外部キー、title/description/priority/status等）
+  - CheckConstraint（title 500文字制限、description必須）
+  - JSON metadata フィールド（approval/rejection/status_history記録用）
+- ✅ **列挙型実装**（`models/enums/` 実装済み）
+  - `story_status.py` - StoryStatus（WAITING_REVIEW/APPROVED/REJECTED）
+  - `priority.py` - Priority（LOW/MEDIUM/HIGH/URGENT）
+- ✅ **Alembic マイグレーション**（`alembic/versions/20260107_466d2e3e35f8_create_stories_table.py` 実装済み）
+  - storiesテーブル作成
+  - 外部キー制約（inquiry_id → inquiries.id、ON DELETE CASCADE）
+  - インデックス（inquiry_id, status, priority, created_at, updated_at）
+- ✅ **StoryRepository実装**（`services/story_repository.py` 実装済み - 86%カバレッジ）
+  - CRUD操作（create, find_by_id, find_many, update, delete）
+  - フィルタリング（status, priority, inquiry_id）
+  - ソート（created_at, updated_at, priority, estimated_effort, assignee, deadline）
+  - ページネーション（page, limit）
+  - カウント機能（count）
+- ✅ **Pydanticスキーマ**（`models/schemas/story.py` 実装済み - 100%カバレッジ）
+  - CreateStoryRequest（手動作成用、inquiry_idはパスパラメータ）
+  - UpdateStoryRequest（編集用、すべてオプショナル）
+  - StoryResponse（API応答用、ISO 8601 datetime シリアライゼーション）
+  - StoryMetadata（ApprovalMetadata、RejectionMetadata、StatusHistoryEntry）
+- ✅ **StoryValidator**（`services/story_validator.py` 実装済み - 95%カバレッジ）
+  - 作成リクエストの検証（validate_create_request）
+  - 更新リクエストの検証（validate_update_request）
+  - AI生成ストーリーの構造検証（validate_generated_story）
+  - 問い合わせID存在確認（validate_inquiry_exists）
+  - エラーコード体系（GS-201～GS-204、日本語エラーメッセージ）
+- ❌ StoryQueryService（`services/story_query_service.py` 未作成）
+- ❌ StoryWorkflowService（`services/story_workflow_service.py` 未作成）
+- ❌ StoryGenerationService（`services/story_generation_service.py` 未作成）
+- ❌ APIエンドポイント（`routers/story.py` 未作成）
 
 **フロントエンド（`web/`）**
 - ✅ TypeScript 4.9設定（完了 - strict mode、tsconfig.json、--legacy-peer-deps）
@@ -175,10 +212,24 @@ inclusion: always
 10. ❌ Tailwind CSS設定
 11. ❌ React Router設定
 
-**Phase 4: Story機能の実装（優先度：中）**
-- `.kiro/specs/story/` の設計・タスク生成から開始
-- Inquiry機能への依存があるため、Phase 2完了後に着手
-- Requirements生成済み、次は Design生成が必要
+**Phase 4: Story機能の実装（優先度：中）** - 🎯 **データモデル・リポジトリ・バリデーション層完了**
+- `.kiro/specs/story/` の設計・タスクに従って実装中
+- Inquiry機能への依存関係を満たすため、Inquiry完了後に着手
+- 実装状況:
+  - ✅ ~~Requirements生成~~ （完了・承認済み）
+  - ✅ ~~Design生成~~ （完了・承認済み）
+  - ✅ ~~Tasks生成~~ （完了・承認済み）
+  - ✅ ~~StoryModel（データモデル）~~ （完了 - tests/test_story_model.py、26テスト）
+  - ✅ ~~StoryStatus/Priority列挙型~~ （完了 - tests/test_story_enums.py、8テスト）
+  - ✅ ~~Alembic マイグレーション（storiesテーブル）~~ （完了）
+  - ✅ ~~StoryRepository（データアクセス層）~~ （完了 - tests/test_story_repository.py、37テスト、86%カバレッジ）
+  - ✅ ~~Pydanticスキーマ（CreateStoryRequest、UpdateStoryRequest、StoryResponse）~~ （完了 - tests/test_story_schemas.py、29テスト、100%カバレッジ）
+  - ✅ ~~StoryValidator（バリデーション層）~~ （完了 - tests/test_story_validator.py、26テスト、95%カバレッジ）
+  - ❌ StoryQueryService（クエリサービス）
+  - ❌ StoryWorkflowService（ワークフロー層）
+  - ❌ StoryGenerationService（AI統合層）
+  - ❌ Story API層（ルーター、エンドポイント）
+  - ❌ Story フロントエンド（コンポーネント、型定義）
 
 ## 🔧 技術的な考慮事項
 
@@ -258,9 +309,9 @@ inclusion: always
 
 ## 📈 開発進捗追跡
 
-### 完了済み（80%） - 🎉 Inquiry基本コンポーネント完全実装完了
+### 完了済み（84%） - 🎉 Inquiry完全実装 + Story基盤・バリデーション層完了
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
-- ✅ 仕様定義（Inquiry: implementation phase、Story: requirements-generated）
+- ✅ 仕様定義（Inquiry: implementation phase、Story: tasks-generated）
 - ✅ ステアリングドキュメント
 - ✅ バックエンド基本構成（FastAPI、モデル、テスト設定）
 - ✅ フロントエンド基本構成（React、テスト設定）
@@ -280,23 +331,30 @@ inclusion: always
 - ✅ **TanStack React Query基盤**（サーバー状態管理、全コンポーネントで活用）
 - ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、54テスト、91.02%カバレッジ）
 - ✅ **コード品質基盤**（Prettier + ESLint設定、全チェック通過）
+- ✅ **Storyデータモデル**（StoryModel、StoryStatus/Priority列挙型、26+8テスト）
+- ✅ **Story Alembicマイグレーション**（storiesテーブル、外部キー、インデックス）
+- ✅ **StoryRepository**（CRUD・フィルタリング・ソート・ページネーション、37テスト、86%カバレッジ）
+- ✅ **Story Pydanticスキーマ**（CreateStoryRequest、UpdateStoryRequest、StoryResponse、29テスト、100%カバレッジ）
+- ✅ **StoryValidator**（バリデーション層、26テスト、95%カバレッジ、GS-2xxエラーコード体系）
 
 ### 進行中（3%）
+- 🔄 Story機能実装（QueryService、WorkflowService、GenerationService、API、フロントエンド）
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
-### 未着手（17%）
+### 未着手（13%）
 - ❌ Inquiry機能のページレイアウト・ルーティング統合
-- ❌ Story機能の設計・実装
-- ❌ AI統合（OpenAI API）
+- ❌ Story機能のサービス層（Query/Workflow/Generation）・API層・フロントエンド実装
+- ❌ AI統合（OpenAI API - StoryGenerationService）
 - ❌ E2Eテスト・統合テスト
 
 ---
 
-**最終更新**: 2025年12月31日
-**更新理由**:
-- InquiryWorkflowService ステータスフロー修正（design.mdと完全一致）
-  - 削除: `failed` ステータス、`received → processing`、`processing → task_working`、`processing → failed`、`needs_clarification → rejected`、`needs_clarification → task_working` 遷移
-  - 追加: `task_working → processing` 遷移
-  - 変更: `processing → completed` （タスク完了）
-- requirements.md 更新（`failed` 削除、`completed` 説明変更）
+**最終更新**: 2026年1月8日
+**更新理由**: Story機能バリデーション層実装完了
+- Story Pydanticスキーマ実装完了（CreateStoryRequest、UpdateStoryRequest、StoryResponse、StoryMetadata、29テスト、100%カバレッジ）
+- StoryValidator実装完了（validate_create_request、validate_update_request、validate_generated_story、validate_inquiry_exists、26テスト、95%カバレッジ）
+- エラーコード体系実装（GS-201～GS-204、日本語エラーメッセージ）
+- バリデーション層テスト完全カバー（タイトル長、必須フィールド、型、問い合わせID存在確認）
+- 進捗率更新: 82% → 84%（完了済み）、5% → 3%（進行中）
+- 次のステップ: StoryQueryService、StoryWorkflowService、StoryGenerationService、API層、フロントエンド
