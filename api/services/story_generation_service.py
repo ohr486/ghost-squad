@@ -28,19 +28,15 @@ from services.story_validator import StoryValidator
 class InquiryNotFoundError(Exception):
     """問い合わせが見つからない場合のエラー."""
 
-    pass
 
 
 class InvalidInquiryStatusError(Exception):
     """問い合わせのステータスが不正な場合のエラー."""
 
-    pass
 
 
 class AIGenerationError(Exception):
     """AI生成失敗時のエラー."""
-
-    pass
 
 
 class StoryGenerationService:
