@@ -15,10 +15,15 @@ from pydantic import ValidationError
 
 from models.enums.priority import Priority
 from models.enums.story_status import StoryStatus
-from models.schemas.story import (ApprovalMetadata, CreateStoryRequest,
-                                  RejectionMetadata, StatusHistoryEntry,
-                                  StoryMetadata, StoryResponse,
-                                  UpdateStoryRequest)
+from models.schemas.story import (
+    ApprovalMetadata,
+    CreateStoryRequest,
+    RejectionMetadata,
+    StatusHistoryEntry,
+    StoryMetadata,
+    StoryResponse,
+    UpdateStoryRequest,
+)
 
 
 class TestCreateStoryRequest:

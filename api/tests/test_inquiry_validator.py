@@ -1,7 +1,10 @@
 """問い合わせバリデーター テスト."""
 
-from services.inquiry_validator import (InquiryValidator, ValidationError,
-                                        ValidationResult)
+from services.inquiry_validator import (
+    InquiryValidator,
+    ValidationError,
+    ValidationResult,
+)
 
 
 class TestInquiryValidatorContent:
