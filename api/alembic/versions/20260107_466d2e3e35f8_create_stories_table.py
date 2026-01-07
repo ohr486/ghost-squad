@@ -112,6 +112,7 @@ def downgrade() -> None:
     # Drop table
     op.drop_table("stories")
 
-    # Explicitly drop enum types to ensure cleanup
+    # Drop enum types in reverse order of creation (storystatus→priority)
+    # to ensure proper cleanup and avoid potential dependency issues
     sa.Enum(name="storystatus").drop(op.get_bind(), checkfirst=True)
     sa.Enum(name="priority").drop(op.get_bind(), checkfirst=True)
