@@ -33,7 +33,7 @@
 
 ### 2. バックエンド - データアクセス層
 
-- [ ] 2.1 (P) StoryRepositoryを実装する
+- [x] 2.1 (P) StoryRepositoryを実装する
   - ストーリーの作成（create_story）機能を実装する
   - ストーリーの取得（get_story）機能を実装する
   - ストーリー一覧の取得（list_stories）機能をフィルタリング・ソート・ページネーション対応で実装する
@@ -42,7 +42,7 @@
   - トランザクション境界の管理を実装する
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.8, 2.9, 2.15, 2.17, 4.1, 4.2_
 
-- [ ] 2.2* StoryRepositoryの動作を検証する
+- [x] 2.2* StoryRepositoryの動作を検証する
   - CRUD操作の正常系・異常系をテストする
   - フィルタリング（status、priority、inquiry_id）の動作を確認する
   - ソート（created_at、updated_at、priority、estimated_effort）の動作を確認する
