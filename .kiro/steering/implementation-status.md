@@ -233,7 +233,7 @@ Story機能（部分実装 - データモデル・リポジトリ・バリデー
   - ✅ ~~StoryRepository（データアクセス層）~~ （完了 - tests/test_story_repository.py、37テスト、86%カバレッジ）
   - ✅ ~~Pydanticスキーマ（CreateStoryRequest、UpdateStoryRequest、StoryResponse）~~ （完了 - tests/test_story_schemas.py、29テスト、100%カバレッジ）
   - ✅ ~~StoryValidator（バリデーション層）~~ （完了 - tests/test_story_validator.py、26テスト、95%カバレッジ）
-  - ✅ ~~StoryGenerationService（AI統合層）~~ （完了 - tests/test_story_generation_service.py、8テスト、88%カバレッジ）
+  - ✅ ~~StoryGenerationService（AI統合層）~~ （完了 - tests/test_story_generation_service.py、単体テスト・カバレッジ計測済み）
   - ❌ StoryQueryService（クエリサービス）
   - ❌ StoryWorkflowService（ワークフロー層）
   - ❌ Story API層（ルーター、エンドポイント）
