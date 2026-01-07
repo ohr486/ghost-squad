@@ -158,7 +158,7 @@ Story機能（部分実装 - データモデル・リポジトリ・バリデー
   - AI生成結果の構造検証（StoryValidator使用）
   - エラー時Inquiryステータスロールバック（_rollback_inquiry_status）
   - トランザクション境界管理
-  - 8包括的テスト（正常系・異常系・リトライ・ロールバック検証）
+  - 8つの包括的テスト（正常系・異常系・リトライ・ロールバック検証）
 - ❌ StoryQueryService（`services/story_query_service.py` 未作成）
 - ❌ StoryWorkflowService（`services/story_workflow_service.py` 未作成）
 - ❌ APIエンドポイント（`routers/story.py` 未作成）
