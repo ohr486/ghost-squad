@@ -637,16 +637,6 @@ async def reject_story(
         StoryResponse: 却下されたストーリー
     """
     try:
-        if not request.reason or not request.reason.strip():
-            raise HTTPException(
-                status_code=http_status.HTTP_400_BAD_REQUEST,
-                detail=_create_error_response(
-                    code="GS-207",
-                    message="却下理由が空です",
-                    field="reason",
-                ).model_dump(),
-            )
-
         repository = StoryRepository(db)
         workflow_service = StoryWorkflowService(repository)
         story = workflow_service.reject_story(id, request.rejector, request.reason)
