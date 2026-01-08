@@ -664,18 +664,22 @@ class TestBatchApprovalEndpoint:
         data = response.json()
         assert "results" in data
         assert len(data["results"]) == 2
-        
+
         # Verify both approvals succeeded
         for result in data["results"]:
             assert result["success"] is True
             assert result["error"] is None
             assert result["id"] in [story1_id, story2_id]
-        
+
         # Verify stories were actually approved in the database
         new_session = TestingSessionLocal()
         try:
-            updated_story1 = new_session.query(StoryModel).filter_by(id=story1_id).first()
-            updated_story2 = new_session.query(StoryModel).filter_by(id=story2_id).first()
+            updated_story1 = (
+                new_session.query(StoryModel).filter_by(id=story1_id).first()
+            )
+            updated_story2 = (
+                new_session.query(StoryModel).filter_by(id=story2_id).first()
+            )
             assert updated_story1.status == StoryStatus.APPROVED
             assert updated_story2.status == StoryStatus.APPROVED
         finally:

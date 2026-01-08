@@ -129,7 +129,8 @@ class StoryGenerationService:
 
         except (AIGenerationError, ValueError):
             # AI生成失敗時は Inquiryステータスも元に戻す（要件1.7）
-            # Note: If story was created before error, it remains but inquiry status is rolled back
+            # Note: If story was created before error, it remains but
+            # inquiry status is rolled back
             inquiry.status = original_status
             self.session.commit()
             raise
