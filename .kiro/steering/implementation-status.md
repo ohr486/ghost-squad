@@ -159,7 +159,11 @@ Story機能（部分実装 - データモデル・リポジトリ・バリデー
   - エラー時Inquiryステータスロールバック（_rollback_inquiry_status）
   - トランザクション境界管理
   - 8つの包括的テスト（正常系・異常系・リトライ・ロールバック検証）
-- ❌ StoryQueryService（`services/story_query_service.py` 未作成）
+- ✅ **StoryQueryService**（`services/story_query_service.py` 実装済み - 28テスト、100%カバレッジ）
+  - list_stories: フィルタリング（status、priority、inquiry_id）・ソート・ページネーション
+  - get_story: ストーリー詳細取得
+  - バリデーション（page、limit、sort_by、sort_order）
+  - エラーハンドリング（StoryNotFoundError、InvalidPaginationError）
 - ❌ StoryWorkflowService（`services/story_workflow_service.py` 未作成）
 - ❌ APIエンドポイント（`routers/story.py` 未作成）
 
@@ -234,7 +238,7 @@ Story機能（部分実装 - データモデル・リポジトリ・バリデー
   - ✅ ~~Pydanticスキーマ（CreateStoryRequest、UpdateStoryRequest、StoryResponse）~~ （完了 - tests/test_story_schemas.py、29テスト、100%カバレッジ）
   - ✅ ~~StoryValidator（バリデーション層）~~ （完了 - tests/test_story_validator.py、26テスト、95%カバレッジ）
   - ✅ ~~StoryGenerationService（AI統合層）~~ （完了 - tests/test_story_generation_service.py、単体テスト・カバレッジ計測済み）
-  - ❌ StoryQueryService（クエリサービス）
+  - ✅ ~~StoryQueryService（クエリサービス）~~ （完了 - tests/test_story_query_service.py、28テスト、100%カバレッジ）
   - ❌ StoryWorkflowService（ワークフロー層）
   - ❌ Story API層（ルーター、エンドポイント）
   - ❌ Story フロントエンド（コンポーネント、型定義）
@@ -345,34 +349,35 @@ Story機能（部分実装 - データモデル・リポジトリ・バリデー
 - ✅ **Story Pydanticスキーマ**（CreateStoryRequest、UpdateStoryRequest、StoryResponse、29テスト、100%カバレッジ）
 - ✅ **StoryValidator**（バリデーション層、26テスト、95%カバレッジ、GS-2xxエラーコード体系）
 - ✅ **StoryGenerationService**（AI生成層、8テスト、88%カバレッジ、OpenAI GPT-4統合、リトライ戦略）
+- ✅ **StoryQueryService**（クエリサービス層、28テスト、100%カバレッジ、フィルタリング・ソート・ページネーション）
 
-### 進行中（2%）
-- 🔄 Story機能実装（QueryService、WorkflowService、API、フロントエンド）
+### 進行中（1%）
+- 🔄 Story機能実装（WorkflowService、API、フロントエンド）
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
 ### 未着手（12%）
 - ❌ Inquiry機能のページレイアウト・ルーティング統合
-- ❌ Story機能のサービス層（Query/Workflow）・API層・フロントエンド実装
+- ❌ Story機能のサービス層（Workflow）・API層・フロントエンド実装
 - ❌ E2Eテスト・統合テスト
 
 ---
 
 **最終更新**: 2026年1月8日
-**更新理由**: Story機能AI生成層実装完了（タスク4.1、4.2）
-- StoryGenerationService実装完了（230行、88%カバレッジ）
-  - generate_story: Inquiryからストーリー自動生成
-  - Inquiryステータス検証・遷移管理（task_working → processing → completed）
-  - OpenAI GPT-4統合（_call_openai_api）、リトライ戦略（3回、指数バックオフ）
-  - AI生成結果の構造検証（StoryValidator使用）
-  - エラー時Inquiryステータスロールバック
-  - トランザクション境界管理
-- 包括的テスト実装（8テスト、295行）
-  - 正常系フロー検証
-  - エラーハンドリング（InquiryNotFoundError、InvalidInquiryStatusError、AIGenerationError）
-  - リトライ処理検証
-  - ロールバック検証
-- OpenAI API 1.3.7統合（requirements.txt追加）
-- 全325+テスト合格、97%カバレッジ、lint合格
-- 進捗率更新: 84% → 86%（完了済み）、3% → 2%（進行中）
-- 次のステップ: StoryQueryService、StoryWorkflowService、API層、フロントエンド
+**更新理由**: Story機能クエリサービス層実装完了（タスク6.1、6.2）
+- StoryQueryService実装完了（63行、100%カバレッジ）
+  - list_stories: フィルタリング（status、priority、inquiry_id）・ソート（6フィールド）・ページネーション
+  - get_story: ストーリー詳細取得
+  - バリデーション（page、limit、sort_by、sort_order）
+  - エラーハンドリング（StoryNotFoundError、InvalidPaginationError）
+  - nullslast使用によるNULL値の一貫した扱い
+- 包括的テスト実装（28テスト、542行）
+  - フィルタリング（単一・複数条件、組み合わせ）
+  - ソート（全6フィールド、昇順・降順）
+  - ページネーション（各ページ、範囲外、エッジケース）
+  - バリデーション（不正パラメータ）
+  - 複雑なクエリ条件
+- InquiryQueryServiceパターンを踏襲した一貫性のある設計
+- 全353+テスト合格、100%カバレッジ（StoryQueryService）、lint合格
+- 進捗率更新: 86% → 87%（完了済み）、2% → 1%（進行中）
+- 次のステップ: StoryWorkflowService、API層、フロントエンド
