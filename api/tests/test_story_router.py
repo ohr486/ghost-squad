@@ -113,6 +113,7 @@ class TestStoryGenerationEndpoint:
         db_session.add(inquiry)
         db_session.commit()
         db_session.refresh(inquiry)
+        db_session.close()  # Close to avoid isolation issues
 
         # Mock OpenAI API
         mock_ai_response = {
@@ -161,10 +162,12 @@ class TestStoryGenerationEndpoint:
         db_session.add(inquiry)
         db_session.commit()
         db_session.refresh(inquiry)
+        inquiry_id = inquiry.id
+        db_session.close()  # Close to avoid isolation issues
 
         # Act: POST /api/inquiries/{inquiry_id}/stories (ボディあり)
         response = client.post(
-            f"/api/inquiries/{inquiry.id}/stories",
+            f"/api/inquiries/{inquiry_id}/stories",
             json={
                 "title": "手動作成ストーリー",
                 "description": "テスト用の説明",
@@ -179,7 +182,7 @@ class TestStoryGenerationEndpoint:
         assert data["title"] == "手動作成ストーリー"
         assert data["status"] == "waiting_review"
         assert data["priority"] == "high"
-        assert data["inquiry_id"] == inquiry.id
+        assert data["inquiry_id"] == inquiry_id
 
     def test_inquiry_not_found(self, client: TestClient):
         """存在しない問い合わせIDの場合404エラー.
@@ -215,10 +218,12 @@ class TestStoryGenerationEndpoint:
         db_session.add(inquiry)
         db_session.commit()
         db_session.refresh(inquiry)
+        inquiry_id = inquiry.id
+        db_session.close()  # Close to avoid isolation issues
 
         # Act
         response = client.post(
-            f"/api/inquiries/{inquiry.id}/stories",
+            f"/api/inquiries/{inquiry_id}/stories",
             # ボディなし
         )
 
@@ -245,10 +250,12 @@ class TestStoryGenerationEndpoint:
         db_session.add(inquiry)
         db_session.commit()
         db_session.refresh(inquiry)
+        inquiry_id = inquiry.id
+        db_session.close()  # Close to avoid isolation issues
 
         # Act
         response = client.post(
-            f"/api/inquiries/{inquiry.id}/stories",
+            f"/api/inquiries/{inquiry_id}/stories",
             json={
                 "title": "あ" * 501,  # 500文字超過
                 "description": "テスト説明",
@@ -642,11 +649,14 @@ class TestBatchApprovalEndpoint:
         db_session.commit()
         db_session.refresh(story1)
         db_session.refresh(story2)
+        story1_id = story1.id
+        story2_id = story2.id
+        db_session.close()  # Close to avoid isolation issues
 
         # Act
         response = client.post(
             "/api/stories/batch-approve",
-            json={"story_ids": [story1.id, story2.id], "approver": "admin-user"},
+            json={"story_ids": [story1_id, story2_id], "approver": "admin-user"},
         )
 
         # Assert
@@ -654,3 +664,19 @@ class TestBatchApprovalEndpoint:
         data = response.json()
         assert "results" in data
         assert len(data["results"]) == 2
+        
+        # Verify both approvals succeeded
+        for result in data["results"]:
+            assert result["success"] is True
+            assert result["error"] is None
+            assert result["id"] in [story1_id, story2_id]
+        
+        # Verify stories were actually approved in the database
+        new_session = TestingSessionLocal()
+        try:
+            updated_story1 = new_session.query(StoryModel).filter_by(id=story1_id).first()
+            updated_story2 = new_session.query(StoryModel).filter_by(id=story2_id).first()
+            assert updated_story1.status == StoryStatus.APPROVED
+            assert updated_story2.status == StoryStatus.APPROVED
+        finally:
+            new_session.close()

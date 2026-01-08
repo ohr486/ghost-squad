@@ -99,7 +99,9 @@ class StoryGenerationService:
         # 2. Inquiryステータスを processing に変更（要件1.2）
         original_status = inquiry.status
         inquiry.status = InquiryStatus.PROCESSING
+        self.session.commit()
 
+        story = None
         try:
             # 3. AI APIを呼び出してストーリーを生成（要件1.3）
             # セキュリティ: 入力内容を検証・サニタイズ
@@ -121,19 +123,20 @@ class StoryGenerationService:
 
             # 6. Inquiryステータスを completed に変更
             inquiry.status = InquiryStatus.COMPLETED
-            self.session.flush()
+            self.session.commit()
 
             return story
 
         except (AIGenerationError, ValueError):
             # AI生成失敗時は Inquiryステータスも元に戻す（要件1.7）
+            # Note: If story was created before error, it remains but inquiry status is rolled back
             inquiry.status = original_status
-            self.session.flush()
+            self.session.commit()
             raise
         except Exception as e:
             # 予期しないエラーの場合はログに記録してロールバック
             inquiry.status = original_status
-            self.session.flush()
+            self.session.commit()
             # 元の例外を再送出して上位で処理
             raise AIGenerationError(
                 f"予期しないエラーが発生しました: {type(e).__name__}: {str(e)}"

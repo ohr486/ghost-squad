@@ -169,20 +169,6 @@ async def create_story(
         HTTPException: エラー発生時
     """
     try:
-        # 問い合わせID存在確認
-        validator = StoryValidator()
-        try:
-            validator.validate_inquiry_exists(db, inquiry_id)
-        except ValueError:
-            # validator.validate_inquiry_exists raises ValueError with GS-204
-            raise HTTPException(
-                status_code=http_status.HTTP_404_NOT_FOUND,
-                detail=_create_error_response(
-                    code="GS-204",
-                    message=f"問い合わせID={inquiry_id}が見つかりません",
-                ).model_dump(),
-            )
-
         # None または 空ボディ（{}）の場合はAI自動生成
         if request is None:
             # AI自動生成フロー
@@ -191,6 +177,7 @@ async def create_story(
         else:
             # 手動作成フロー
             # バリデーション
+            validator = StoryValidator()
             validation_result = validator.validate_create_request(request)
             if not validation_result.valid:
                 first_error = validation_result.errors[0]
