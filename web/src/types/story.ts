@@ -5,6 +5,8 @@
  * 要件: 4.7, 4.8
  */
 
+import type { Priority } from "./inquiry";
+
 /**
  * ストーリーステータス列挙型
  */
@@ -66,7 +68,7 @@ export interface StoryResponse {
   inquiry_id: number;
   title: string;
   description: string;
-  priority: string; // Priority from inquiry.ts
+  priority: Priority;
   status: StoryStatus;
   estimated_effort: number | null;
   deadline: string | null; // ISO 8601形式
@@ -83,7 +85,7 @@ export interface StoryResponse {
 export interface CreateStoryRequest {
   title: string; // 1-500文字
   description: string; // 必須
-  priority: string; // Enum: LOW/MEDIUM/HIGH/URGENT
+  priority: Priority;
   estimated_effort?: number; // オプショナル
   deadline?: string; // ISO 8601形式、オプショナル
   assignee?: string; // オプショナル
@@ -95,7 +97,7 @@ export interface CreateStoryRequest {
 export interface UpdateStoryRequest {
   title?: string;
   description?: string;
-  priority?: string;
+  priority?: Priority;
   estimated_effort?: number;
   deadline?: string; // ISO 8601形式
   assignee?: string;
@@ -142,7 +144,7 @@ export interface ListStoriesParams {
   page?: number; // デフォルト: 1
   limit?: number; // デフォルト: 20、範囲: 1-100
   status?: StoryStatus | StoryStatus[];
-  priority?: string | string[];
+  priority?: Priority | Priority[];
   inquiry_id?: number;
   sort_by?:
     | "created_at"

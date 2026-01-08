@@ -103,16 +103,14 @@ export async function generateStory(inquiryId: number): Promise<StoryResponse> {
 }
 
 /**
- * ストーリー一覧取得API呼び出し（全ストーリー）
+ * クエリパラメータ構築のヘルパー関数
  *
- * @param params クエリパラメータ（ページネーション、フィルタリング、ソート）
- * @returns ページネーション付きストーリー一覧
- * @throws ErrorResponse サーバーエラー
+ * @param params ListStoriesParams型のパラメータ
+ * @returns クエリパラメータオブジェクト
  */
-export async function listStories(
+function buildQueryParams(
   params?: ListStoriesParams,
-): Promise<PaginatedResponse<StoryResponse>> {
-  // クエリパラメータの構築
+): Record<string, string> {
   const queryParams: Record<string, string> = {};
 
   if (params?.page !== undefined) {
@@ -143,6 +141,21 @@ export async function listStories(
     queryParams.sort_order = params.sort_order;
   }
 
+  return queryParams;
+}
+
+/**
+ * ストーリー一覧取得API呼び出し（全ストーリー）
+ *
+ * @param params クエリパラメータ（ページネーション、フィルタリング、ソート）
+ * @returns ページネーション付きストーリー一覧
+ * @throws ErrorResponse サーバーエラー
+ */
+export async function listStories(
+  params?: ListStoriesParams,
+): Promise<PaginatedResponse<StoryResponse>> {
+  const queryParams = buildQueryParams(params);
+
   const response = await apiClient.get<PaginatedResponse<StoryResponse>>(
     "/api/stories",
     { params: queryParams },
@@ -162,31 +175,7 @@ export async function listStoriesByInquiry(
   inquiryId: number,
   params?: ListStoriesParams,
 ): Promise<PaginatedResponse<StoryResponse>> {
-  // クエリパラメータの構築
-  const queryParams: Record<string, string> = {};
-
-  if (params?.page !== undefined) {
-    queryParams.page = String(params.page);
-  }
-  if (params?.limit !== undefined) {
-    queryParams.limit = String(params.limit);
-  }
-  if (params?.status !== undefined) {
-    queryParams.status = Array.isArray(params.status)
-      ? params.status.join(",")
-      : params.status;
-  }
-  if (params?.priority !== undefined) {
-    queryParams.priority = Array.isArray(params.priority)
-      ? params.priority.join(",")
-      : params.priority;
-  }
-  if (params?.sort_by !== undefined) {
-    queryParams.sort_by = params.sort_by;
-  }
-  if (params?.sort_order !== undefined) {
-    queryParams.sort_order = params.sort_order;
-  }
+  const queryParams = buildQueryParams(params);
 
   const response = await apiClient.get<PaginatedResponse<StoryResponse>>(
     `/api/inquiries/${inquiryId}/stories`,
