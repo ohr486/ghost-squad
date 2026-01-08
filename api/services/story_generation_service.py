@@ -84,59 +84,64 @@ class StoryGenerationService:
         # 入力検証: inquiry_id は正の整数でなければならない
         if not isinstance(inquiry_id, int) or inquiry_id <= 0:
             raise ValueError("inquiry_id must be a positive integer")
-        # トランザクション境界を設定し、InquiryとStoryの更新を一括管理する
-        with self.session.begin():
-            # 1. 問い合わせの取得と検証（要件1.1）
-            inquiry = self.session.query(InquiryModel).filter_by(id=inquiry_id).first()
 
-            if inquiry is None:
-                raise InquiryNotFoundError(f"Inquiry with id {inquiry_id} not found")
+        # 1. 問い合わせの取得と検証（要件1.1）
+        inquiry = self.session.query(InquiryModel).filter_by(id=inquiry_id).first()
 
-            if inquiry.status != InquiryStatus.TASK_WORKING:
-                raise InvalidInquiryStatusError(
-                    f"Inquiry status must be task_working, got {inquiry.status.value}"
-                )
+        if inquiry is None:
+            raise InquiryNotFoundError(f"Inquiry with id {inquiry_id} not found")
 
-            # 2. Inquiryステータスを processing に変更（要件1.2）
-            original_status = inquiry.status
-            inquiry.status = InquiryStatus.PROCESSING
+        if inquiry.status != InquiryStatus.TASK_WORKING:
+            raise InvalidInquiryStatusError(
+                f"Inquiry status must be task_working, got {inquiry.status.value}"
+            )
 
-            try:
-                # 3. AI APIを呼び出してストーリーを生成（要件1.3）
-                # セキュリティ: 入力内容を検証・サニタイズ
-                sanitized_content = self._sanitize_inquiry_content(inquiry.content)
-                ai_response = self._call_openai_api(sanitized_content)
+        # 2. Inquiryステータスを processing に変更（要件1.2）
+        original_status = inquiry.status
+        inquiry.status = InquiryStatus.PROCESSING
+        self.session.commit()
 
-                # 4. AI生成結果を検証（要件1.8）
-                validated_data = self.validator.validate_generated_story(ai_response)
+        story = None
+        try:
+            # 3. AI APIを呼び出してストーリーを生成（要件1.3）
+            # セキュリティ: 入力内容を検証・サニタイズ
+            sanitized_content = self._sanitize_inquiry_content(inquiry.content)
+            ai_response = self._call_openai_api(sanitized_content)
 
-                # 5. ストーリーを作成（要件1.4, 1.5, 1.6）
-                story_data = CreateStoryData(
-                    inquiry_id=inquiry_id,
-                    title=validated_data.title,
-                    description=validated_data.description,
-                    priority=validated_data.priority,
-                    estimated_effort=validated_data.estimated_effort,
-                )
-                story = self.repository.create(story_data)
+            # 4. AI生成結果を検証（要件1.8）
+            validated_data = self.validator.validate_generated_story(ai_response)
 
-                # 6. Inquiryステータスを completed に変更
-                inquiry.status = InquiryStatus.COMPLETED
+            # 5. ストーリーを作成（要件1.4, 1.5, 1.6）
+            story_data = CreateStoryData(
+                inquiry_id=inquiry_id,
+                title=validated_data.title,
+                description=validated_data.description,
+                priority=validated_data.priority,
+                estimated_effort=validated_data.estimated_effort,
+            )
+            story = self.repository.create(story_data)
 
-                return story
+            # 6. Inquiryステータスを completed に変更
+            inquiry.status = InquiryStatus.COMPLETED
+            self.session.commit()
 
-            except (AIGenerationError, ValueError):
-                # AI生成失敗時はトランザクション全体をロールバックすることで
-                # Inquiryステータスも元に戻す（要件1.7）
-                inquiry.status = original_status
-                raise
-            except Exception as e:
-                # 予期しないエラーの場合はログに記録してロールバック
-                inquiry.status = original_status
-                # 元の例外を再送出して上位で処理
-                raise AIGenerationError(
-                    f"予期しないエラーが発生しました: {type(e).__name__}: {str(e)}"
-                ) from e
+            return story
+
+        except (AIGenerationError, ValueError):
+            # AI生成失敗時は Inquiryステータスも元に戻す（要件1.7）
+            # Note: If story was created before error, it remains but
+            # inquiry status is rolled back
+            inquiry.status = original_status
+            self.session.commit()
+            raise
+        except Exception as e:
+            # 予期しないエラーの場合はログに記録してロールバック
+            inquiry.status = original_status
+            self.session.commit()
+            # 元の例外を再送出して上位で処理
+            raise AIGenerationError(
+                f"予期しないエラーが発生しました: {type(e).__name__}: {str(e)}"
+            ) from e
 
     def _sanitize_inquiry_content(self, content: str) -> str:
         """問い合わせ内容をサニタイズする.
