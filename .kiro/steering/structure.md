@@ -58,10 +58,10 @@ models/
   - ワークフローサービス（`inquiry_workflow_service.py` - 承認・却下処理、ステータス遷移管理、89%カバレッジ）
 - **Story関連（部分実装）**:
   - データアクセス（`story_repository.py` - CRUD操作、フィルタリング、ソート、ページネーション、86%カバレッジ）
-  - バリデーション（`story_validator.py` - 未実装）
-  - クエリサービス（`story_query_service.py` - 未実装）
-  - ワークフローサービス（`story_workflow_service.py` - 未実装）
-  - AI統合（`story_generation_service.py` - 未実装、OpenAI API使用予定）
+  - クエリサービス（`story_query_service.py` - ストーリー検索・一覧取得、100%カバレッジ）
+  - バリデーション（`story_validator.py` - ストーリーデータ検証、100%カバレッジ）
+  - ワークフローサービス（`story_workflow_service.py` - 承認・却下処理、ステータス遷移管理、100%カバレッジ）
+  - AI統合（`story_generation_service.py` - OpenAI API統合、ストーリー自動生成、93%カバレッジ）
 
 **API層** (`routers/`)
 - FastAPIルーター定義
