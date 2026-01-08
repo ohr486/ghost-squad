@@ -174,7 +174,7 @@ npm test -- --coverage --watchAll=false
 
 **品質基準**
 - **テストカバレッジ**:
-  - バックエンド: 現在317テスト、高カバレッジ（inquiry: 91%、story schemas: 100%、story validator: 95%、database接続テスト含む）、新機能は80%以上
+  - バックエンド: 現在353+テスト、高カバレッジ（inquiry: 91%、story: 86-100%、database接続テスト含む）、新機能は80%以上
   - InquiryRepository: 90%カバレッジ、17ユニットテスト
   - InquiryQueryService: 100%カバレッジ、12ユニットテスト
   - InquiryWorkflowService: 89%カバレッジ
@@ -183,6 +183,9 @@ npm test -- --coverage --watchAll=false
   - StoryStatus/Priority列挙型: 8ユニットテスト
   - Story Pydanticスキーマ: 100%カバレッジ、29ユニットテスト（CreateStoryRequest、UpdateStoryRequest、StoryResponse、StoryMetadata）
   - StoryValidator: 95%カバレッジ、26ユニットテスト（validate_create_request、validate_update_request、validate_generated_story、validate_inquiry_exists、GS-2xxエラーコード）
+  - StoryGenerationService: 88%カバレッジ、8ユニットテスト（OpenAI統合、リトライ戦略、ロールバック処理）
+  - StoryQueryService: 100%カバレッジ、28ユニットテスト（フィルタリング、ソート、ページネーション）
+  - StoryWorkflowService: 100%カバレッジ（承認・却下・一括承認ワークフロー）
   - フロントエンド: **現在91.02%カバレッジ**（54テスト、5スイート）、新機能は80%以上
   - InquiryForm.tsx: 100% statements、94.28% branches、100% functions（13テスト）
   - InquiryList.tsx: 84.21% statements、62.5% branches、81.81% functions（25テスト）
