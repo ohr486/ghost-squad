@@ -166,21 +166,21 @@
 
 ### 8. フロントエンド - 型定義とAPIクライアント
 
-- [ ] 8.1 (P) TypeScript型定義を実装する
+- [x] 8.1 (P) TypeScript型定義を実装する
   - StoryStatus、Priority列挙型を定義する
   - StoryResponse、CreateStoryRequest、UpdateStoryRequest型を定義する
   - PaginatedResponse<StoryResponse>型を定義する
   - バックエンドPydanticスキーマと型整合性を保証する
   - _Requirements: 4.7, 4.8_
 
-- [ ] 8.2 (P) Story APIクライアントを実装する
+- [x] 8.2 (P) Story APIクライアントを実装する
   - Axiosインスタンス作成（タイムアウト30秒、CORS設定）を実装する
   - エラーレスポンスインターセプター（ErrorResponse標準化）を実装する
   - createStory（手動作成）、generateStory（AI生成）、listStories、getStory、updateStory、deleteStory関数を実装する
   - approveStory、rejectStory、batchApproveStories関数を実装する
   - _Requirements: 2.1, 2.5, 2.6, 2.8, 2.15, 3.1, 3.4_
 
-- [ ] 8.3* APIクライアントの動作を検証する
+- [x] 8.3* APIクライアントの動作を検証する
   - モックサーバーを使用したAPIクライアントのテストを実施する
   - エラーハンドリング（ネットワークエラー、タイムアウト）を確認する
   - _Requirements: 2.1, 2.5, 2.6_
