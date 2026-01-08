@@ -88,15 +88,15 @@ POST   /api/inquiries/{id}/reject  # 却下処理
 # システムエンドポイント
 GET    /health                     # ヘルスチェック
 
-# 開発中（Story API - データモデル・リポジトリ実装完了）
-GET    /api/stories                # ストーリー一覧（未実装）
-GET    /api/stories/{id}           # ストーリー詳細（未実装）
-POST   /api/inquiries/{id}/stories # ストーリー生成（AI or 手動）（未実装）
-PUT    /api/stories/{id}           # ストーリー編集（未実装）
-POST   /api/stories/{id}/approve   # ストーリー承認（未実装）
-POST   /api/stories/{id}/reject    # ストーリー却下（未実装）
-DELETE /api/stories/{id}           # ストーリー削除（未実装）
-POST   /api/stories/batch-approve  # 一括承認（未実装）
+# 実装中（Story API - サービス層完了、API層実装中）
+GET    /api/stories                # ストーリー一覧（実装済み）
+GET    /api/stories/{id}           # ストーリー詳細（実装済み）
+POST   /api/inquiries/{id}/stories # ストーリー生成（AI or 手動）（実装済み）
+PUT    /api/stories/{id}           # ストーリー編集（実装済み）
+POST   /api/stories/{id}/approve   # ストーリー承認（実装済み）
+POST   /api/stories/{id}/reject    # ストーリー却下（実装済み）
+DELETE /api/stories/{id}           # ストーリー削除（実装済み）
+POST   /api/stories/batch-approve  # 一括承認（実装済み）
 
 # 将来実装
 GET    /api/templates          # テンプレート一覧
@@ -158,8 +158,16 @@ class Priority(Enum):
 - `received` → `rejected`: 却下操作
 - `received` → `needs_clarification`: 明確化要求（将来実装）
 - `needs_clarification` → `received`: 明確化完了（将来実装）
-- `task_working` → `processing`: AI変換開始（story specで実装予定）
-- `processing` → `completed`: タスク完了（story specで実装予定）
+- `task_working` → `processing`: AI変換開始（StoryGenerationServiceで実装済み）
+- `processing` → `completed`: タスク完了（StoryGenerationServiceで実装済み）
+
+**ストーリーワークフロー（実装済み）**
+
+ストーリーのステータス遷移は以下の通り：
+- `waiting_review` → `approved`: 承認操作（StoryWorkflowService）
+- `waiting_review` → `rejected`: 却下操作（StoryWorkflowService）
+- 却下時は理由（reason）が必須
+- ステータス履歴は story_metadata に記録される
 
 **実装済みフィールド設計**
 ```python

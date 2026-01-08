@@ -56,19 +56,19 @@ models/
   - データアクセス（`inquiry_repository.py` - CRUD操作、フィルタリング、ソート、ページネーション、90%カバレッジ）
   - クエリサービス（`inquiry_query_service.py` - 問い合わせ検索・一覧取得、100%カバレッジ）
   - ワークフローサービス（`inquiry_workflow_service.py` - 承認・却下処理、ステータス遷移管理、89%カバレッジ）
-- **Story関連（部分実装）**:
+- **Story関連（サービス層完了）**:
   - データアクセス（`story_repository.py` - CRUD操作、フィルタリング、ソート、ページネーション、86%カバレッジ）
   - クエリサービス（`story_query_service.py` - ストーリー検索・一覧取得、100%カバレッジ）
-  - バリデーション（`story_validator.py` - ストーリーデータ検証、100%カバレッジ）
-  - ワークフローサービス（`story_workflow_service.py` - 承認・却下処理、ステータス遷移管理、100%カバレッジ）
-  - AI統合（`story_generation_service.py` - OpenAI API統合、ストーリー自動生成、93%カバレッジ）
+  - バリデーション（`story_validator.py` - ストーリーデータ検証、95%カバレッジ）
+  - ワークフローサービス（`story_workflow_service.py` - 承認・却下処理、ステータス遷移管理、一括承認、100%カバレッジ）
+  - AI統合（`story_generation_service.py` - OpenAI API統合、ストーリー自動生成、リトライ戦略、88%カバレッジ）
 
 **API層** (`routers/`)
 - FastAPIルーター定義
 - エンドポイント実装
 - 依存性注入
 - **Inquiry API（実装済み）**: `inquiry.py` - CRUD + ワークフロー全エンドポイント
-- **Story API（未実装）**: `story.py` - CRUD + ワークフロー + AI変換エンドポイント
+- **Story API（実装済み）**: `story.py` - CRUD + ワークフロー + AI変換 + 一括承認エンドポイント
 
 **テスト** (`tests/`)
 - `conftest.py` - pytest設定・フィクスチャ

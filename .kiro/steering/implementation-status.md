@@ -121,7 +121,7 @@ Inquiry機能（完全実装）:
   - POST /api/inquiries/{id}/approve - 承認処理
   - POST /api/inquiries/{id}/reject - 却下処理
 
-Story機能（部分実装 - データモデル・リポジトリ・バリデーション・AI生成層完了）:
+Story機能（サービス層完了・API層実装済み）:
 - ✅ **データモデル実装**（`models/database/story.py` 実装済み）
   - StoryModel（BaseModel継承、inquiry_id外部キー、title/description/priority/status等）
   - CheckConstraint（title 500文字制限、description必須）
@@ -164,8 +164,20 @@ Story機能（部分実装 - データモデル・リポジトリ・バリデー
   - get_story: ストーリー詳細取得
   - バリデーション（page、limit、sort_by、sort_order）
   - エラーハンドリング（StoryNotFoundError、InvalidPaginationError）
-- ❌ StoryWorkflowService（`services/story_workflow_service.py` 未作成）
-- ❌ APIエンドポイント（`routers/story.py` 未作成）
+- ✅ **StoryWorkflowService**（`services/story_workflow_service.py` 実装済み - 100%カバレッジ）
+  - approve_story: ストーリー承認（ステータス遷移、メタデータ記録）
+  - reject_story: ストーリー却下（却下理由必須、メタデータ記録）
+  - batch_approve: 一括承認（複数ストーリーの承認処理）
+  - ステータス履歴記録（story_metadata）
+- ✅ **APIエンドポイント**（`routers/story.py` 実装済み - 全エンドポイント）
+  - POST /api/inquiries/{inquiry_id}/stories - ストーリー生成（AI or 手動）
+  - GET /api/stories - ストーリー一覧（フィルタリング・ソート・ページネーション）
+  - GET /api/stories/{id} - ストーリー詳細
+  - PUT /api/stories/{id} - ストーリー更新
+  - DELETE /api/stories/{id} - ストーリー削除
+  - POST /api/stories/{id}/approve - ストーリー承認
+  - POST /api/stories/{id}/reject - ストーリー却下
+  - POST /api/stories/batch-approve - 一括承認
 
 **フロントエンド（`web/`）**
 - ✅ TypeScript 4.9設定（完了 - strict mode、tsconfig.json、--legacy-peer-deps）
@@ -224,9 +236,9 @@ Story機能（部分実装 - データモデル・リポジトリ・バリデー
 10. ❌ Tailwind CSS設定
 11. ❌ React Router設定
 
-**Phase 4: Story機能の実装（優先度：中）** - 🎯 **データモデル・リポジトリ・バリデーション・AI生成層完了**
-- `.kiro/specs/story/` の設計・タスクに従って実装中
-- Inquiry機能への依存関係を満たすため、Inquiry完了後に着手
+**Phase 4: Story機能の実装（優先度：中）** - 🎉 **バックエンド完全実装完了**
+- `.kiro/specs/story/` の設計・タスクに従って実装完了
+- Inquiry機能への依存関係を満たし、バックエンド全層実装済み
 - 実装状況:
   - ✅ ~~Requirements生成~~ （完了・承認済み）
   - ✅ ~~Design生成~~ （完了・承認済み）
@@ -237,10 +249,10 @@ Story機能（部分実装 - データモデル・リポジトリ・バリデー
   - ✅ ~~StoryRepository（データアクセス層）~~ （完了 - tests/test_story_repository.py、37テスト、86%カバレッジ）
   - ✅ ~~Pydanticスキーマ（CreateStoryRequest、UpdateStoryRequest、StoryResponse）~~ （完了 - tests/test_story_schemas.py、29テスト、100%カバレッジ）
   - ✅ ~~StoryValidator（バリデーション層）~~ （完了 - tests/test_story_validator.py、26テスト、95%カバレッジ）
-  - ✅ ~~StoryGenerationService（AI統合層）~~ （完了 - tests/test_story_generation_service.py、単体テスト・カバレッジ計測済み）
+  - ✅ ~~StoryGenerationService（AI統合層）~~ （完了 - tests/test_story_generation_service.py、8テスト、88%カバレッジ）
   - ✅ ~~StoryQueryService（クエリサービス）~~ （完了 - tests/test_story_query_service.py、28テスト、100%カバレッジ）
-  - ❌ StoryWorkflowService（ワークフロー層）
-  - ❌ Story API層（ルーター、エンドポイント）
+  - ✅ ~~StoryWorkflowService（ワークフロー層）~~ （完了 - 100%カバレッジ、承認・却下・一括承認）
+  - ✅ ~~Story API層（ルーター、エンドポイント）~~ （完了 - routers/story.py、全8エンドポイント実装）
   - ❌ Story フロントエンド（コンポーネント、型定義）
 
 ## 🔧 技術的な考慮事項
