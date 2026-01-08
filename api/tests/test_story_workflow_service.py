@@ -412,9 +412,7 @@ class TestStoryWorkflowServiceEdgeCases:
         assert rejected_story.story_metadata["custom_field"] == "custom_value"
         assert "rejection" in rejected_story.story_metadata
 
-    def test_status_change_creates_history_entry(
-        self, service, db_session, inquiry
-    ):
+    def test_status_change_creates_history_entry(self, service, db_session, inquiry):
         """ステータス変更時に履歴エントリが作成される."""
         # 承認用のストーリーを作成
         story1 = StoryModel(

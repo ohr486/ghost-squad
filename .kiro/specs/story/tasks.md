@@ -115,14 +115,14 @@
 
 ### 6. バックエンド - クエリサービス
 
-- [ ] 6.1 (P) StoryQueryServiceを実装する
+- [x] 6.1 (P) StoryQueryServiceを実装する
   - フィルタリング条件の構築（status、priority、inquiry_id）を実装する
   - ソート順の適用（created_at、updated_at、priority、estimated_effort、assignee、deadline）を実装する
   - ページネーション処理（limit/offset）を実装する
   - ストーリー一覧取得（list_stories_with_filters）を実装する
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-- [ ] 6.2* クエリサービスの動作を検証する
+- [x] 6.2* クエリサービスの動作を検証する
   - フィルタリング・ソート・ページネーションの組み合わせをテストする
   - 複雑なクエリ条件の動作を確認する
   - _Requirements: 2.1, 2.2, 2.3, 2.4_
