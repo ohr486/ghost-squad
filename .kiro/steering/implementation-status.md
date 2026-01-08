@@ -56,6 +56,7 @@ inclusion: always
   - `Dockerfile` - --legacy-peer-deps対応
 - 型定義（`src/types/`）
   - `inquiry.ts` - Inquiry関連型定義（InquiryResponse、CreateInquiryRequest、ErrorResponse等）
+  - `story.ts` - Story関連型定義（StoryStatus、StoryResponse、CreateStoryRequest、ApproveStoryRequest等）
   - `index.ts` - 型エクスポート
 - コンポーネント（`src/components/`）
   - `InquiryForm.tsx` - 問い合わせ入力フォーム（React Hook Form + Zod、100% statements、94.28% branches）
@@ -65,11 +66,13 @@ inclusion: always
   - `index.ts` - コンポーネントエクスポート
 - APIクライアントサービス（`src/services/`）
   - `inquiryApi.ts` - 問い合わせAPI呼び出し実装（Axios、エラーインターセプター、86.11%カバレッジ）
+  - `storyApi.ts` - ストーリーAPI呼び出し実装（Axios、CRUD・ワークフロー・AI生成、82.45%カバレッジ）
   - `index.ts` - サービスエクスポート
 - テスト設定
   - `setupTests.ts` - TypeScript化、React act()警告抑制
   - `__mocks__/axios.ts` - Axiosマニュアルモック（エラーハンドリングテスト用）
   - `inquiryApi.test.ts` - APIクライアント包括的テスト（14テスト、エラーハンドリング含む）
+  - `storyApi.test.ts` - ストーリーAPIクライアント包括的テスト（18テスト、CRUD・ワークフロー・エラーハンドリング）
 - 依存関係定義（`package.json`、`package-lock.json`）
   - TypeScript 4.9.5: `@types/react`, `@types/react-dom`, `@types/node`, `@types/jest`
   - フォーム: `@hookform/resolvers@3.3.2`（固定）, `react-hook-form@7.43.0`（固定）, `zod@3.22.4`（固定）
@@ -253,7 +256,13 @@ Story機能（サービス層完了・API層実装済み）:
   - ✅ ~~StoryQueryService（クエリサービス）~~ （完了 - tests/test_story_query_service.py、28テスト、100%カバレッジ）
   - ✅ ~~StoryWorkflowService（ワークフロー層）~~ （完了 - 100%カバレッジ、承認・却下・一括承認）
   - ✅ ~~Story API層（ルーター、エンドポイント）~~ （完了 - routers/story.py、全8エンドポイント実装）
-  - ❌ Story フロントエンド（コンポーネント、型定義）
+  - 🚧 Story フロントエンド（部分実装 - 型定義・APIクライアント完了、UIコンポーネント未実装）
+    - ✅ TypeScript型定義（`src/types/story.ts` - StoryStatus、StoryResponse、CreateStoryRequest等）
+    - ✅ Story APIクライアント（`src/services/storyApi.ts` - CRUD・ワークフロー・AI生成、82.45%カバレッジ）
+    - ✅ APIクライアントテスト（`src/services/storyApi.test.ts` - 18テスト、全パス）
+    - ❌ StoryListコンポーネント（一覧表示、未実装）
+    - ❌ StoryFormコンポーネント（新規作成、未実装）
+    - ❌ StoryDetailコンポーネント（詳細・編集、未実装）
 
 ## 🔧 技術的な考慮事項
 
@@ -333,7 +342,7 @@ Story機能（サービス層完了・API層実装済み）:
 
 ## 📈 開発進捗追跡
 
-### 完了済み - 🎉 Inquiry完全実装 + Story基盤・バリデーション・AI生成層完了
+### 完了済み - 🎉 Inquiry完全実装 + Story API完全実装 + Story フロントエンド基盤完了
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
 - ✅ 仕様定義（Inquiry: implementation phase、Story: tasks-generated）
 - ✅ ステアリングドキュメント
@@ -353,7 +362,7 @@ Story機能（サービス層完了・API層実装済み）:
 - ✅ **InquiryListコンポーネント**（TanStack Query、ページネーション、フィルタ、84.21% statements）
 - ✅ **InquiryDetailコンポーネント**（詳細表示、編集、承認・却下、94.64% statements、86.36% branches）
 - ✅ **TanStack React Query基盤**（サーバー状態管理、全コンポーネントで活用）
-- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、66テスト、81.09%カバレッジ）
+- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、84テスト、81.39%カバレッジ）
 - ✅ **コード品質基盤**（Prettier + ESLint設定、全チェック通過）
 - ✅ **Storyデータモデル**（StoryModel、StoryStatus/Priority列挙型、26+8テスト）
 - ✅ **Story Alembicマイグレーション**（storiesテーブル、外部キー、インデックス）
@@ -362,34 +371,33 @@ Story機能（サービス層完了・API層実装済み）:
 - ✅ **StoryValidator**（バリデーション層、26テスト、95%カバレッジ、GS-2xxエラーコード体系）
 - ✅ **StoryGenerationService**（AI生成層、8テスト、88%カバレッジ、OpenAI GPT-4統合、リトライ戦略）
 - ✅ **StoryQueryService**（クエリサービス層、28テスト、100%カバレッジ、フィルタリング・ソート・ページネーション）
+- ✅ **StoryWorkflowService**（ワークフロー層、100%カバレッジ、承認・却下・一括承認）
+- ✅ **Story API層完全実装**（routers/story.py、全8エンドポイント - CRUD・ワークフロー・AI生成）
+- ✅ **Story型定義**（src/types/story.ts、StoryStatus/StoryResponse/各種Request型）
+- ✅ **Story APIクライアント**（src/services/storyApi.ts、18テスト、82.45%カバレッジ、CRUD・ワークフロー・AI生成）
 
-### 進行中（1%）
-- 🔄 Story機能実装（WorkflowService、API、フロントエンド）
+### 進行中（5%）
+- 🔄 Story UIコンポーネント実装（StoryList、StoryForm、StoryDetail）
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
-### 未着手（12%）
+### 未着手（8%）
 - ❌ Inquiry機能のページレイアウト・ルーティング統合
-- ❌ Story機能のサービス層（Workflow）・API層・フロントエンド実装
+- ❌ Story UIコンポーネント（タスク9-12: StoryList、StoryForm、StoryDetail、統合）
 - ❌ E2Eテスト・統合テスト
 
 ---
 
-**最終更新**: 2026年1月8日
-**更新理由**: Story機能クエリサービス層実装完了（タスク6.1、6.2）
-- StoryQueryService実装完了（63行、100%カバレッジ）
-  - list_stories: フィルタリング（status、priority、inquiry_id）・ソート（6フィールド）・ページネーション
-  - get_story: ストーリー詳細取得
-  - バリデーション（page、limit、sort_by、sort_order）
-  - エラーハンドリング（StoryNotFoundError、InvalidPaginationError）
-  - nullslast使用によるNULL値の一貫した扱い
-- 包括的テスト実装（28テスト、542行）
-  - フィルタリング（単一・複数条件、組み合わせ）
-  - ソート（全6フィールド、昇順・降順）
-  - ページネーション（各ページ、範囲外、エッジケース）
-  - バリデーション（不正パラメータ）
-  - 複雑なクエリ条件
-- InquiryQueryServiceパターンを踏襲した一貫性のある設計
-- 全353+テスト合格、100%カバレッジ（StoryQueryService）、lint合格
-- 進捗率更新: 86% → 87%（完了済み）、2% → 1%（進行中）
-- 次のステップ: StoryWorkflowService、API層、フロントエンド
+**最終更新**: 2026年1月9日
+**更新理由**: Story機能フロントエンド基盤完了（タスク8.1、8.2、8.3）
+- Story型定義実装完了（src/types/story.ts）
+  - StoryStatus/StoryResponse/CreateStoryRequest/ApproveStoryRequest等
+  - Priority型をInquiryから共通化
+- Story APIクライアント実装完了（src/services/storyApi.ts、82.45%カバレッジ）
+  - createStory、generateStory、listStories、getStory、updateStory、deleteStory
+  - approveStory、rejectStory、batchApproveStories
+  - エラーハンドリング、30秒タイムアウト、CORS設定
+- Story APIクライアントテスト完了（src/services/storyApi.test.ts、18テスト）
+  - CRUD操作・ワークフロー・エラーハンドリング・ネットワークエラー
+- フロントエンド全体: 84テスト、81.39%カバレッジ（+18テスト）
+- 次のステップ: StoryList、StoryForm、StoryDetailコンポーネント実装（タスク9-12）
