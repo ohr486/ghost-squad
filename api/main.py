@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
-from routers import inquiry
+from routers import inquiry, story
 
 app = FastAPI(
     title="Ghost Squad API",
@@ -22,6 +22,7 @@ app.add_middleware(
 
 # ルーター登録
 app.include_router(inquiry.router)
+app.include_router(story.router)
 
 
 @app.get("/")
