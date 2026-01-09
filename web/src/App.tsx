@@ -94,7 +94,7 @@ function AppContent(): JSX.Element {
     if (data) {
       await createStory(inquiryId, data);
       // ストーリー一覧を再取得
-      qc.invalidateQueries({ queryKey: ["stories"] });
+      queryClientFromContext.invalidateQueries({ queryKey: ["stories"] });
     }
   };
 

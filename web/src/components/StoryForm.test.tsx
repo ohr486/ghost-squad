@@ -4,7 +4,7 @@
  * 要件: 2.11, 2.12, 2.13, 5.15, 5.16, 5.17, 5.18, 5.19, 5.20, 5.21, 5.22
  */
 
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { StoryForm, StoryFormProps } from "./StoryForm";
 import type {
@@ -215,11 +215,13 @@ describe("StoryForm", () => {
 
       render(<StoryForm {...emptyInquiriesProps} isOpen={true} />);
 
-      // ドロップダウンを取得
-      const inquirySelect = screen.getByLabelText(/問い合わせ/i);
+      // ドロップダウンを取得（Testing Libraryのメソッドを使用）
+      const inquirySelect = screen.getByRole("combobox", {
+        name: /問い合わせ/i,
+      });
 
-      // プレースホルダーオプションのみ存在すること
-      const options = inquirySelect.querySelectorAll("option");
+      // プレースホルダーオプションのみ存在すること（within で select 内に絞る）
+      const options = within(inquirySelect).getAllByRole("option");
       expect(options).toHaveLength(1);
       expect(options[0]).toHaveTextContent("問い合わせを選択してください");
     });
@@ -688,11 +690,7 @@ describe("StoryForm", () => {
 
     test("モーダルが閉じられた時にフォームがリセットされること", async () => {
       const { rerender } = render(
-        <StoryForm
-          {...defaultProps}
-          isOpen={true}
-          onSubmit={mockOnSubmit}
-        />,
+        <StoryForm {...defaultProps} isOpen={true} onSubmit={mockOnSubmit} />,
       );
 
       // フォームにデータを入力
@@ -713,20 +711,12 @@ describe("StoryForm", () => {
 
       // モーダルを閉じる
       rerender(
-        <StoryForm
-          {...defaultProps}
-          isOpen={false}
-          onSubmit={mockOnSubmit}
-        />,
+        <StoryForm {...defaultProps} isOpen={false} onSubmit={mockOnSubmit} />,
       );
 
       // モーダルを再度開く
       rerender(
-        <StoryForm
-          {...defaultProps}
-          isOpen={true}
-          onSubmit={mockOnSubmit}
-        />,
+        <StoryForm {...defaultProps} isOpen={true} onSubmit={mockOnSubmit} />,
       );
 
       // フォームがリセットされていることを確認
