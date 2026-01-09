@@ -51,11 +51,12 @@ const storyFormSchema = z.object({
     required_error: "優先度を選択してください",
   }),
   estimated_effort: z
-    .number()
-    .min(0, "推定工数は0以上の数値を入力してください")
+    .union([
+      z.number().min(0, "推定工数は0以上の数値を入力してください"),
+      z.null(),
+    ])
     .optional()
-    .nullable()
-    .transform((val) => (val === null ? undefined : val)),
+    .transform((val) => (val == null ? undefined : val)),
   assignee: z
     .string()
     .max(50, "担当者は50文字以内で入力してください")
