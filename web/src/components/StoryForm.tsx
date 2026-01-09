@@ -326,7 +326,11 @@ export const StoryForm: React.FC<StoryFormProps> = ({
                     `}
                     disabled={isLoading}
                   >
-                    <option value="">問い合わせを選択してください</option>
+                    <option value="">
+                      {isLoading && inquiries.length === 0
+                        ? "読み込み中..."
+                        : "問い合わせを選択してください"}
+                    </option>
                     {inquiries.map((inquiry) => (
                       <option key={inquiry.id} value={inquiry.id}>
                         {inquiry.content.length > 50

@@ -42,11 +42,11 @@ function AppContent(): JSX.Element {
   const queryClientFromContext = useQueryClient();
 
   // 問い合わせ一覧を取得（StoryForm用）
-  const { data: inquiriesData } = useQuery({
+  // APIの制限により、limitは最大100まで
+  // 100件以上の問い合わせがある場合は、検索機能の導入を検討する
+  const { data: inquiriesData, isLoading: isLoadingInquiries } = useQuery({
     queryKey: ["inquiries-for-story-form"],
-    // StoryFormのドロップダウン用に十分な件数を取得するため、上限を1000件に拡大
-    // それ以上の件数が必要になった場合は、検索やページネーションの導入を検討する
-    queryFn: () => listInquiries({ limit: 1000 }),
+    queryFn: () => listInquiries({ limit: 100 }),
     enabled: showStoryForm, // StoryFormが表示されている時のみ取得
   });
 
@@ -214,6 +214,7 @@ function AppContent(): JSX.Element {
         onSubmit={handleStoryFormSubmit}
         onClose={handleStoryFormClose}
         onCancel={handleStoryFormClose}
+        isLoading={isLoadingInquiries}
       />
     </div>
   );
