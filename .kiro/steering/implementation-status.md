@@ -256,13 +256,14 @@ Story機能（サービス層完了・API層実装済み）:
   - ✅ ~~StoryQueryService（クエリサービス）~~ （完了 - tests/test_story_query_service.py、28テスト、100%カバレッジ）
   - ✅ ~~StoryWorkflowService（ワークフロー層）~~ （完了 - 100%カバレッジ、承認・却下・一括承認）
   - ✅ ~~Story API層（ルーター、エンドポイント）~~ （完了 - routers/story.py、全8エンドポイント実装）
-  - 🚧 Story フロントエンド（部分実装 - 型定義・APIクライアント・StoryList完了）
+  - 🚧 Story フロントエンド（部分実装 - 型定義・APIクライアント・StoryList・StoryForm完了）
     - ✅ TypeScript型定義（`src/types/story.ts` - StoryStatus、StoryResponse、CreateStoryRequest等）
     - ✅ Story APIクライアント（`src/services/storyApi.ts` - CRUD・ワークフロー・AI生成、82.45%カバレッジ）
     - ✅ APIクライアントテスト（`src/services/storyApi.test.ts` - 18テスト、全パス）
     - ✅ **StoryListコンポーネント**（`src/components/StoryList.tsx` - 一覧表示、ページネーション、フィルタリング、ソート、95.83% statements）
     - ✅ **StoryListテスト**（`src/components/StoryList.test.tsx` - 22テスト、ローディング・エラー・一覧表示・ページネーション・フィルタリング・ソート・キーボードナビゲーション）
-    - ❌ StoryFormコンポーネント（新規作成、未実装）
+    - ✅ **StoryFormコンポーネント**（`src/components/StoryForm.tsx` - モーダルフォーム、React Hook Form + Zod、問い合わせ選択・プレビュー）
+    - ✅ **StoryFormテスト**（`src/components/StoryForm.test.tsx` - 23テスト、バリデーション・問い合わせ選択・作成成功/失敗）
     - ❌ StoryDetailコンポーネント（詳細・編集、未実装）
 
 ## 🔧 技術的な考慮事項
@@ -378,42 +379,41 @@ Story機能（サービス層完了・API層実装済み）:
 - ✅ **Story APIクライアント**（src/services/storyApi.ts、18テスト、82.45%カバレッジ、CRUD・ワークフロー・AI生成）
 
 ### 進行中（10%）
-- 🔄 Story UIコンポーネント実装（StoryForm、StoryDetail）
+- 🔄 Story UIコンポーネント実装（StoryDetail）
   - ✅ StoryList完了（タスク9.1、9.2）
-  - ❌ StoryForm（タスク10.1、10.2）
+  - ✅ StoryForm完了（タスク10.1、10.2）
   - ❌ StoryDetail（タスク11.1、11.2）
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
 ### 未着手（5%）
 - ❌ Inquiry機能のページレイアウト・ルーティング統合
-- ❌ Story UIコンポーネント（タスク10-12: StoryForm、StoryDetail、統合）
+- ❌ Story UIコンポーネント（タスク11-12: StoryDetail、統合）
 - ❌ E2Eテスト・統合テスト
 
 ---
 
-**最終更新**: 2026年1月9日
-**更新理由**: StoryListコンポーネント実装完了（タスク9.1、9.2）
-- StoryListコンポーネント実装完了（src/components/StoryList.tsx、95.83% statements）
-  - TanStack React Query統合（サーバー状態管理）
-  - ページネーション機能（前へ・次へボタン、ページ情報表示）
-  - ステータスフィルタリング（waiting_review、approved、rejected）
-  - ソート機能（作成日時、更新日時、優先度、推定工数、担当者、期限）
-  - 行クリックナビゲーション（onStoryClickコールバック）
-  - 新規ストーリー作成ボタン（onCreateStoryClickコールバック）
-  - 説明文100文字省略表示
-  - ローディング・エラー状態表示
-  - アクセシビリティ対応（ARIA、キーボードナビゲーション）
-- StoryListテスト完了（src/components/StoryList.test.tsx、22テスト）
-  - ローディング状態テスト（1テスト）
-  - エラー状態テスト（2テスト）
-  - ストーリー一覧表示テスト（5テスト）
-  - 新規ストーリー作成ボタンテスト（2テスト）
-  - ページネーションテスト（5テスト）
-  - ステータスフィルタリングテスト（3テスト）
-  - 行クリック・キーボードナビゲーションテスト（3テスト）
-  - ソート機能テスト（2テスト）
-- App.tsx統合（タブナビゲーション追加、ブラウザ動作確認可能）
+**最終更新**: 2026年1月10日
+**更新理由**: StoryFormコンポーネント実装完了（タスク10.1、10.2）
+- StoryFormコンポーネント実装完了（src/components/StoryForm.tsx）
+  - モーダルダイアログでストーリー作成フォームを表示
+  - React Hook Form + Zod バリデーション
+  - 問い合わせID選択ドロップダウン（問い合わせ内容・ステータスプレビュー付き）
+  - タイトル、説明、優先度、推定工数、担当者、期限の入力フィールド
+  - リアルタイムバリデーション（タイトル500文字以内、必須フィールド）
+  - 作成成功時にフォームを閉じ、ストーリー一覧を再取得
+  - エラーハンドリング・成功通知（react-hot-toast）
+- StoryFormテスト完了（src/components/StoryForm.test.tsx、23テスト）
+  - レンダリングテスト（3テスト）
+  - 問い合わせ選択テスト（4テスト）
+  - バリデーションテスト（4テスト）
+  - フォーム送信テスト（4テスト）
+  - エラーハンドリングテスト（2テスト）
+  - ローディング状態テスト（2テスト）
+  - キャンセル機能テスト（2テスト）
+  - 優先度選択テスト（1テスト）
+  - 初期データテスト（1テスト）
+- App.tsx統合（StoryFormモーダル表示、問い合わせ一覧取得、ストーリー作成後のキャッシュ更新）
 - コンポーネントエクスポート追加（src/components/index.ts）
-- フロントエンド全体: 106テスト、カバレッジ更新（+22テスト）
-- 次のステップ: StoryForm、StoryDetailコンポーネント実装（タスク10-12）
+- フロントエンド全体: 132テスト（+26テスト）
+- 次のステップ: StoryDetailコンポーネント実装（タスク11.1、11.2）、統合・E2Eテスト（タスク12）
