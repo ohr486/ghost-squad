@@ -96,7 +96,6 @@ function AppContent(): JSX.Element {
       // ストーリー一覧を再取得
       qc.invalidateQueries({ queryKey: ["stories"] });
     }
-    setShowStoryForm(false);
   };
 
   const handleTabChange = (tab: Tab) => {
