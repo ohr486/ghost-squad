@@ -13,3 +13,6 @@ export type { InquiryDetailProps } from "./InquiryDetail";
 
 export { default as StoryList } from "./StoryList";
 export type { StoryListProps } from "./StoryList";
+
+export { StoryForm } from "./StoryForm";
+export type { StoryFormProps } from "./StoryForm";
