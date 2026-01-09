@@ -39,7 +39,7 @@ function AppContent(): JSX.Element {
   const [showStoryForm, setShowStoryForm] = useState(false);
 
   // QueryClientを取得（ストーリー作成後のキャッシュ更新用）
-  const qc = useQueryClient();
+  const queryClientFromContext = useQueryClient();
 
   // 問い合わせ一覧を取得（StoryForm用）
   const { data: inquiriesData } = useQuery({
