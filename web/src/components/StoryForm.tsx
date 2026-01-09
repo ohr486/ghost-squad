@@ -81,6 +81,31 @@ const PRIORITY_LABELS: Record<Priority, string> = {
 };
 
 /**
+ * ステータスラベルマッピング
+ */
+const STATUS_LABELS: Record<string, string> = {
+  received: "受付済み",
+  processing: "AI処理中",
+  needs_clarification: "明確化要求",
+  task_working: "タスク作業中",
+  completed: "完了",
+  rejected: "却下済み",
+  failed: "失敗",
+};
+
+/**
+ * ErrorResponse型ガード
+ */
+const isErrorResponse = (error: unknown): error is ErrorResponse => {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "errors" in error &&
+    Array.isArray((error as ErrorResponse).errors)
+  );
+};
+
+/**
  * StoryFormプロパティ
  */
 export interface StoryFormProps {
@@ -224,25 +249,6 @@ export const StoryForm: React.FC<StoryFormProps> = ({
   };
 
   /**
-   * ErrorResponse型ガード
-   */
-  const isErrorResponse = (error: unknown): error is ErrorResponse => {
-    return (
-      typeof error === "object" &&
-      error !== null &&
-      "errors" in error &&
-      Array.isArray((error as ErrorResponse).errors)
-    );
-  };
-
-  /**
-   * キャンセルハンドラ
-   */
-  const handleCancel = () => {
-    onCancel?.();
-  };
-
-  /**
    * 背景クリックハンドラ
    */
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -352,7 +358,8 @@ export const StoryForm: React.FC<StoryFormProps> = ({
                               : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {selectedInquiry.status}
+                      {STATUS_LABELS[selectedInquiry.status] ||
+                        selectedInquiry.status}
                     </span>
                   </p>
                   <p className="mt-1 text-sm text-gray-600">
@@ -558,7 +565,7 @@ export const StoryForm: React.FC<StoryFormProps> = ({
             <div className="flex justify-end gap-4 pt-4 border-t border-gray-200">
               <button
                 type="button"
-                onClick={handleCancel}
+                onClick={onCancel}
                 disabled={isLoading}
                 className={`
                   px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-md

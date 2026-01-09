@@ -176,7 +176,7 @@ describe("StoryForm", () => {
 
       // プレビュー表示を確認（ステータス表示）
       await waitFor(() => {
-        expect(screen.getByText(/task_working/i)).toBeInTheDocument();
+        expect(screen.getByText(/タスク作業中/i)).toBeInTheDocument();
       });
     });
 
@@ -205,6 +205,23 @@ describe("StoryForm", () => {
 
       // onSubmitが呼ばれていないこと
       expect(mockOnSubmit).not.toHaveBeenCalled();
+    });
+
+    test("問い合わせリストが空の場合、プレースホルダーのみ表示されること", () => {
+      const emptyInquiriesProps: StoryFormProps = {
+        ...defaultProps,
+        inquiries: [],
+      };
+
+      render(<StoryForm {...emptyInquiriesProps} isOpen={true} />);
+
+      // ドロップダウンを取得
+      const inquirySelect = screen.getByLabelText(/問い合わせ/i);
+
+      // プレースホルダーオプションのみ存在すること
+      const options = inquirySelect.querySelectorAll("option");
+      expect(options).toHaveLength(1);
+      expect(options[0]).toHaveTextContent("問い合わせを選択してください");
     });
   });
 
@@ -327,6 +344,43 @@ describe("StoryForm", () => {
       // onSubmitが呼ばれていないこと
       expect(mockOnSubmit).not.toHaveBeenCalled();
     });
+
+    test("担当者が50文字を超える場合、バリデーションエラーが表示されること", async () => {
+      render(
+        <StoryForm {...defaultProps} isOpen={true} onSubmit={mockOnSubmit} />,
+      );
+
+      // 問い合わせを選択
+      const inquirySelect = screen.getByLabelText(/問い合わせ/i);
+      await user.selectOptions(inquirySelect, "1");
+
+      // フォームに入力
+      const titleInput = screen.getByLabelText(/タイトル/i);
+      const descriptionTextarea = screen.getByLabelText(/説明/i);
+      const assigneeInput = screen.getByLabelText(/担当者/i);
+
+      await user.type(titleInput, "テストストーリー");
+      await user.type(descriptionTextarea, "テストの説明です");
+      // 51文字の担当者名を入力
+      await user.type(
+        assigneeInput,
+        "a".repeat(51),
+      );
+
+      // 送信ボタンをクリック
+      const submitButton = screen.getByRole("button", { name: /作成/i });
+      await user.click(submitButton);
+
+      // バリデーションエラーメッセージが表示されること
+      await waitFor(() => {
+        expect(
+          screen.getByText(/担当者は50文字以内で入力してください/i),
+        ).toBeInTheDocument();
+      });
+
+      // onSubmitが呼ばれていないこと
+      expect(mockOnSubmit).not.toHaveBeenCalled();
+    });
   });
 
   describe("フォーム送信", () => {
@@ -393,7 +447,7 @@ describe("StoryForm", () => {
 
       await user.type(estimatedEffortInput, "8");
       await user.type(assigneeInput, "developer_001");
-      await user.type(deadlineInput, "2024-12-31");
+      await user.type(deadlineInput, "2027-12-31");
 
       // 送信ボタンをクリック
       const submitButton = screen.getByRole("button", { name: /作成/i });
@@ -407,7 +461,7 @@ describe("StoryForm", () => {
           priority: "high",
           estimated_effort: 8,
           assignee: "developer_001",
-          deadline: "2024-12-31T00:00:00.000Z",
+          deadline: "2027-12-31T00:00:00.000Z",
         });
       });
     });
@@ -630,7 +684,60 @@ describe("StoryForm", () => {
       );
 
       // 問い合わせプレビューが表示されていること
-      expect(screen.getByText(/task_working/i)).toBeInTheDocument();
+      expect(screen.getByText(/タスク作業中/i)).toBeInTheDocument();
+    });
+
+    test("モーダルが閉じられた時にフォームがリセットされること", async () => {
+      const { rerender } = render(
+        <StoryForm
+          {...defaultProps}
+          isOpen={true}
+          onSubmit={mockOnSubmit}
+        />,
+      );
+
+      // フォームにデータを入力
+      const inquirySelect = screen.getByLabelText(/問い合わせ/i);
+      const titleInput = screen.getByLabelText(/タイトル/i);
+      const descriptionTextarea = screen.getByLabelText(/説明/i);
+
+      await user.selectOptions(inquirySelect, "1");
+      await user.type(titleInput, "テストタイトル");
+      await user.type(descriptionTextarea, "テスト説明");
+
+      // データが入力されていることを確認
+      expect((inquirySelect as HTMLSelectElement).value).toBe("1");
+      expect((titleInput as HTMLInputElement).value).toBe("テストタイトル");
+      expect((descriptionTextarea as HTMLTextAreaElement).value).toBe(
+        "テスト説明",
+      );
+
+      // モーダルを閉じる
+      rerender(
+        <StoryForm
+          {...defaultProps}
+          isOpen={false}
+          onSubmit={mockOnSubmit}
+        />,
+      );
+
+      // モーダルを再度開く
+      rerender(
+        <StoryForm
+          {...defaultProps}
+          isOpen={true}
+          onSubmit={mockOnSubmit}
+        />,
+      );
+
+      // フォームがリセットされていることを確認
+      const newInquirySelect = screen.getByLabelText(/問い合わせ/i);
+      const newTitleInput = screen.getByLabelText(/タイトル/i);
+      const newDescriptionTextarea = screen.getByLabelText(/説明/i);
+
+      expect((newInquirySelect as HTMLSelectElement).value).toBe("");
+      expect((newTitleInput as HTMLInputElement).value).toBe("");
+      expect((newDescriptionTextarea as HTMLTextAreaElement).value).toBe("");
     });
   });
 });
