@@ -112,7 +112,7 @@ const StoryList: React.FC<StoryListProps> = ({
    * ソート順変更ハンドラ
    */
   const handleSortChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newSortBy = event.target.value;
+    const newSortBy = event.target.value as ListStoriesParams["sort_by"];
     setSortBy(newSortBy);
     setCurrentPage(1); // ソート変更時は1ページ目にリセット
   };
