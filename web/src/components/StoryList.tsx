@@ -55,7 +55,8 @@ const StoryList: React.FC<StoryListProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedStatus, setSelectedStatus] = useState<StoryStatus | "">("");
-  const [sortBy, setSortBy] = useState<ListStoriesParams["sort_by"]>("created_at");
+  const [sortBy, setSortBy] =
+    useState<ListStoriesParams["sort_by"]>("created_at");
   const [sortOrder] = useState<"asc" | "desc">("desc");
   const limit = 20;
 
