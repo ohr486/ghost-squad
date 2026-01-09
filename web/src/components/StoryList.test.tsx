@@ -4,8 +4,7 @@
  * 要件: 5.1, 5.4, 5.5, 5.10, 5.11, 5.12
  */
 
-import React from "react";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import StoryList from "./StoryList";
@@ -143,10 +142,11 @@ describe("StoryList Component", () => {
 
       await waitFor(() => {
         expect(screen.getByText("#1")).toBeInTheDocument();
-        expect(screen.getByText("ユーザー登録機能の実装")).toBeInTheDocument();
-        expect(screen.getByText("#2")).toBeInTheDocument();
-        expect(screen.getByText("ログイン機能の改善")).toBeInTheDocument();
       });
+
+      expect(screen.getByText("ユーザー登録機能の実装")).toBeInTheDocument();
+      expect(screen.getByText("#2")).toBeInTheDocument();
+      expect(screen.getByText("ログイン機能の改善")).toBeInTheDocument();
     });
 
     it("ストーリーのステータスを日本語で表示する", async () => {
@@ -155,12 +155,14 @@ describe("StoryList Component", () => {
       renderComponent();
 
       await waitFor(() => {
-        const waitingReviewElements = screen.getAllByText("レビュー待ち");
-        expect(waitingReviewElements.length).toBeGreaterThan(0);
-
-        const approvedElements = screen.getAllByText("承認済み");
-        expect(approvedElements.length).toBeGreaterThan(0);
+        expect(screen.getByText("#1")).toBeInTheDocument();
       });
+
+      const waitingReviewElements = screen.getAllByText("レビュー待ち");
+      expect(waitingReviewElements.length).toBeGreaterThan(0);
+
+      const approvedElements = screen.getAllByText("承認済み");
+      expect(approvedElements.length).toBeGreaterThan(0);
     });
 
     it("ストーリーの優先度を日本語で表示する", async () => {
@@ -170,8 +172,9 @@ describe("StoryList Component", () => {
 
       await waitFor(() => {
         expect(screen.getByText("高")).toBeInTheDocument();
-        expect(screen.getByText("中")).toBeInTheDocument();
       });
+
+      expect(screen.getByText("中")).toBeInTheDocument();
     });
 
     it("説明文を100文字で省略表示する", async () => {
@@ -284,8 +287,7 @@ describe("StoryList Component", () => {
       renderComponent();
 
       await waitFor(() => {
-        const nextButtons = screen.getAllByText("次へ");
-        expect(nextButtons.length).toBeGreaterThan(0);
+        expect(screen.getAllByText("次へ").length).toBeGreaterThan(0);
       });
 
       const nextButtons = screen.getAllByText("次へ");
@@ -293,12 +295,13 @@ describe("StoryList Component", () => {
 
       await waitFor(() => {
         expect(mockedListStories).toHaveBeenCalledTimes(2);
-        expect(mockedListStories).toHaveBeenLastCalledWith({
-          page: 2,
-          limit: 20,
-          sort_by: "created_at",
-          sort_order: "desc",
-        });
+      });
+
+      expect(mockedListStories).toHaveBeenLastCalledWith({
+        page: 2,
+        limit: 20,
+        sort_by: "created_at",
+        sort_order: "desc",
       });
     });
 
@@ -381,8 +384,7 @@ describe("StoryList Component", () => {
       renderComponent();
 
       await waitFor(() => {
-        const nextButtons = screen.getAllByText("次へ");
-        expect(nextButtons.length).toBeGreaterThan(0);
+        expect(screen.getAllByText("次へ").length).toBeGreaterThan(0);
       });
 
       // Navigate to page 2
@@ -425,10 +427,10 @@ describe("StoryList Component", () => {
         expect(screen.getByText("#1")).toBeInTheDocument();
       });
 
-      const firstRow = screen.getByText("#1").closest("tr");
-      if (firstRow) {
-        await userEvent.click(firstRow);
-      }
+      // Use getByRole to find the row
+      const rows = screen.getAllByRole("row");
+      const firstDataRow = rows[1]; // Skip header row
+      await userEvent.click(firstDataRow);
 
       expect(onStoryClick).toHaveBeenCalledWith(1);
     });
@@ -443,11 +445,11 @@ describe("StoryList Component", () => {
         expect(screen.getByText("#1")).toBeInTheDocument();
       });
 
-      const firstRow = screen.getByText("#1").closest("tr");
-      if (firstRow) {
-        firstRow.focus();
-        await userEvent.keyboard("{Enter}");
-      }
+      // Use getByRole to find the row
+      const rows = screen.getAllByRole("row");
+      const firstDataRow = rows[1]; // Skip header row
+      firstDataRow.focus();
+      await userEvent.keyboard("{Enter}");
 
       expect(onStoryClick).toHaveBeenCalledWith(1);
     });
@@ -462,11 +464,11 @@ describe("StoryList Component", () => {
         expect(screen.getByText("#1")).toBeInTheDocument();
       });
 
-      const firstRow = screen.getByText("#1").closest("tr");
-      if (firstRow) {
-        firstRow.focus();
-        await userEvent.keyboard(" ");
-      }
+      // Use getByRole to find the row
+      const rows = screen.getAllByRole("row");
+      const firstDataRow = rows[1]; // Skip header row
+      firstDataRow.focus();
+      await userEvent.keyboard(" ");
 
       expect(onStoryClick).toHaveBeenCalledWith(1);
     });
