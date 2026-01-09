@@ -10,3 +10,6 @@ export type { InquiryListProps } from "./InquiryList";
 
 export { default as InquiryDetail } from "./InquiryDetail";
 export type { InquiryDetailProps } from "./InquiryDetail";
+
+export { default as StoryList } from "./StoryList";
+export type { StoryListProps } from "./StoryList";
