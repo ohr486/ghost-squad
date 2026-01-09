@@ -8,7 +8,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listStories } from "../services/storyApi";
-import type { StoryStatus, Priority } from "../types";
+import type { StoryStatus, Priority, ListStoriesParams } from "../types";
 
 export interface StoryListProps {
   onStoryClick: (storyId: number) => void;
@@ -55,7 +55,7 @@ const StoryList: React.FC<StoryListProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedStatus, setSelectedStatus] = useState<StoryStatus | "">("");
-  const [sortBy, setSortBy] = useState<string>("created_at");
+  const [sortBy, setSortBy] = useState<ListStoriesParams["sort_by"]>("created_at");
   const [sortOrder] = useState<"asc" | "desc">("desc");
   const limit = 20;
 
@@ -67,7 +67,7 @@ const StoryList: React.FC<StoryListProps> = ({
         page: currentPage,
         limit,
         ...(selectedStatus && { status: selectedStatus }),
-        sort_by: sortBy as any,
+        sort_by: sortBy,
         sort_order: sortOrder,
       }),
   });
