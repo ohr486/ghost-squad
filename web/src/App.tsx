@@ -44,7 +44,9 @@ function AppContent(): JSX.Element {
   // 問い合わせ一覧を取得（StoryForm用）
   const { data: inquiriesData } = useQuery({
     queryKey: ["inquiries-for-story-form"],
-    queryFn: () => listInquiries({ limit: 100 }),
+    // StoryFormのドロップダウン用に十分な件数を取得するため、上限を1000件に拡大
+    // それ以上の件数が必要になった場合は、検索やページネーションの導入を検討する
+    queryFn: () => listInquiries({ limit: 1000 }),
     enabled: showStoryForm, // StoryFormが表示されている時のみ取得
   });
 
