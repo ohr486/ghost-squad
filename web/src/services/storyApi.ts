@@ -108,9 +108,7 @@ export async function generateStory(inquiryId: number): Promise<StoryResponse> {
  * @param params ListStoriesParams型のパラメータ
  * @returns クエリパラメータオブジェクト
  */
-function buildQueryParams(
-  params?: ListStoriesParams,
-): Record<string, string> {
+function buildQueryParams(params?: ListStoriesParams): Record<string, string> {
   const queryParams: Record<string, string> = {};
 
   if (params?.page !== undefined) {
