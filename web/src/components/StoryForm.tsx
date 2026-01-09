@@ -20,6 +20,7 @@ import type {
   CreateStoryRequest,
   ErrorResponse,
   InquiryResponse,
+  InquiryStatus,
   Priority,
 } from "../types";
 
@@ -83,7 +84,7 @@ const PRIORITY_LABELS: Record<Priority, string> = {
 /**
  * ステータスラベルマッピング
  */
-const STATUS_LABELS: Record<string, string> = {
+const STATUS_LABELS: Record<InquiryStatus, string> = {
   received: "受付済み",
   processing: "AI処理中",
   needs_clarification: "明確化要求",

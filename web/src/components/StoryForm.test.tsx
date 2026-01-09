@@ -346,6 +346,8 @@ describe("StoryForm", () => {
     });
 
     test("担当者が50文字を超える場合、バリデーションエラーが表示されること", async () => {
+      const ASSIGNEE_MAX_LENGTH_PLUS_ONE = 51;
+
       render(
         <StoryForm {...defaultProps} isOpen={true} onSubmit={mockOnSubmit} />,
       );
@@ -361,11 +363,8 @@ describe("StoryForm", () => {
 
       await user.type(titleInput, "テストストーリー");
       await user.type(descriptionTextarea, "テストの説明です");
-      // 51文字の担当者名を入力
-      await user.type(
-        assigneeInput,
-        "a".repeat(51),
-      );
+      // 最大長を超える担当者名を入力（50文字を超える51文字）
+      await user.type(assigneeInput, "a".repeat(ASSIGNEE_MAX_LENGTH_PLUS_ONE));
 
       // 送信ボタンをクリック
       const submitButton = screen.getByRole("button", { name: /作成/i });
