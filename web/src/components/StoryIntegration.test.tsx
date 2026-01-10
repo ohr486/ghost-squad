@@ -133,10 +133,7 @@ describe("Story Integration Tests - Critical Paths", () => {
 
       render(
         <QueryClientProvider client={queryClient}>
-          <StoryList
-            onStoryClick={jest.fn()}
-            onCreateStoryClick={jest.fn()}
-          />
+          <StoryList onStoryClick={jest.fn()} onCreateStoryClick={jest.fn()} />
         </QueryClientProvider>,
       );
 
@@ -234,7 +231,9 @@ describe("Story Integration Tests - Critical Paths", () => {
 
       // Assert: バリデーションエラーが表示される（すべてのエラーが同時に表示されるのを待つ）
       await waitFor(() => {
-        expect(screen.getByText("問い合わせを選択してください")).toBeInTheDocument();
+        expect(
+          screen.getByText("問い合わせを選択してください"),
+        ).toBeInTheDocument();
       });
 
       await waitFor(() => {
