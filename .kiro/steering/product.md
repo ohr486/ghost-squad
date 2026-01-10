@@ -36,20 +36,24 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 - **開発環境**: Docker Compose + Makefile統合
 - **テスト**: 189テスト、高カバレッジ（inquiry: 91%、database接続テスト含む）
 
-**フロントエンド（基盤完成、85%実装）**
-- **TypeScript基盤**: strict mode、型定義完備（InquiryResponse、CreateInquiryRequest等）
-- **APIクライアント**: Axios統合、エラーハンドリング、CORS対応（86.11%カバレッジ）
+**フロントエンド（基盤完成、95%実装）**
+- **TypeScript基盤**: strict mode、型定義完備（InquiryResponse、StoryResponse等）
+- **APIクライアント**: Axios統合、エラーハンドリング、CORS対応
 - **状態管理**: TanStack React Query 5.8.4（サーバー状態管理）
-- **コンポーネント**:
+- **Inquiryコンポーネント**:
   - InquiryForm（問い合わせ入力、React Hook Form + Zod、100% statements）
   - InquiryList（一覧表示、ページネーション、フィルタリング、84.21% statements）
   - InquiryDetail（詳細・編集・承認/却下、94.64% statements）
-- **テスト**: 54テスト、91.02%カバレッジ（Jest + React Testing Library）
+- **Storyコンポーネント**:
+  - StoryList（一覧表示、ページネーション、フィルタ、ソート、95.83% statements）
+  - StoryForm（作成フォーム、React Hook Form + Zod、モーダル）
+  - StoryDetail（詳細・編集・承認/却下/削除、93.85% statements）
+- **テスト**: 160テスト、87%カバレッジ（Jest + React Testing Library）
 - **コード品質**: Prettier + ESLint設定完備
 
 ### 🚧 開発中機能
-- **フロントエンド統合**: ページレイアウト、React Routerルーティング、E2Eテスト
-- **ストーリー管理**: データモデル・リポジトリ実装完了、AI変換・ワークフロー・API層の実装が進行中
+- **フロントエンド統合**: レスポンシブデザイン最適化、E2Eテスト
+- **ストーリー管理**: バックエンド・フロントエンド実装完了、統合テスト・UI最適化が進行中
 
 ## ドメインモデル
 
