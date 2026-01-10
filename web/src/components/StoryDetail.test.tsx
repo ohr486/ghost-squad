@@ -377,6 +377,8 @@ describe("StoryDetail", () => {
       // 両方のバリデーションエラーメッセージが表示されることを確認
       await waitFor(() => {
         expect(screen.getByText(/タイトルは必須です/)).toBeInTheDocument();
+      });
+      await waitFor(() => {
         expect(screen.getByText(/説明は必須です/)).toBeInTheDocument();
       });
 
@@ -413,7 +415,9 @@ describe("StoryDetail", () => {
 
       // バリデーションエラーが消えることを確認
       await waitFor(() => {
-        expect(screen.queryByText(/タイトルは必須です/)).not.toBeInTheDocument();
+        expect(
+          screen.queryByText(/タイトルは必須です/),
+        ).not.toBeInTheDocument();
       });
     });
 

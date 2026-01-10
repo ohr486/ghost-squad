@@ -9,6 +9,7 @@ import {
   requestClarification,
   completeClarification,
 } from "../services/inquiryApi";
+import { generateStory } from "../services/storyApi";
 
 export interface InquiryDetailProps {
   inquiryId: number;
@@ -43,6 +44,23 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
   const [showClarificationDialog, setShowClarificationDialog] = useState(false);
   const [clarificationReason, setClarificationReason] = useState("");
 
+  // Utility function to extract error message from API response
+  const extractErrorMessage = (
+    error: unknown,
+    defaultMessage: string,
+  ): string => {
+    if (error && typeof error === "object" && "response" in error) {
+      const axiosError = error as {
+        response?: { data?: { errors?: Array<{ message?: string }> } };
+      };
+      const apiMessage = axiosError.response?.data?.errors?.[0]?.message;
+      if (apiMessage) {
+        return apiMessage;
+      }
+    }
+    return defaultMessage;
+  };
+
   // Fetch inquiry details
   const {
     data: inquiry,
@@ -61,8 +79,12 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
       setIsEditing(false);
       toast.success("問い合わせを更新しました");
     },
-    onError: () => {
-      toast.error("問い合わせの更新に失敗しました");
+    onError: (error: unknown) => {
+      const errorMessage = extractErrorMessage(
+        error,
+        "問い合わせの更新に失敗しました",
+      );
+      toast.error(errorMessage);
     },
   });
 
@@ -73,8 +95,12 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
       queryClient.invalidateQueries({ queryKey: ["inquiry", inquiryId] });
       toast.success("問い合わせを承認しました");
     },
-    onError: () => {
-      toast.error("問い合わせの承認に失敗しました");
+    onError: (error: unknown) => {
+      const errorMessage = extractErrorMessage(
+        error,
+        "問い合わせの承認に失敗しました",
+      );
+      toast.error(errorMessage);
     },
   });
 
@@ -88,8 +114,12 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
       setRejectReason("");
       toast.success("問い合わせを却下しました");
     },
-    onError: () => {
-      toast.error("問い合わせの却下に失敗しました");
+    onError: (error: unknown) => {
+      const errorMessage = extractErrorMessage(
+        error,
+        "問い合わせの却下に失敗しました",
+      );
+      toast.error(errorMessage);
     },
   });
 
@@ -103,8 +133,12 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
       setClarificationReason("");
       toast.success("明確化を要求しました");
     },
-    onError: () => {
-      toast.error("明確化要求に失敗しました");
+    onError: (error: unknown) => {
+      const errorMessage = extractErrorMessage(
+        error,
+        "明確化要求に失敗しました",
+      );
+      toast.error(errorMessage);
     },
   });
 
@@ -115,8 +149,29 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
       queryClient.invalidateQueries({ queryKey: ["inquiry", inquiryId] });
       toast.success("明確化を完了しました");
     },
-    onError: () => {
-      toast.error("明確化完了に失敗しました");
+    onError: (error: unknown) => {
+      const errorMessage = extractErrorMessage(
+        error,
+        "明確化完了に失敗しました",
+      );
+      toast.error(errorMessage);
+    },
+  });
+
+  // Story generation mutation
+  const storyGenerationMutation = useMutation({
+    mutationFn: () => generateStory(inquiryId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inquiry", inquiryId] });
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      toast.success("ストーリーを生成しました");
+    },
+    onError: (error: unknown) => {
+      const errorMessage = extractErrorMessage(
+        error,
+        "ストーリーの生成に失敗しました",
+      );
+      toast.error(errorMessage);
     },
   });
 
@@ -174,6 +229,10 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
     completeClarificationMutation.mutate();
   };
 
+  const handleGenerateStory = () => {
+    storyGenerationMutation.mutate();
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -197,6 +256,7 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
   const canEdit = inquiry.status === "received";
   const canApproveOrReject =
     inquiry.status === "received" || inquiry.status === "needs_clarification";
+  const canGenerateStory = inquiry.status === "task_working";
 
   return (
     <div className="max-w-4xl mx-auto p-6">
@@ -357,6 +417,17 @@ const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId }) => {
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                 >
                   明確化完了
+                </button>
+              )}
+              {canGenerateStory && (
+                <button
+                  onClick={handleGenerateStory}
+                  disabled={storyGenerationMutation.isPending}
+                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {storyGenerationMutation.isPending
+                    ? "ストーリー生成中..."
+                    : "ストーリー生成"}
                 </button>
               )}
             </>

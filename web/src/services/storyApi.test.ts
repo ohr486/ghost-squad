@@ -141,7 +141,7 @@ describe("storyApi", () => {
       expect(result).toEqual(responseData);
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         `/api/inquiries/${inquiryId}/stories`,
-        {},
+        undefined,
       );
     });
 

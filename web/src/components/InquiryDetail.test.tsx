@@ -3,13 +3,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import InquiryDetail from "./InquiryDetail";
 import * as inquiryApi from "../services/inquiryApi";
+import * as storyApi from "../services/storyApi";
 import { InquiryResponse, InquiryStatus } from "../types/inquiry";
 
 // AxiosモックはsetupTests.tsで設定済み
 jest.mock("../services/inquiryApi");
+jest.mock("../services/storyApi");
 jest.mock("react-hot-toast");
 
 const mockInquiryApi = inquiryApi as jest.Mocked<typeof inquiryApi>;
+const mockStoryApi = storyApi as jest.Mocked<typeof storyApi>;
 
 describe("InquiryDetail", () => {
   let queryClient: QueryClient;
@@ -515,6 +518,181 @@ describe("InquiryDetail", () => {
       });
 
       expect(screen.queryByText("却下情報")).not.toBeInTheDocument();
+    });
+  });
+
+  // ストーリー生成トリガーボタンのテスト
+  describe("Story generation trigger button", () => {
+    test("displays story generation button when inquiry status is task_working", async () => {
+      const taskWorkingInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "task_working" as InquiryStatus,
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(taskWorkingInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      expect(
+        screen.getByRole("button", { name: /ストーリー生成/ }),
+      ).toBeInTheDocument();
+    });
+
+    test("hides story generation button when inquiry status is received", async () => {
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(mockInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      expect(
+        screen.queryByRole("button", { name: /ストーリー生成/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    test("hides story generation button when inquiry status is rejected", async () => {
+      const rejectedInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "rejected" as InquiryStatus,
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(rejectedInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      expect(
+        screen.queryByRole("button", { name: /ストーリー生成/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    test("hides story generation button when inquiry status is completed", async () => {
+      const completedInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "completed" as InquiryStatus,
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(completedInquiry);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      expect(
+        screen.queryByRole("button", { name: /ストーリー生成/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    test("generates story when story generation button is clicked", async () => {
+      const taskWorkingInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "task_working" as InquiryStatus,
+      };
+
+      const generatedStory = {
+        id: 1,
+        inquiry_id: 1,
+        title: "生成されたストーリー",
+        description: "AI生成による説明",
+        priority: "medium" as const,
+        status: "waiting_review" as const,
+        estimated_effort: null,
+        deadline: null,
+        assignee: null,
+        story_metadata: {},
+        created_at: "2025-01-01T00:00:00Z",
+        updated_at: "2025-01-01T00:00:00Z",
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(taskWorkingInquiry);
+      mockStoryApi.generateStory.mockResolvedValueOnce(generatedStory);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      const generateButton = screen.getByRole("button", {
+        name: /ストーリー生成/,
+      });
+      fireEvent.click(generateButton);
+
+      await waitFor(() => {
+        expect(mockStoryApi.generateStory).toHaveBeenCalledWith(1);
+      });
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith("ストーリーを生成しました");
+      });
+    });
+
+    test("displays error when story generation fails", async () => {
+      const taskWorkingInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "task_working" as InquiryStatus,
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(taskWorkingInquiry);
+      mockStoryApi.generateStory.mockRejectedValueOnce(
+        new Error("Generation failed"),
+      );
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      const generateButton = screen.getByRole("button", {
+        name: /ストーリー生成/,
+      });
+      fireEvent.click(generateButton);
+
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith(
+          "ストーリーの生成に失敗しました",
+        );
+      });
+    });
+
+    test("disables story generation button while generating", async () => {
+      const taskWorkingInquiry: InquiryResponse = {
+        ...mockInquiry,
+        status: "task_working" as InquiryStatus,
+      };
+
+      mockInquiryApi.getInquiry.mockResolvedValueOnce(taskWorkingInquiry);
+      // Create a pending promise to simulate loading state
+      mockStoryApi.generateStory.mockImplementationOnce(
+        () => new Promise(() => {}),
+      );
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(screen.getByText("テスト問い合わせ内容")).toBeInTheDocument();
+      });
+
+      const generateButton = screen.getByRole("button", {
+        name: /ストーリー生成/,
+      });
+      fireEvent.click(generateButton);
+
+      await waitFor(() => {
+        expect(generateButton).toBeDisabled();
+      });
     });
   });
 });
