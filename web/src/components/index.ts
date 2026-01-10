@@ -16,3 +16,6 @@ export type { StoryListProps } from "./StoryList";
 
 export { StoryForm } from "./StoryForm";
 export type { StoryFormProps } from "./StoryForm";
+
+export { default as StoryDetail } from "./StoryDetail";
+export type { StoryDetailProps } from "./StoryDetail";

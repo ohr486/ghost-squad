@@ -11,6 +11,7 @@ import InquiryDetail from "./components/InquiryDetail";
 import { InquiryForm } from "./components/InquiryForm";
 import { StoryForm } from "./components/StoryForm";
 import StoryList from "./components/StoryList";
+import StoryDetail from "./components/StoryDetail";
 import { createInquiry, listInquiries } from "./services/inquiryApi";
 import { createStory } from "./services/storyApi";
 import type { CreateStoryRequest } from "./types";
@@ -35,6 +36,7 @@ function AppContent(): JSX.Element {
   const [selectedInquiryId, setSelectedInquiryId] = useState<number | null>(
     null,
   );
+  const [selectedStoryId, setSelectedStoryId] = useState<number | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showStoryForm, setShowStoryForm] = useState(false);
 
@@ -75,8 +77,12 @@ function AppContent(): JSX.Element {
   };
 
   const handleStoryClick = (storyId: number) => {
-    console.log("Story clicked:", storyId);
-    // TODO: ストーリー詳細画面への遷移（タスク11で実装予定）
+    setSelectedStoryId(storyId);
+    setShowStoryForm(false);
+  };
+
+  const handleBackToStoryList = () => {
+    setSelectedStoryId(null);
   };
 
   const handleCreateStoryClick = () => {
@@ -101,6 +107,7 @@ function AppContent(): JSX.Element {
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
     setSelectedInquiryId(null);
+    setSelectedStoryId(null);
     setShowCreateForm(false);
     setShowStoryForm(false);
   };
@@ -195,15 +202,34 @@ function AppContent(): JSX.Element {
           </>
         ) : (
           // ストーリータブのコンテンツ
-          <div className="px-4 py-6 sm:px-0">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h2 className="text-2xl font-bold mb-4">ストーリー一覧</h2>
-              <StoryList
-                onStoryClick={handleStoryClick}
-                onCreateStoryClick={handleCreateStoryClick}
-              />
-            </div>
-          </div>
+          <>
+            {selectedStoryId ? (
+              <div className="px-4 py-6 sm:px-0">
+                <div className="mb-4">
+                  <button
+                    onClick={handleBackToStoryList}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    ← 一覧に戻る
+                  </button>
+                </div>
+                <StoryDetail
+                  storyId={selectedStoryId}
+                  onBack={handleBackToStoryList}
+                />
+              </div>
+            ) : (
+              <div className="px-4 py-6 sm:px-0">
+                <div className="bg-white shadow rounded-lg p-6">
+                  <h2 className="text-2xl font-bold mb-4">ストーリー一覧</h2>
+                  <StoryList
+                    onStoryClick={handleStoryClick}
+                    onCreateStoryClick={handleCreateStoryClick}
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
 
