@@ -99,6 +99,8 @@ src/
 │   ├── StoryList.test.tsx    # ストーリー一覧コンポーネントテスト
 │   ├── StoryForm.tsx         # ストーリー作成フォーム（React Hook Form + Zod、モーダル）
 │   ├── StoryForm.test.tsx    # ストーリー作成フォームテスト
+│   ├── StoryDetail.tsx       # ストーリー詳細・編集コンポーネント（TanStack Query、承認/却下/削除）
+│   ├── StoryDetail.test.tsx  # ストーリー詳細コンポーネントテスト
 │   └── index.ts              # コンポーネントエクスポート
 ├── __mocks__/         # テストモック（実装済み）
 │   └── axios.ts       # Axiosマニュアルモック
@@ -113,8 +115,7 @@ src/
 src/
 ├── components/       # 追加の再利用可能コンポーネント
 │   ├── ui/          # 基本UIコンポーネント（未実装）
-│   ├── layout/      # レイアウトコンポーネント（未実装）
-│   └── StoryDetail.tsx     # ストーリー詳細・編集コンポーネント（未実装）
+│   └── layout/      # レイアウトコンポーネント（未実装）
 ├── pages/           # ページコンポーネント（未実装）
 ├── hooks/           # カスタムReactフック（未実装）
 ├── utils/           # ユーティリティ関数（未実装）
@@ -186,8 +187,16 @@ src/
     - タイトル、説明、優先度、推定工数、担当者、期限入力
     - リアルタイムバリデーション（タイトル500文字以内、必須フィールド）
     - エラーハンドリング・成功通知（react-hot-toast）
-- **将来実装**:
   - `StoryDetail.tsx` - ストーリー詳細・編集コンポーネント
+    - TanStack React Query（詳細取得・mutations）
+    - 読み取り/編集モード切り替え
+    - インライン編集（タイトル、説明、優先度、推定工数、担当者、期限）
+    - 承認・却下ワークフロー（ステータス='waiting_review'のみ）
+    - 確認ダイアログ（承認・却下・削除）
+    - 却下理由入力モーダル（バリデーション付き）
+    - 承認情報・却下情報の表示
+    - 93.85% statements カバレッジ
+- **将来実装**:
   - `ui/` - 基本UIコンポーネント（Button、Input、Modal等）
   - `layout/` - レイアウトコンポーネント（Header、Footer、Sidebar等）
 
