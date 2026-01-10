@@ -277,8 +277,6 @@ API情報を取得します。
 }
 ```
 
-## 開発中のエンドポイント
-
 ### ストーリー管理API
 
 #### `POST /api/inquiries/{id}/generate-stories`
@@ -297,15 +295,80 @@ API情報を取得します。
 }
 ```
 
+**レスポンス例**
+```json
+{
+  "id": 1,
+  "inquiry_id": 1,
+  "title": "ユーザーログイン機能",
+  "description": "As a user, I want to login so that I can access my account",
+  "category": "development",
+  "priority": "high",
+  "status": "waiting_review",
+  "estimated_effort": 5.0,
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
 #### `GET /api/stories`
 ストーリー一覧を取得します。
 
 **クエリパラメータ**
-- `page`: ページ番号
-- `limit`: 1ページあたりの件数
-- `status`: ステータスフィルタ
-- `priority`: 優先度フィルタ
-- `category`: カテゴリフィルタ
+- `page`: ページ番号（デフォルト: 1）
+- `limit`: 1ページあたりの件数（デフォルト: 20）
+- `status`: ステータスフィルタ（オプション）
+- `priority`: 優先度フィルタ（オプション）
+- `category`: カテゴリフィルタ（オプション）
+
+**レスポンス例**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "inquiry_id": 1,
+      "title": "ユーザーログイン機能",
+      "description": "As a user, I want to login so that I can access my account",
+      "category": "development",
+      "priority": "high",
+      "status": "waiting_review",
+      "estimated_effort": 5.0,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "has_next": true
+  },
+  "timestamp": "2024-01-01T00:00:00Z"
+}
+```
+
+#### `GET /api/stories/{id}`
+特定のストーリーを取得します。
+
+**パスパラメータ**
+- `id`: ストーリーID
+
+**レスポンス例**
+```json
+{
+  "id": 1,
+  "inquiry_id": 1,
+  "title": "ユーザーログイン機能",
+  "description": "As a user, I want to login so that I can access my account",
+  "category": "development",
+  "priority": "high",
+  "status": "waiting_review",
+  "estimated_effort": 5.0,
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z"
+}
+```
 
 #### `PUT /api/stories/{id}`
 ストーリーを更新します。
@@ -323,8 +386,49 @@ API情報を取得します。
 }
 ```
 
+**レスポンス例**
+```json
+{
+  "id": 1,
+  "inquiry_id": 1,
+  "title": "ユーザーログイン機能",
+  "description": "As a user, I want to login so that I can access my account",
+  "category": "development",
+  "priority": "high",
+  "status": "waiting_review",
+  "estimated_effort": 5.0,
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:05:00Z"
+}
+```
+
 #### `POST /api/stories/{id}/approve`
-ストーリーを承認します。
+ストーリーを承認します（ステータスを`approved`に変更）。
+
+**パスパラメータ**
+- `id`: ストーリーID
+
+**リクエストボディ**
+なし
+
+**レスポンス例**
+```json
+{
+  "id": 1,
+  "inquiry_id": 1,
+  "title": "ユーザーログイン機能",
+  "description": "As a user, I want to login so that I can access my account",
+  "category": "development",
+  "priority": "high",
+  "status": "approved",
+  "estimated_effort": 5.0,
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:10:00Z"
+}
+```
+
+#### `POST /api/stories/{id}/reject`
+ストーリーを却下します（ステータスを`rejected`に変更）。
 
 **パスパラメータ**
 - `id`: ストーリーID
@@ -332,8 +436,27 @@ API情報を取得します。
 **リクエスト例**
 ```json
 {
-  "approved": true,
-  "comment": "承認します"
+  "reason": "要件が不明確です"
+}
+```
+
+**レスポンス例**
+```json
+{
+  "id": 1,
+  "inquiry_id": 1,
+  "title": "ユーザーログイン機能",
+  "description": "As a user, I want to login so that I can access my account",
+  "category": "development",
+  "priority": "high",
+  "status": "rejected",
+  "estimated_effort": 5.0,
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:10:00Z",
+  "story_metadata": {
+    "rejected_at": "2024-01-01T00:10:00Z",
+    "rejection_reason": "要件が不明確です"
+  }
 }
 ```
 
@@ -346,12 +469,6 @@ Ghost Squadの機能拡張に伴い、以下のAPIエンドポイントが追加
 - `POST /api/templates` - カスタムテンプレート作成
 - `GET /api/templates/{id}` - テンプレート詳細
 - `PUT /api/templates/{id}` - テンプレート更新
-
-### エクスポートAPI
-- `POST /api/export/trello` - Trelloエクスポート
-- `POST /api/export/jira` - Jiraエクスポート
-- `POST /api/export/github` - GitHub Projectsエクスポート
-- `GET /api/export/history` - エクスポート履歴
 
 ### 分析API
 - `GET /api/analytics/stories` - ストーリー分析
@@ -416,7 +533,6 @@ Ghost Squad APIは以下のHTTPステータスコードを使用します：
 - **GS-001 ~ GS-099**: 問い合わせ関連エラー
 - **GS-100 ~ GS-199**: ストーリー関連エラー
 - **GS-200 ~ GS-299**: テンプレート関連エラー
-- **GS-300 ~ GS-399**: エクスポート関連エラー
 - **GS-400 ~ GS-499**: 認証・認可エラー
 - **GS-500 ~ GS-599**: AI統合エラー
 - **GS-900 ~ GS-999**: システムエラー

@@ -4,23 +4,18 @@ AIエージェントによるタスク管理ツールです。自然言語での
 
 ## 概要
 
-Ghost Squadは、AIエージェントを活用した包括的なタスク管理プラットフォームです。自然言語での問い合わせを構造化されたユーザーストーリーに変換し、既存のカンバンシステムに統合します。
+Ghost Squadは、AIエージェントを活用した包括的なタスク管理プラットフォームです。自然言語での問い合わせを構造化されたユーザーストーリーに変換します。
 
-### 🎯 ストーリーボード機能（現在実装済み）
+### 🎯 実装済みの機能
 - 🗣️ **自然言語問い合わせ**: 日本語での問い合わせ入力・保存・履歴管理
-- 📊 **REST API**: 問い合わせの作成・取得・管理のためのAPIエンドポイント
+- 📊 **REST API**: 問い合わせ・ストーリーの作成・取得・管理のためのAPIエンドポイント
 - 🗄️ **データ永続化**: PostgreSQL + SQLAlchemy による信頼性の高いデータ管理
 - 🔧 **開発環境**: Docker Compose + Makefileによる統合開発環境
-
-### 🚧 開発中の機能
 - 🤖 **AI駆動ストーリー生成**: OpenAI APIを使用した自動ストーリー変換
-- 📝 **ストーリーレビュー**: 生成されたストーリーの確認・編集機能
+- 📝 **ストーリー管理**: 生成されたストーリーの確認・編集・承認機能
 - 🌐 **React WebUI**: TypeScriptによるモダンなフロントエンド
-- 🔗 **外部システム統合**: Trello、Jira、GitHub Projectsとの連携
 
 ### 🚀 将来の機能拡張
-- AI駆動ストーリー生成の完全実装
-- React TypeScript WebUIの実装
 - タスクの自動優先度付け
 - プロジェクト進捗の予測分析
 - チーム生産性の最適化提案
@@ -99,11 +94,6 @@ JWT_SECRET_KEY=your_jwt_secret_key_here
 #### オプション設定
 
 ```bash
-# 外部カンバンシステム統合（使用する場合）
-TRELLO_API_KEY=your_trello_api_key
-JIRA_API_TOKEN=your_jira_api_token
-GITHUB_TOKEN=your_github_token
-
 # 通知機能（使用する場合）
 SMTP_USERNAME=your_email@gmail.com
 SMTP_PASSWORD=your_app_password
@@ -146,11 +136,27 @@ ghost-squad/
 ├── api/                    # Python FastAPIバックエンド
 │   ├── main.py            # FastAPIアプリケーション
 │   ├── database.py        # データベース接続管理
+│   ├── config.py          # 設定管理
 │   ├── models/            # データモデル
+│   │   ├── database/      # SQLAlchemyモデル（inquiry, story）
+│   │   ├── schemas/       # Pydanticスキーマ
+│   │   └── enums/         # ステータス・優先度列挙型
+│   ├── routers/           # APIルーター（inquiry, story）
+│   ├── services/          # ビジネスロジック
+│   │   ├── *_repository.py     # データアクセス層
+│   │   ├── *_validator.py      # バリデーション
+│   │   ├── *_query_service.py  # 検索サービス
+│   │   ├── *_workflow_service.py # ワークフロー管理
+│   │   └── story_generation_service.py # AI生成
 │   ├── alembic/           # データベースマイグレーション
 │   └── tests/             # バックエンドテスト
 ├── web/                   # React TypeScriptフロントエンド
-│   ├── src/               # ソースコード
+│   ├── src/
+│   │   ├── components/    # UIコンポーネント
+│   │   │   ├── InquiryForm.tsx, InquiryList.tsx, InquiryDetail.tsx
+│   │   │   └── StoryForm.tsx, StoryList.tsx, StoryDetail.tsx
+│   │   ├── services/      # APIクライアント
+│   │   └── types/         # TypeScript型定義
 │   ├── public/            # 静的ファイル
 │   └── package.json       # Node.js依存関係
 ├── docs/                  # プロジェクトドキュメント
@@ -159,7 +165,7 @@ ghost-squad/
 │   └── SDD.md            # Spec-Driven Development
 ├── .kiro/                 # Kiro仕様ファイル
 │   ├── steering/         # プロジェクト全体のガイドライン
-│   └── specs/            # 機能仕様
+│   └── specs/            # 機能仕様（inquiry, story）
 ├── docker-compose.yml     # Docker Compose設定
 ├── Makefile              # 開発タスク自動化
 ├── .env.example          # 環境変数テンプレート
@@ -182,27 +188,22 @@ Ghost Squadは **Kiro-style Spec-Driven Development** を採用しています�
 ### 現在実装済みの機能
 
 **問い合わせ管理**
-1. WebUIまたはAPIで問い合わせを入力
-2. システムが問い合わせを受け付けて保存
-3. 問い合わせ履歴の確認・検索
+- WebUIまたはAPIで問い合わせを入力
+- システムが問い合わせを受け付けて保存
+- 問い合わせ履歴の確認・検索・詳細表示
+- ステータス管理（RECEIVED → PROCESSING → COMPLETED等）
+
+**ストーリー管理**
+- 問い合わせからAIを使用してストーリーを自動生成
+- ストーリーの一覧表示・検索・詳細表示
+- ストーリーの編集・承認・拒否
+- 優先度・カテゴリ管理
+- ステータス管理（WAITING_REVIEW → APPROVED / REJECTED）
 
 **データベース管理**
 - PostgreSQL + SQLAlchemy による永続化
 - Alembic によるマイグレーション管理
 - テストデータのシーディング機能
-
-### 開発中の機能
-
-**ストーリー生成ワークフロー**
-1. 問い合わせからAIを使用してストーリーを生成
-2. 生成されたストーリーをレビュー・編集
-3. 承認後、外部カンバンシステムに出力
-
-**ストーリー管理**
-- ストーリーの一覧表示・検索
-- 個別ストーリーの詳細編集
-- 一括操作（承認・拒否）
-- 変更履歴の確認
 
 ## ドキュメント
 
