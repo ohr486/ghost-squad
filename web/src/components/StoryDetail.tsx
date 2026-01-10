@@ -179,7 +179,10 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
     };
 
     if (editedEstimatedEffort) {
-      updateData.estimated_effort = parseFloat(editedEstimatedEffort);
+      const effort = parseFloat(editedEstimatedEffort);
+      if (!Number.isNaN(effort)) {
+        updateData.estimated_effort = effort;
+      }
     }
 
     if (editedAssignee) {
