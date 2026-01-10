@@ -229,6 +229,227 @@ describe("StoryDetail", () => {
     });
   });
 
+  // バリデーションテスト
+  describe("Validation", () => {
+    test("shows validation error when title is empty", async () => {
+      mockStoryApi.getStory.mockResolvedValueOnce(mockStory);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("テストストーリータイトル"),
+        ).toBeInTheDocument();
+      });
+
+      // 編集モードに切り替え
+      fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+
+      // タイトルを空にする
+      const titleInput = screen.getByLabelText(/タイトル/);
+      fireEvent.change(titleInput, { target: { value: "" } });
+
+      // 保存
+      fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+
+      // バリデーションエラーメッセージが表示されることを確認
+      await waitFor(() => {
+        expect(screen.getByText(/タイトルは必須です/)).toBeInTheDocument();
+      });
+
+      // APIが呼び出されていないことを確認
+      expect(mockStoryApi.updateStory).not.toHaveBeenCalled();
+    });
+
+    test("shows validation error when title is only whitespace", async () => {
+      mockStoryApi.getStory.mockResolvedValueOnce(mockStory);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("テストストーリータイトル"),
+        ).toBeInTheDocument();
+      });
+
+      // 編集モードに切り替え
+      fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+
+      // タイトルを空白文字のみにする
+      const titleInput = screen.getByLabelText(/タイトル/);
+      fireEvent.change(titleInput, { target: { value: "   " } });
+
+      // 保存
+      fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+
+      // バリデーションエラーメッセージが表示されることを確認
+      await waitFor(() => {
+        expect(screen.getByText(/タイトルは必須です/)).toBeInTheDocument();
+      });
+
+      // APIが呼び出されていないことを確認
+      expect(mockStoryApi.updateStory).not.toHaveBeenCalled();
+    });
+
+    test("shows validation error when description is empty", async () => {
+      mockStoryApi.getStory.mockResolvedValueOnce(mockStory);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("テストストーリータイトル"),
+        ).toBeInTheDocument();
+      });
+
+      // 編集モードに切り替え
+      fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+
+      // 説明を空にする
+      const descInput = screen.getByLabelText(/説明/);
+      fireEvent.change(descInput, { target: { value: "" } });
+
+      // 保存
+      fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+
+      // バリデーションエラーメッセージが表示されることを確認
+      await waitFor(() => {
+        expect(screen.getByText(/説明は必須です/)).toBeInTheDocument();
+      });
+
+      // APIが呼び出されていないことを確認
+      expect(mockStoryApi.updateStory).not.toHaveBeenCalled();
+    });
+
+    test("shows validation error when description is only whitespace", async () => {
+      mockStoryApi.getStory.mockResolvedValueOnce(mockStory);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("テストストーリータイトル"),
+        ).toBeInTheDocument();
+      });
+
+      // 編集モードに切り替え
+      fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+
+      // 説明を空白文字のみにする
+      const descInput = screen.getByLabelText(/説明/);
+      fireEvent.change(descInput, { target: { value: "   " } });
+
+      // 保存
+      fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+
+      // バリデーションエラーメッセージが表示されることを確認
+      await waitFor(() => {
+        expect(screen.getByText(/説明は必須です/)).toBeInTheDocument();
+      });
+
+      // APIが呼び出されていないことを確認
+      expect(mockStoryApi.updateStory).not.toHaveBeenCalled();
+    });
+
+    test("shows both validation errors when title and description are empty", async () => {
+      mockStoryApi.getStory.mockResolvedValueOnce(mockStory);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("テストストーリータイトル"),
+        ).toBeInTheDocument();
+      });
+
+      // 編集モードに切り替え
+      fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+
+      // タイトルと説明を空にする
+      const titleInput = screen.getByLabelText(/タイトル/);
+      const descInput = screen.getByLabelText(/説明/);
+      fireEvent.change(titleInput, { target: { value: "" } });
+      fireEvent.change(descInput, { target: { value: "" } });
+
+      // 保存
+      fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+
+      // 両方のバリデーションエラーメッセージが表示されることを確認
+      await waitFor(() => {
+        expect(screen.getByText(/タイトルは必須です/)).toBeInTheDocument();
+        expect(screen.getByText(/説明は必須です/)).toBeInTheDocument();
+      });
+
+      // APIが呼び出されていないことを確認
+      expect(mockStoryApi.updateStory).not.toHaveBeenCalled();
+    });
+
+    test("clears validation error when valid input is entered", async () => {
+      mockStoryApi.getStory.mockResolvedValueOnce(mockStory);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("テストストーリータイトル"),
+        ).toBeInTheDocument();
+      });
+
+      // 編集モードに切り替え
+      fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+
+      // タイトルを空にして保存を試みる
+      const titleInput = screen.getByLabelText(/タイトル/);
+      fireEvent.change(titleInput, { target: { value: "" } });
+      fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+
+      // バリデーションエラーが表示される
+      await waitFor(() => {
+        expect(screen.getByText(/タイトルは必須です/)).toBeInTheDocument();
+      });
+
+      // 有効な値を入力
+      fireEvent.change(titleInput, { target: { value: "新しいタイトル" } });
+
+      // バリデーションエラーが消えることを確認
+      await waitFor(() => {
+        expect(screen.queryByText(/タイトルは必須です/)).not.toBeInTheDocument();
+      });
+    });
+
+    test("clears validation errors when cancel is clicked", async () => {
+      mockStoryApi.getStory.mockResolvedValueOnce(mockStory);
+
+      renderComponent(1);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("テストストーリータイトル"),
+        ).toBeInTheDocument();
+      });
+
+      // 編集モードに切り替え
+      fireEvent.click(screen.getByRole("button", { name: /編集/ }));
+
+      // タイトルを空にして保存を試みる
+      const titleInput = screen.getByLabelText(/タイトル/);
+      fireEvent.change(titleInput, { target: { value: "" } });
+      fireEvent.click(screen.getByRole("button", { name: /保存/ }));
+
+      // バリデーションエラーが表示される
+      await waitFor(() => {
+        expect(screen.getByText(/タイトルは必須です/)).toBeInTheDocument();
+      });
+
+      // キャンセルボタンをクリック
+      fireEvent.click(screen.getByRole("button", { name: /キャンセル/ }));
+
+      // 編集モードが終了し、エラーが表示されていないことを確認
+      expect(screen.queryByText(/タイトルは必須です/)).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /編集/ })).toBeInTheDocument();
+    });
+  });
+
   // 承認操作テスト
   describe("Approve operation", () => {
     test("approves story when approve button is clicked and confirmed", async () => {
