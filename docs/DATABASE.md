@@ -287,10 +287,9 @@ make db-seed
 - `urgent` - 緊急
 
 **ステータス値**:
-- `pending_review` - レビュー待ち
+- `waiting_review` - レビュー待ち
 - `approved` - 承認済み
-- `exported` - エクスポート済み
-- `rejected` - 拒否
+- `rejected` - 却下
 
 **インデックス**:
 - `ix_stories_inquiry_id` - 問い合わせID
