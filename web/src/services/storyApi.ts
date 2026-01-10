@@ -94,10 +94,10 @@ export async function createStory(
  * @throws ErrorResponse AI生成失敗、Inquiry不存在、またはサーバーエラー
  */
 export async function generateStory(inquiryId: number): Promise<StoryResponse> {
-  // 空ボディでPOSTすることでAI自動生成を指示
+  // ボディなしでPOSTすることでAI自動生成を指示
   const response = await apiClient.post<StoryResponse>(
     `/api/inquiries/${inquiryId}/stories`,
-    {},
+    undefined,
   );
   return response.data;
 }
