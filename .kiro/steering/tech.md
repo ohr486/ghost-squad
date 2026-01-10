@@ -186,10 +186,15 @@ npm test -- --coverage --watchAll=false
   - StoryGenerationService: 88%カバレッジ、8ユニットテスト（OpenAI統合、リトライ戦略、ロールバック処理）
   - StoryQueryService: 100%カバレッジ、28ユニットテスト（フィルタリング、ソート、ページネーション）
   - StoryWorkflowService: 100%カバレッジ（承認・却下・一括承認ワークフロー）
-  - フロントエンド: **現在91.02%カバレッジ**（54テスト、5スイート）、新機能は80%以上
+  - フロントエンド: **現在178テスト、10スイート**、新機能は80%以上
   - InquiryForm.tsx: 100% statements、94.28% branches、100% functions（13テスト）
   - InquiryList.tsx: 84.21% statements、62.5% branches、81.81% functions（25テスト）
-  - InquiryDetail.tsx: 94.64% statements、86.36% branches、95% functions（16テスト）
+  - InquiryDetail.tsx: 94.64% statements、86.36% branches、95% functions（23テスト - ストーリー生成含む）
+  - StoryList.tsx: 95.83% statements（22テスト）
+  - StoryForm.tsx: 23テスト（バリデーション、問い合わせ選択、作成成功/失敗）
+  - StoryDetail.tsx: 93.85% statements（26テスト）
+  - StoryIntegration.test.tsx: E2E統合テスト（10テスト）
+  - storyApi.ts: 82.45%カバレッジ（18テスト）
   - inquiryApi.ts: 86.11% statements（14テスト）
   - App.tsx: 100%カバレッジ
 - **型安全性**: TypeScript 4.9 strict mode、mypy strict mode

@@ -101,6 +101,7 @@ src/
 │   ├── StoryForm.test.tsx    # ストーリー作成フォームテスト
 │   ├── StoryDetail.tsx       # ストーリー詳細・編集コンポーネント（TanStack Query、承認/却下/削除）
 │   ├── StoryDetail.test.tsx  # ストーリー詳細コンポーネントテスト
+│   ├── StoryIntegration.test.tsx  # E2E統合テスト（ストーリー生成・作成・承認/却下フロー）
 │   └── index.ts              # コンポーネントエクスポート
 ├── __mocks__/         # テストモック（実装済み）
 │   └── axios.ts       # Axiosマニュアルモック
@@ -171,6 +172,7 @@ src/
     - 読み取り/編集モード切り替え
     - インライン編集（textarea）
     - 承認・却下ワークフロー（ステータス='received'のみ）
+    - ストーリー生成トリガー（ステータス='task_working'時のみ表示）
     - モーダルダイアログ（却下理由入力）
     - 94.64% statements カバレッジ、86.36% branches カバレッジ
   - `StoryList.tsx` - ストーリー一覧表示
@@ -196,6 +198,12 @@ src/
     - 却下理由入力モーダル（バリデーション付き）
     - 承認情報・却下情報の表示
     - 93.85% statements カバレッジ
+  - `StoryIntegration.test.tsx` - E2E統合テスト
+    - ストーリー生成フロー（問い合わせ詳細からのストーリー生成）
+    - 手動作成フロー（StoryFormからの作成）
+    - 承認・却下フロー（StoryDetailでのワークフロー）
+    - ナビゲーション・ステータス別UI動作検証
+    - 10テスト
 - **将来実装**:
   - `ui/` - 基本UIコンポーネント（Button、Input、Modal等）
   - `layout/` - レイアウトコンポーネント（Header、Footer、Sidebar等）

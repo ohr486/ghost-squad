@@ -264,7 +264,10 @@ Story機能（サービス層完了・API層実装済み）:
     - ✅ **StoryListテスト**（`src/components/StoryList.test.tsx` - 22テスト、ローディング・エラー・一覧表示・ページネーション・フィルタリング・ソート・キーボードナビゲーション）
     - ✅ **StoryFormコンポーネント**（`src/components/StoryForm.tsx` - モーダルフォーム、React Hook Form + Zod、問い合わせ選択・プレビュー）
     - ✅ **StoryFormテスト**（`src/components/StoryForm.test.tsx` - 23テスト、バリデーション・問い合わせ選択・作成成功/失敗）
-    - ❌ StoryDetailコンポーネント（詳細・編集、未実装）
+    - ✅ **StoryDetailコンポーネント**（`src/components/StoryDetail.tsx` - 詳細表示・編集・承認/却下/削除、93.85% statements）
+    - ✅ **StoryDetailテスト**（`src/components/StoryDetail.test.tsx` - 26テスト、詳細表示・編集・ワークフロー・エラーハンドリング）
+    - ✅ **StoryIntegration E2Eテスト**（`src/components/StoryIntegration.test.tsx` - 10テスト、ストーリー生成・作成・承認/却下フロー）
+    - ✅ **InquiryDetail ストーリー生成トリガー**（問い合わせ詳細からストーリー生成ボタン、task_working時のみ表示）
 
 ## 🔧 技術的な考慮事項
 
@@ -362,9 +365,9 @@ Story機能（サービス層完了・API層実装済み）:
 - ✅ **APIクライアントサービス**（Axios、エラーインターセプター、86.11%カバレッジ）
 - ✅ **InquiryFormコンポーネント**（React Hook Form + Zod、100% statements、94.28% branches）
 - ✅ **InquiryListコンポーネント**（TanStack Query、ページネーション、フィルタ、84.21% statements）
-- ✅ **InquiryDetailコンポーネント**（詳細表示、編集、承認・却下、94.64% statements、86.36% branches）
+- ✅ **InquiryDetailコンポーネント**（詳細表示、編集、承認・却下、ストーリー生成トリガー、94.64% statements、86.36% branches）
 - ✅ **TanStack React Query基盤**（サーバー状態管理、全コンポーネントで活用）
-- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、84テスト、81.39%カバレッジ）
+- ✅ **フロントエンドテスト基盤**（Jest + RTL + TypeScript、178テスト、10スイート）
 - ✅ **コード品質基盤**（Prettier + ESLint設定、全チェック通過）
 - ✅ **Storyデータモデル**（StoryModel、StoryStatus/Priority列挙型、26+8テスト）
 - ✅ **Story Alembicマイグレーション**（storiesテーブル、外部キー、インデックス）
@@ -378,42 +381,42 @@ Story機能（サービス層完了・API層実装済み）:
 - ✅ **Story型定義**（src/types/story.ts、StoryStatus/StoryResponse/各種Request型）
 - ✅ **Story APIクライアント**（src/services/storyApi.ts、18テスト、82.45%カバレッジ、CRUD・ワークフロー・AI生成）
 
-### 進行中（10%）
-- 🔄 Story UIコンポーネント実装（StoryDetail）
+### 進行中（5%）
+- 🔄 Story UIコンポーネント実装
   - ✅ StoryList完了（タスク9.1、9.2）
   - ✅ StoryForm完了（タスク10.1、10.2）
-  - ❌ StoryDetail（タスク11.1、11.2）
+  - ✅ StoryDetail完了（タスク11.1、11.2）
+  - ✅ UI統合・ストーリー生成トリガー完了（タスク12.1）
+  - ✅ E2E統合テスト完了（タスク12.2）
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
 ### 未着手（5%）
 - ❌ Inquiry機能のページレイアウト・ルーティング統合
-- ❌ Story UIコンポーネント（タスク11-12: StoryDetail、統合）
-- ❌ E2Eテスト・統合テスト
+- ❌ 高度なレスポンシブデザイン最適化
 
 ---
 
-**最終更新**: 2026年1月10日
-**更新理由**: StoryFormコンポーネント実装完了（タスク10.1、10.2）
-- StoryFormコンポーネント実装完了（src/components/StoryForm.tsx）
-  - モーダルダイアログでストーリー作成フォームを表示
-  - React Hook Form + Zod バリデーション
-  - 問い合わせID選択ドロップダウン（問い合わせ内容・ステータスプレビュー付き）
-  - タイトル、説明、優先度、推定工数、担当者、期限の入力フィールド
-  - リアルタイムバリデーション（タイトル500文字以内、必須フィールド）
-  - 作成成功時にフォームを閉じ、ストーリー一覧を再取得
-  - エラーハンドリング・成功通知（react-hot-toast）
-- StoryFormテスト完了（src/components/StoryForm.test.tsx、23テスト）
-  - レンダリングテスト（3テスト）
-  - 問い合わせ選択テスト（4テスト）
-  - バリデーションテスト（4テスト）
-  - フォーム送信テスト（4テスト）
-  - エラーハンドリングテスト（2テスト）
-  - ローディング状態テスト（2テスト）
-  - キャンセル機能テスト（2テスト）
-  - 優先度選択テスト（1テスト）
-  - 初期データテスト（1テスト）
-- App.tsx統合（StoryFormモーダル表示、問い合わせ一覧取得、ストーリー作成後のキャッシュ更新）
-- コンポーネントエクスポート追加（src/components/index.ts）
-- フロントエンド全体: 132テスト（+26テスト）
-- 次のステップ: StoryDetailコンポーネント実装（タスク11.1、11.2）、統合・E2Eテスト（タスク12）
+**最終更新**: 2026年1月11日
+**更新理由**: Story UIコンポーネント実装完了（タスク11.1、11.2、12.1、12.2）
+- StoryDetailコンポーネント実装完了（src/components/StoryDetail.tsx）
+  - 詳細表示・編集モード切り替え
+  - インライン編集（タイトル、説明、優先度、推定工数、担当者、期限）
+  - 承認・却下ワークフロー（ステータス='waiting_review'のみ）
+  - 確認ダイアログ・却下理由入力モーダル
+  - 93.85% statementsカバレッジ
+- StoryDetailテスト完了（src/components/StoryDetail.test.tsx、26テスト）
+- ストーリー生成トリガー追加（InquiryDetail.tsx）
+  - 問い合わせ詳細ページからストーリー生成ボタン
+  - task_workingステータス時のみ表示
+  - エラーハンドリング（APIエラーメッセージ表示）
+  - 7テスト追加（InquiryDetail.test.tsx）
+- StoryIntegration E2Eテスト追加（src/components/StoryIntegration.test.tsx、10テスト）
+  - ストーリー生成フロー
+  - 手動作成フロー
+  - 承認・却下フロー
+  - ナビゲーション・ステータス別UI動作
+- storyApi.ts修正: generateStory関数がundefinedをボディとして送信（AI自動生成モード）
+- setupTests.ts: React Query警告抑制追加
+- フロントエンド全体: 178テスト、10テストスイート
+- 次のステップ: ページレイアウト・ルーティング統合、レスポンシブデザイン最適化
