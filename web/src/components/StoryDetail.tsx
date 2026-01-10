@@ -77,6 +77,10 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectReasonError, setRejectReasonError] = useState("");
 
+  // バリデーションエラー状態管理
+  const [titleError, setTitleError] = useState("");
+  const [descriptionError, setDescriptionError] = useState("");
+
   // ストーリー詳細取得
   const {
     data: story,
@@ -94,6 +98,8 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
       queryClient.invalidateQueries({ queryKey: ["story", storyId] });
       queryClient.invalidateQueries({ queryKey: ["stories"] });
       setIsEditing(false);
+      setTitleError("");
+      setDescriptionError("");
       toast.success("ストーリーを更新しました");
     },
     onError: () => {
@@ -155,6 +161,8 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
       setEditedEstimatedEffort(story.estimated_effort?.toString() || "");
       setEditedAssignee(story.assignee || "");
       setEditedDeadline(story.deadline ? story.deadline.split("T")[0] : "");
+      setTitleError("");
+      setDescriptionError("");
       setIsEditing(true);
     }
   };
@@ -168,10 +176,33 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
     setEditedEstimatedEffort("");
     setEditedAssignee("");
     setEditedDeadline("");
+    setTitleError("");
+    setDescriptionError("");
   };
 
   // 保存
   const handleSave = () => {
+    // バリデーション
+    let hasError = false;
+
+    if (!editedTitle.trim()) {
+      setTitleError("タイトルは必須です");
+      hasError = true;
+    } else {
+      setTitleError("");
+    }
+
+    if (!editedDescription.trim()) {
+      setDescriptionError("説明は必須です");
+      hasError = true;
+    } else {
+      setDescriptionError("");
+    }
+
+    if (hasError) {
+      return;
+    }
+
     const updateData: UpdateStoryRequest = {
       title: editedTitle,
       description: editedDescription,
@@ -336,16 +367,26 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
                   htmlFor="edit-title"
                   className="block text-sm font-medium mb-2"
                 >
-                  タイトル
+                  タイトル <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="edit-title"
                   type="text"
-                  className="w-full p-3 border rounded-md"
+                  className={`w-full p-3 border rounded-md ${
+                    titleError ? "border-red-500" : ""
+                  }`}
                   value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
+                  onChange={(e) => {
+                    setEditedTitle(e.target.value);
+                    if (titleError && e.target.value.trim()) {
+                      setTitleError("");
+                    }
+                  }}
                   maxLength={500}
                 />
+                {titleError && (
+                  <p className="mt-1 text-sm text-red-600">{titleError}</p>
+                )}
               </div>
 
               {/* 説明編集 */}
@@ -354,14 +395,26 @@ const StoryDetail: React.FC<StoryDetailProps> = ({ storyId, onBack }) => {
                   htmlFor="edit-description"
                   className="block text-sm font-medium mb-2"
                 >
-                  説明
+                  説明 <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   id="edit-description"
-                  className="w-full p-3 border rounded-md min-h-[200px]"
+                  className={`w-full p-3 border rounded-md min-h-[200px] ${
+                    descriptionError ? "border-red-500" : ""
+                  }`}
                   value={editedDescription}
-                  onChange={(e) => setEditedDescription(e.target.value)}
+                  onChange={(e) => {
+                    setEditedDescription(e.target.value);
+                    if (descriptionError && e.target.value.trim()) {
+                      setDescriptionError("");
+                    }
+                  }}
                 />
+                {descriptionError && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {descriptionError}
+                  </p>
+                )}
               </div>
 
               {/* 優先度編集 */}
