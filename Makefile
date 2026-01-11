@@ -740,7 +740,7 @@ db-tables:
 	docker-compose exec -T db psql -U gs_user -d gs_db -c "\dt"
 	@echo ""
 	@echo "📋 Table details:"
-	@for table in inquiries stories story_templates; do \
+	@for table in inquiries stories; do \
 		echo ""; \
 		echo "🔍 Table: $$table"; \
 		docker-compose exec -T db psql -U gs_user -d gs_db -c "\d $$table" 2>/dev/null || echo "  Table $$table not found"; \
@@ -771,12 +771,9 @@ db-data:
 	fi
 	@echo ""
 	@echo "📋 Inquiries (問い合わせ):"
-	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, user_id, LEFT(content, 50) || '...' as content_preview, language, status, timestamp FROM inquiries ORDER BY timestamp DESC;" 2>/dev/null || echo "  No inquiries table found"
+	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, user_id, LEFT(content, 50) || '...' as content_preview, source_system, status, timestamp FROM inquiries ORDER BY timestamp DESC;" 2>/dev/null || echo "  No inquiries table found"
 	@echo ""
 	@echo "📋 Stories (ストーリー):"
-	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, LEFT(title, 40) || '...' as title_preview, category, priority, status, estimated_effort, created_at FROM stories ORDER BY created_at DESC;" 2>/dev/null || echo "  No stories table found"
-	@echo ""
-	@echo "�  Story Templates (ストーリーテンプレート):"
-	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, name, pattern, is_custom, default_estimate, created_at FROM story_templates ORDER BY created_at DESC;" 2>/dev/null || echo "  No story_templates table found"
+	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, inquiry_id, LEFT(title, 40) || '...' as title_preview, priority, status, estimated_effort, created_at FROM stories ORDER BY created_at DESC;" 2>/dev/null || echo "  No stories table found"
 	@echo ""
 	@echo "💡 Use 'make db-connect' for interactive database access"
