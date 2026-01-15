@@ -222,9 +222,14 @@ class TestDataSourcePlugin:
         config = MockPluginConfig()
         plugin = ConcretePlugin(config)
 
-        # 接続と切断が例外を発生させずに実行できることを確認
+        # 接続後にfetchが成功することを確認
         plugin.connect()
+        plugin.fetch()
+
+        # 切断後にfetchがエラーになることを確認
         plugin.disconnect()
+        with pytest.raises(RuntimeError):
+            plugin.fetch()
 
     def test_fetch_returns_raw_import_data_list(self) -> None:
         """fetchがRawImportDataのリストを返す."""
