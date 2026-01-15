@@ -12,7 +12,7 @@
   - ユニットテスト作成
   - _Requirements: 1.4_
 
-- [ ] 1.2 PluginRegistryサービスの実装
+- [x] 1.2 PluginRegistryサービスの実装
   - プラグイン登録・解除機能の実装（register、unregister）
   - プラグイン有効/無効切り替え機能の実装（enable、disable）
   - 設定情報検証機能の実装（登録時にvalidate_config呼び出し）
