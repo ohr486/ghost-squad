@@ -37,11 +37,11 @@ class ValidationResult:
     """バリデーション結果.
 
     Attributes:
-        is_valid: バリデーション成功フラグ
+        valid: バリデーション成功フラグ
         errors: バリデーションエラーのリスト
     """
 
-    is_valid: bool
+    valid: bool
     errors: List[ValidationError]
 
 
