@@ -141,8 +141,8 @@ class PluginRegistryService:
         Returns:
             Result[PluginStatus]: 登録結果
         """
-        # 一時的なインスタンスを作成して plugin_type を取得
-        # （初期化失敗の場合でも plugin_type を取得する必要があるため）
+        # 一時的なインスタンスを作成して plugin_type を取得する
+        # （初期化に失敗した場合は plugin_type は取得できず、エラーとして登録処理を中断する）
         try:
             temp_instance = plugin_class(config)
             plugin_type = temp_instance.plugin_type
