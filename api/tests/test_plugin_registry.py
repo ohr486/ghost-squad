@@ -84,12 +84,20 @@ class MockPlugin(DataSourcePlugin[MockPluginConfig]):
 
 
 class FailingPlugin(DataSourcePlugin[MockPluginConfig]):
-    """初期化に失敗するプラグイン."""
+    """初期化に失敗するプラグイン.
+
+    このクラスはテスト用に「必ず初期化に失敗する」ことを目的としており、
+    実際のコードパスではインスタンス化されないことを想定している。
+    """
 
     def __init__(self, config: MockPluginConfig):
-        # 初期化時に例外をスロー
+        # 初期化時に例外をスローして、初期化失敗時の挙動をテストする。
+        # そのため、このクラスの他のメソッドは実行されることを想定していない。
         raise RuntimeError("初期化に失敗しました")
 
+    # DataSourcePlugin 抽象基底クラスの要件を満たすために、
+    # 以下のメソッドを実装しているが、__init__ が常に例外を送出するため
+    # 実際には到達しないコードである（テストのためにのみ存在する）。
     @property
     def plugin_type(self) -> str:
         return "failing"
