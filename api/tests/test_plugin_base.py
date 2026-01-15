@@ -7,12 +7,8 @@ from typing import List
 
 import pytest
 
-from services.importer.plugin_base import (
-    DataSourcePlugin,
-    RawImportData,
-    ValidationError,
-    ValidationResult,
-)
+from services.importer.plugin_base import (DataSourcePlugin, RawImportData,
+                                           ValidationError, ValidationResult)
 
 
 class TestRawImportData:
