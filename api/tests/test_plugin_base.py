@@ -74,9 +74,9 @@ class TestValidationResult:
 
     def test_create_successful_validation_result(self) -> None:
         """成功したバリデーション結果を作成できる."""
-        result = ValidationResult(is_valid=True, errors=[])
+        result = ValidationResult(valid=True, errors=[])
 
-        assert result.is_valid is True
+        assert result.valid is True
         assert result.errors == []
 
     def test_create_failed_validation_result(self) -> None:
@@ -88,9 +88,9 @@ class TestValidationResult:
                 code="GS-301",
             )
         ]
-        result = ValidationResult(is_valid=False, errors=errors)
+        result = ValidationResult(valid=False, errors=errors)
 
-        assert result.is_valid is False
+        assert result.valid is False
         assert len(result.errors) == 1
         assert result.errors[0].field == "imap_server"
 
@@ -108,7 +108,7 @@ class TestValidationResult:
                 code="GS-302",
             ),
         ]
-        result = ValidationResult(is_valid=False, errors=errors)
+        result = ValidationResult(valid=False, errors=errors)
 
         assert len(result.errors) == 2
 
@@ -151,7 +151,7 @@ class ConcretePlugin(DataSourcePlugin[MockPluginConfig]):
     def validate_config(self, config: MockPluginConfig) -> ValidationResult:
         if not config.valid:
             return ValidationResult(
-                is_valid=False,
+                valid=False,
                 errors=[
                     ValidationError(
                         field="server",
@@ -160,7 +160,7 @@ class ConcretePlugin(DataSourcePlugin[MockPluginConfig]):
                     )
                 ],
             )
-        return ValidationResult(is_valid=True, errors=[])
+        return ValidationResult(valid=True, errors=[])
 
     def connect(self) -> None:
         self._connected = True
@@ -205,7 +205,7 @@ class TestDataSourcePlugin:
         result = plugin.validate_config(config)
 
         assert isinstance(result, ValidationResult)
-        assert result.is_valid is True
+        assert result.valid is True
 
     def test_validate_config_with_invalid_config(self) -> None:
         """不正な設定でvalidate_configを呼び出すとエラーを返す."""
@@ -214,7 +214,7 @@ class TestDataSourcePlugin:
 
         result = plugin.validate_config(config)
 
-        assert result.is_valid is False
+        assert result.valid is False
         assert len(result.errors) == 1
 
     def test_connect_and_disconnect(self) -> None:
