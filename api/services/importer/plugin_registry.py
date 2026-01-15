@@ -90,7 +90,7 @@ class Result(Generic[T]):
         return self._error is not None
 
     def unwrap(self) -> T:
-        """成功時の値を取得.成功でない場合は例外を発生."""
+        """成功時の値を取得。成功でない場合は例外を発生。"""
         if self._error is not None:
             raise ValueError(f"Called unwrap on an Err value: {self._error}")
         return self._value  # type: ignore
