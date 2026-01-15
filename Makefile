@@ -65,16 +65,16 @@ setup:
 	@echo "🚀 Setting up development environment..."
 	@echo "📋 Checking prerequisites..."
 	@command -v docker >/dev/null 2>&1 || { echo "❌ Docker is required but not installed. Please install Docker first."; exit 1; }
-	@command -v docker-compose >/dev/null 2>&1 || { echo "❌ Docker Compose is required but not installed. Please install Docker Compose first."; exit 1; }
+	@docker compose version >/dev/null 2>&1 || { echo "❌ Docker Compose is required but not installed. Please install Docker Compose first."; exit 1; }
 	@echo "✅ Prerequisites check passed"
 	@echo "📁 Creating .env file from template..."
 	@if [ ! -f .env ]; then cp .env.example .env && echo "✅ .env file created from template"; else echo "ℹ️ .env file already exists"; fi
 	@echo "🐳 Building Docker containers..."
-	docker-compose build
+	docker compose build
 	@echo "📦 Installing api dependencies..."
-	docker-compose run --rm $(PIP_ENV_VARS) api pip install -r requirements.txt
+	docker compose run --rm $(PIP_ENV_VARS) api pip install -r requirements.txt
 	@echo "📦 Installing web dependencies..."
-	docker-compose run --rm web npm install
+	docker compose run --rm web npm install
 	@echo "🗄️ Setting up database..."
 	$(MAKE) db-migrate
 	@echo "🌱 Seeding initial data..."
@@ -88,7 +88,7 @@ dev:
 	@echo "🌐 Frontend will be available at: http://localhost:3000"
 	@echo "🗄️ Database will be available at: localhost:5432"
 	@echo ""
-	docker-compose up -d
+	docker compose up -d
 	@echo "✅ All services started in background"
 	@echo "📋 Use 'make logs' to view logs"
 	@echo "🛑 Use 'make stop' to stop all services"
@@ -96,13 +96,13 @@ dev:
 # 開発サーバー停止 (Stop development servers)
 stop:
 	@echo "🛑 Stopping development servers..."
-	docker-compose stop
+	docker compose stop
 	@echo "✅ All services stopped"
 
 # 開発サーバー再起動 (Restart development servers)
 restart:
 	@echo "🔄 Restarting development servers..."
-	docker-compose restart
+	docker compose restart
 	@echo "✅ All services restarted"
 
 # 全テスト実行 (Run all tests)
@@ -113,7 +113,7 @@ test: test-api test-web
 test-api:
 	@echo "🧪 Running api tests..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api python -m pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-config=.coveragerc; \
+		docker compose run --rm api python -m pytest tests/ -v --cov=. --cov-report=term-missing --cov-report=html --cov-config=.coveragerc; \
 	else \
 		echo "ℹ️ No tests directory found. Create api/tests/ directory and add test files."; \
 	fi
@@ -121,7 +121,7 @@ test-api:
 # フロントエンドテスト (Run web tests)
 test-web:
 	@echo "🧪 Running web tests..."
-	docker-compose run --rm web npm test -- --coverage --watchAll=false --passWithNoTests
+	docker compose run --rm web npm test -- --coverage --watchAll=false --passWithNoTests
 
 # コード品質チェック (Run all linting)
 lint: lint-api lint-web
@@ -132,20 +132,20 @@ lint-api:
 	@echo "🔍 Running api linting..."
 	@echo "📝 Running flake8..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api flake8 models/ services/ routers/ tests/ config.py database.py manage_db.py main.py; \
+		docker compose run --rm api flake8 models/ services/ routers/ tests/ config.py database.py manage_db.py main.py; \
 	else \
-		docker-compose run --rm api flake8 models/ services/ routers/ config.py database.py manage_db.py main.py; \
+		docker compose run --rm api flake8 models/ services/ routers/ config.py database.py manage_db.py main.py; \
 	fi
 	@echo "🔍 Running mypy type checking..."
-	docker-compose run --rm api mypy --explicit-package-bases models/ services/ routers/ config.py database.py manage_db.py main.py
+	docker compose run --rm api mypy --explicit-package-bases models/ services/ routers/ config.py database.py manage_db.py main.py
 	@echo "🛡️ Running bandit security check..."
-	docker-compose run --rm api bandit -r models/ services/ routers/ -f json
+	docker compose run --rm api bandit -r models/ services/ routers/ -f json
 
 # フロントエンドコード品質チェック (Run web linting)
 lint-web:
 	@echo "🔍 Running web linting..."
 	@echo "📝 Running ESLint..."
-	docker-compose run --rm web npm run lint
+	docker compose run --rm web npm run lint
 	@echo "✅ Web linting completed"
 	@echo "ℹ️  Note: TypeScript type checking skipped (compatibility issue with TS 4.9.5)"
 	@echo "ℹ️  Run 'npm run type-check' manually if needed (will show node_modules errors)"
@@ -159,36 +159,36 @@ format-api:
 	@echo "🎨 Formatting api code..."
 	@echo "📝 Running black formatter..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api black models/ services/ routers/ tests/ config.py database.py manage_db.py main.py; \
+		docker compose run --rm api black models/ services/ routers/ tests/ config.py database.py manage_db.py main.py; \
 	else \
-		docker-compose run --rm api black models/ services/ routers/ config.py database.py manage_db.py main.py; \
+		docker compose run --rm api black models/ services/ routers/ config.py database.py manage_db.py main.py; \
 	fi
 	@echo "📦 Running isort import sorter..."
 	@if [ -d "api/tests" ]; then \
-		docker-compose run --rm api isort models/ services/ routers/ tests/ config.py database.py manage_db.py main.py; \
+		docker compose run --rm api isort models/ services/ routers/ tests/ config.py database.py manage_db.py main.py; \
 	else \
-		docker-compose run --rm api isort models/ services/ routers/ config.py database.py manage_db.py main.py; \
+		docker compose run --rm api isort models/ services/ routers/ config.py database.py manage_db.py main.py; \
 	fi
 
 # フロントエンドコードフォーマット (Format web code)
 format-web:
 	@echo "🎨 Formatting web code..."
 	@echo "📝 Running prettier..."
-	docker-compose run --rm web npm run format
+	docker compose run --rm web npm run format
 	@echo "📝 Running ESLint with --fix..."
-	docker-compose run --rm web npm run lint:fix
+	docker compose run --rm web npm run lint:fix
 
 # データベースマイグレーション (Run database migrations)
 db-migrate:
 	@echo "🗄️ Running database migrations..."
 	@echo "🚀 Starting database container..."
-	docker-compose up -d db
+	docker compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 3
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
+		if docker compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -204,21 +204,21 @@ db-migrate:
 	@echo "🔍 Checking if Alembic is initialized..."
 	@if [ ! -f api/alembic.ini ] || [ ! -d api/alembic ]; then \
 		echo "📋 Initializing Alembic for the first time..."; \
-		docker-compose run --rm api alembic init alembic; \
+		docker compose run --rm api alembic init alembic; \
 		echo "⚙️  Configuring Alembic database URL..."; \
-		docker-compose run --rm api sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini; \
+		docker compose run --rm api sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini; \
 		echo "ℹ️ Alembic initialized. Creating initial migration..."; \
-		docker-compose run --rm api alembic revision --autogenerate -m "Initial migration"; \
+		docker compose run --rm api alembic revision --autogenerate -m "Initial migration"; \
 	else \
 		echo "✅ Alembic already initialized"; \
 	fi
 	@echo "📊 Running Alembic migrations..."
-	@if docker-compose run --rm api alembic current >/dev/null 2>&1; then \
-		docker-compose run --rm api alembic upgrade head; \
+	@if docker compose run --rm api alembic current >/dev/null 2>&1; then \
+		docker compose run --rm api alembic upgrade head; \
 	else \
 		echo "ℹ️ No migrations found. Creating initial migration..."; \
-		docker-compose run --rm api alembic revision --autogenerate -m "Initial migration"; \
-		docker-compose run --rm api alembic upgrade head; \
+		docker compose run --rm api alembic revision --autogenerate -m "Initial migration"; \
+		docker compose run --rm api alembic upgrade head; \
 	fi
 	@echo "✅ Database migrations completed"
 
@@ -226,13 +226,13 @@ db-migrate:
 db-seed:
 	@echo "🌱 Seeding test data..."
 	@echo "🚀 Starting database container..."
-	docker-compose up -d db
+	docker compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 3
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
+		if docker compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -246,7 +246,7 @@ db-seed:
 		exit 1; \
 	fi
 	@echo "📊 Running seed script..."
-	docker-compose run --rm api python manage_db.py seed
+	docker compose run --rm api python manage_db.py seed
 	@echo "✅ Test data seeding completed"
 
 # データベースリセット (Reset database)
@@ -255,17 +255,17 @@ db-reset:
 	@echo "⚠️ This will delete all data. Press Ctrl+C to cancel, or wait 5 seconds to continue..."
 	@sleep 5
 	@echo "🛑 Stopping database container..."
-	docker-compose stop db
+	docker compose stop db
 	@echo "🗑️ Removing database volume..."
-	docker-compose down -v
+	docker compose down -v
 	@echo "🚀 Starting fresh database..."
-	docker-compose up -d db
+	docker compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 3
 	@max_attempts=15; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
+		if docker compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -288,13 +288,13 @@ db-reset:
 db-reset-migrations:
 	@echo "🔄 Resetting migration history to use unified schema..."
 	@echo "🚀 Starting database container..."
-	docker-compose up -d db
+	docker compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 3
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $attempt -le $max_attempts ]; do \
-		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
+		if docker compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -307,16 +307,16 @@ db-reset-migrations:
 		exit 1; \
 	fi
 	@echo "🗑️ Dropping existing tables..."
-	docker-compose run --rm api python -c "from database import engine; from models.database.base import Base; Base.metadata.drop_all(engine); print('Tables dropped')"
+	docker compose run --rm api python -c "from database import engine; from models.database.base import Base; Base.metadata.drop_all(engine); print('Tables dropped')"
 	@echo "📊 Running unified migration..."
-	docker-compose run --rm api alembic upgrade head
+	docker compose run --rm api alembic upgrade head
 	@echo "✅ Migration history reset completed"
 
 # Alembic初期化 (Initialize Alembic)
 db-init:
 	@echo "🔧 Initializing Alembic configuration..."
 	@echo "🚀 Starting database container..."
-	docker-compose up -d db
+	docker compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 5
 	@echo "🔍 Checking existing Alembic setup..."
@@ -326,9 +326,9 @@ db-init:
 		echo "🧹 Cleaned up existing Alembic files"; \
 	fi
 	@echo "📋 Initializing fresh Alembic setup..."
-	docker-compose run --rm api alembic init alembic
+	docker compose run --rm api alembic init alembic
 	@echo "⚙️  Configuring Alembic database URL..."
-	docker-compose run --rm api sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini
+	docker compose run --rm api sed -i 's|sqlalchemy.url = driver://user:pass@localhost/dbname|sqlalchemy.url = postgresql://gs_user:gs_password@db:5432/gs_db|g' alembic.ini
 	@echo "✅ Alembic initialization completed"
 	@echo "ℹ️ Next step: Create your first migration with 'make db-revision'"
 
@@ -336,7 +336,7 @@ db-init:
 db-revision:
 	@echo "📝 Creating new database migration..."
 	@echo "🚀 Starting database container..."
-	docker-compose up -d db
+	docker compose up -d db
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 5
 	@if [ ! -f api/alembic.ini ]; then \
@@ -344,20 +344,20 @@ db-revision:
 		exit 1; \
 	fi
 	@read -p "Enter migration message: " message; \
-	docker-compose run --rm api alembic revision --autogenerate -m "$$message"
+	docker compose run --rm api alembic revision --autogenerate -m "$$message"
 	@echo "✅ Migration created successfully"
 
 # Alembicステータス確認 (Check Alembic status)
 db-status:
 	@echo "📊 Checking database and Alembic status..."
 	@echo "🚀 Starting database container..."
-	docker-compose up -d db >/dev/null 2>&1
+	docker compose up -d db >/dev/null 2>&1
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 3
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
+		if docker compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -385,10 +385,10 @@ db-status:
 	@echo ""
 	@echo "📊 Migration Status:"
 	@if [ -f api/alembic.ini ] && [ -d api/alembic ]; then \
-		docker-compose run --rm api alembic current 2>/dev/null || echo "  ℹ️ No migrations applied yet"; \
+		docker compose run --rm api alembic current 2>/dev/null || echo "  ℹ️ No migrations applied yet"; \
 		echo ""; \
 		echo "📋 Available migrations:"; \
-		docker-compose run --rm api alembic history 2>/dev/null || echo "  ℹ️ No migrations created yet"; \
+		docker compose run --rm api alembic history 2>/dev/null || echo "  ℹ️ No migrations created yet"; \
 	else \
 		echo "  ❌ Alembic not initialized"; \
 	fi
@@ -397,9 +397,9 @@ db-status:
 clean:
 	@echo "🧹 Cleaning up development environment..."
 	@echo "🛑 Stopping all containers..."
-	docker-compose down
+	docker compose down
 	@echo "🗑️ Removing containers and networks..."
-	docker-compose down --remove-orphans
+	docker compose down --remove-orphans
 	@echo "🧹 Removing unused Docker images..."
 	docker image prune -f
 	@echo "🧹 Removing unused Docker volumes..."
@@ -449,26 +449,26 @@ clean-deep:
 # Development utilities
 logs:
 	@echo "📋 Showing logs for all services..."
-	docker-compose logs -f
+	docker compose logs -f
 
 logs-api:
 	@echo "📋 Showing api logs..."
-	docker-compose logs -f api
+	docker compose logs -f api
 
 logs-web:
 	@echo "📋 Showing web logs..."
-	docker-compose logs -f web
+	docker compose logs -f web
 
 logs-db:
 	@echo "📋 Showing database logs..."
-	docker-compose logs -f db
+	docker compose logs -f db
 
 # Quick status check
 status:
 	@echo "📊 Development environment status:"
 	@echo ""
 	@echo "🐳 Docker containers:"
-	@docker-compose ps
+	@docker compose ps
 	@echo ""
 	@echo "🌐 Service connectivity:"
 	@echo -n "Backend API: "
@@ -476,7 +476,7 @@ status:
 	@echo -n "Frontend: "
 	@curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null && echo " ✅ Responding" || echo " ❌ Not responding"
 	@echo -n "Database: "
-	@docker-compose exec -T db pg_isready -U gs_user 2>/dev/null && echo "✅ Ready" || echo "❌ Not ready"
+	@docker compose exec -T db pg_isready -U gs_user 2>/dev/null && echo "✅ Ready" || echo "❌ Not ready"
 
 # ディスク容量とDocker使用量確認 (Check disk and Docker usage)
 disk-usage:
@@ -678,25 +678,25 @@ volume-cleanup-force:
 # Install pre-commit hooks
 install-hooks:
 	@echo "🪝 Installing pre-commit hooks..."
-	docker-compose run --rm api pre-commit install
+	docker compose run --rm api pre-commit install
 	@echo "✅ Pre-commit hooks installed"
 
 # Run pre-commit on all files
 pre-commit:
 	@echo "🪝 Running pre-commit on all files..."
-	docker-compose run --rm api pre-commit run --all-files
+	docker compose run --rm api pre-commit run --all-files
 
 # データベース直接接続 (Connect to database directly)
 db-connect:
 	@echo "🔗 Connecting to database..."
 	@echo "🚀 Starting database container..."
-	docker-compose up -d db >/dev/null 2>&1
+	docker compose up -d db >/dev/null 2>&1
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 3
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
+		if docker compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -711,19 +711,19 @@ db-connect:
 	fi
 	@echo "📊 Connecting to PostgreSQL database..."
 	@echo "ℹ️  Use \\q to quit, \\dt to list tables, \\d <table> to describe table"
-	docker-compose exec db psql -U gs_user -d gs_db
+	docker compose exec db psql -U gs_user -d gs_db
 
 # データベーステーブル一覧表示 (List database tables)
 db-tables:
 	@echo "📋 Listing database tables..."
 	@echo "🚀 Starting database container..."
-	docker-compose up -d db >/dev/null 2>&1
+	docker compose up -d db >/dev/null 2>&1
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 3
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
+		if docker compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -737,26 +737,26 @@ db-tables:
 		exit 1; \
 	fi
 	@echo "📊 Database tables:"
-	docker-compose exec -T db psql -U gs_user -d gs_db -c "\dt"
+	docker compose exec -T db psql -U gs_user -d gs_db -c "\dt"
 	@echo ""
 	@echo "📋 Table details:"
 	@for table in inquiries stories; do \
 		echo ""; \
 		echo "🔍 Table: $$table"; \
-		docker-compose exec -T db psql -U gs_user -d gs_db -c "\d $$table" 2>/dev/null || echo "  Table $$table not found"; \
+		docker compose exec -T db psql -U gs_user -d gs_db -c "\d $$table" 2>/dev/null || echo "  Table $$table not found"; \
 	done
 
 # データベースデータ表示 (Show database data)
 db-data:
 	@echo "📊 Showing database data..."
 	@echo "🚀 Starting database container..."
-	docker-compose up -d db >/dev/null 2>&1
+	docker compose up -d db >/dev/null 2>&1
 	@echo "⏳ Waiting for database to be ready..."
 	@sleep 3
 	@max_attempts=10; \
 	attempt=1; \
 	while [ $$attempt -le $$max_attempts ]; do \
-		if docker-compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
+		if docker compose run --rm api python manage_db.py check >/dev/null 2>&1; then \
 			echo "✅ Database is ready!"; \
 			break; \
 		fi; \
@@ -771,9 +771,9 @@ db-data:
 	fi
 	@echo ""
 	@echo "📋 Inquiries (問い合わせ):"
-	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, user_id, LEFT(content, 50) || '...' as content_preview, source_system, status, timestamp FROM inquiries ORDER BY timestamp DESC;" 2>/dev/null || echo "  No inquiries table found"
+	@docker compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, user_id, LEFT(content, 50) || '...' as content_preview, source_system, status, timestamp FROM inquiries ORDER BY timestamp DESC;" 2>/dev/null || echo "  No inquiries table found"
 	@echo ""
 	@echo "📋 Stories (ストーリー):"
-	@docker-compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, inquiry_id, LEFT(title, 40) || '...' as title_preview, priority, status, estimated_effort, created_at FROM stories ORDER BY created_at DESC;" 2>/dev/null || echo "  No stories table found"
+	@docker compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, inquiry_id, LEFT(title, 40) || '...' as title_preview, priority, status, estimated_effort, created_at FROM stories ORDER BY created_at DESC;" 2>/dev/null || echo "  No stories table found"
 	@echo ""
 	@echo "💡 Use 'make db-connect' for interactive database access"

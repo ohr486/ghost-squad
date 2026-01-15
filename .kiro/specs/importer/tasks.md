@@ -4,7 +4,7 @@
 
 ### 1. プラグインアーキテクチャ基盤の実装
 
-- [ ] 1.1 (P) データソースプラグイン共通インターフェースの実装
+- [x] 1.1 (P) データソースプラグイン共通インターフェースの実装
   - RawImportDataデータクラスの定義（source_id、source_type、content、subject、sender、received_at、raw_metadata）
   - DataSourcePluginの抽象基底クラスの定義（plugin_type、validate_config、connect、disconnect、fetch、mark_as_processed）
   - ValidationResultデータクラスの定義
