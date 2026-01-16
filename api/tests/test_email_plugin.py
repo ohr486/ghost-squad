@@ -12,6 +12,7 @@ Task 3.2: EmailPluginのIMAP接続機能の実装
 Requirements: 2.1, 2.3, 2.5
 """
 import socket
+from datetime import timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -1050,10 +1051,14 @@ Content-Type: text/plain; charset=utf-8
             result = plugin.fetch()
 
             assert len(result) == 1
-            # メールヘッダーの日付（+0900のタイムゾーン情報を含む）が正しくパースされていることを確認
+            # メールヘッダーの日付（+0900）がUTCに変換されていることを確認
+            # 2026-01-11 10:30:00 +0900 -> 2026-01-11 01:30:00 +0000
             assert result[0].received_at.year == 2026
             assert result[0].received_at.month == 1
             assert result[0].received_at.day == 11
+            assert result[0].received_at.hour == 1
+            assert result[0].received_at.minute == 30
+            assert result[0].received_at.tzinfo == timezone.utc
 
     def test_fetch_handles_multipart_email(self) -> None:
         """マルチパートメールを正しく処理できることを確認."""

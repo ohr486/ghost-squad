@@ -603,7 +603,7 @@ class EmailPlugin(DataSourcePlugin[EmailPluginConfig]):
 
         try:
             parsed = email.utils.parsedate_to_datetime(date_str)
-            return parsed
+            return parsed.astimezone(timezone.utc)
         except (ValueError, TypeError):
             return datetime.now(timezone.utc)
 
