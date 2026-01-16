@@ -25,7 +25,7 @@
 
 ### 2. AIプロバイダーアーキテクチャ基盤の実装
 
-- [ ] 2.1 (P) AIプロバイダー共通インターフェースの実装
+- [x] 2.1 (P) AIプロバイダー共通インターフェースの実装
   - AIProviderType列挙型の定義（OPENAI、ANTHROPIC）
   - AIProviderConfig基底データクラスの定義（api_key、model、temperature、max_tokens、timeout、retry_max、retry_backoff_base）
   - AIAnalysisRequestデータクラスの定義（content、subject、sender、source_type、additional_context）
