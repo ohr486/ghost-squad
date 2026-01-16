@@ -9,6 +9,7 @@ Task 2.1: AIプロバイダー共通インターフェースの実装
 Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6
 """
 from dataclasses import FrozenInstanceError
+from typing import List
 
 import pytest
 
@@ -306,7 +307,7 @@ class MockAIProvider(AIProvider[AIProviderConfig]):
         return AIProviderType.OPENAI
 
     @property
-    def supported_models(self) -> list[str]:
+    def supported_models(self) -> List[str]:
         return ["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"]
 
     def validate_config(self, config: AIProviderConfig) -> ValidationResult:
