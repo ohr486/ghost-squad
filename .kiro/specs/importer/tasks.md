@@ -52,7 +52,7 @@
   - ユニットテスト作成
   - _Requirements: 2.1, 2.3_
 
-- [ ] 3.2 EmailPluginのIMAP接続機能の実装
+- [x] 3.2 EmailPluginのIMAP接続機能の実装
   - IMAP4_SSLによるメールサーバー接続の実装（connect）
   - 接続切断の実装（disconnect）
   - 指数バックオフによるリトライ戦略の実装（最大3回、2^n秒）

@@ -4,8 +4,16 @@ Task 3.1: EmailPluginConfigと設定検証の実装
 - EmailPluginConfigデータクラスのテスト
 - 設定検証ロジックのテスト（必須フィールド、ポート範囲、フォルダ名形式）
 
-Requirements: 2.1, 2.3
+Task 3.2: EmailPluginのIMAP接続機能の実装
+- IMAP4_SSLによるメールサーバー接続のテスト
+- 接続切断のテスト
+- リトライ戦略のテスト
+
+Requirements: 2.1, 2.3, 2.5
 """
+import socket
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from services.importer.email_plugin import (EmailPlugin, EmailPluginConfig,
@@ -406,19 +414,29 @@ class TestEmailPlugin:
         assert result.valid is False
         assert len(result.errors) > 0
 
-    def test_connect_raises_not_implemented(self) -> None:
-        """connectがNotImplementedErrorを発生させることを確認."""
-        plugin = EmailPlugin(self._create_valid_config())
+    def test_connect_attempts_connection(self) -> None:
+        """connectが接続を試みることを確認（実際のサーバーがないためエラーになる）."""
+        from services.importer.email_plugin import EmailConnectionError
 
-        with pytest.raises(NotImplementedError):
+        plugin = EmailPlugin(
+            EmailPluginConfig(
+                imap_server="nonexistent.server.example.com",
+                username="user@example.com",
+                password="secret123",
+                retry_max=0,  # リトライなしで即座にエラー
+            )
+        )
+
+        with pytest.raises(EmailConnectionError):
             plugin.connect()
 
-    def test_disconnect_raises_not_implemented(self) -> None:
-        """disconnectがNotImplementedErrorを発生させることを確認."""
+    def test_disconnect_when_not_connected_is_safe(self) -> None:
+        """未接続状態でdisconnectを呼び出しても安全であることを確認."""
         plugin = EmailPlugin(self._create_valid_config())
 
-        with pytest.raises(NotImplementedError):
-            plugin.disconnect()
+        # エラーが発生しないことを確認
+        plugin.disconnect()
+        assert plugin.is_connected is False
 
     def test_fetch_raises_not_implemented(self) -> None:
         """fetchがNotImplementedErrorを発生させることを確認."""
@@ -491,3 +509,340 @@ class TestEmailPluginWithPluginRegistry:
         assert plugin is not None
         assert plugin.plugin_type == "email"
         assert isinstance(plugin, EmailPlugin)
+
+
+class TestEmailPluginConnection:
+    """EmailPluginのIMAP接続機能テストスイート.
+
+    Task 3.2: EmailPluginのIMAP接続機能の実装
+    - IMAP4_SSLによるメールサーバー接続の実装（connect）
+    - 接続切断の実装（disconnect）
+    - 指数バックオフによるリトライ戦略の実装（最大3回、2^n秒）
+    - 接続失敗時のエラーハンドリングとエラー通知
+    - タイムアウト設定（30秒）
+
+    Requirements: 2.1, 2.5
+    """
+
+    def _create_valid_config(self, **overrides) -> EmailPluginConfig:
+        """テスト用の有効なConfigを作成."""
+        defaults = {
+            "imap_server": "imap.example.com",
+            "username": "user@example.com",
+            "password": "secret123",
+        }
+        defaults.update(overrides)
+        return EmailPluginConfig(**defaults)
+
+    # --- 接続成功のテスト ---
+
+    def test_connect_success_with_ssl(self) -> None:
+        """SSL接続が成功することを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ) as mock_imap_class:
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            mock_imap_class.assert_called_once_with("imap.example.com", 993, timeout=30)
+            mock_imap.login.assert_called_once_with("user@example.com", "secret123")
+            mock_imap.select.assert_called_once_with("INBOX")
+            assert plugin.is_connected is True
+
+    def test_connect_success_without_ssl(self) -> None:
+        """非SSL接続が成功することを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4",
+            return_value=mock_imap,
+        ) as mock_imap_class:
+            config = self._create_valid_config(use_ssl=False, imap_port=143)
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            mock_imap_class.assert_called_once_with("imap.example.com", 143, timeout=30)
+            mock_imap.login.assert_called_once()
+            assert plugin.is_connected is True
+
+    def test_connect_with_custom_folder(self) -> None:
+        """カスタムフォルダへの接続が成功することを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config(folder="Support/Tickets")
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            mock_imap.select.assert_called_once_with("Support/Tickets")
+
+    # --- 接続失敗とリトライのテスト ---
+
+    def test_connect_retries_on_connection_error(self) -> None:
+        """接続エラー時にリトライすることを確認."""
+        mock_imap_success = MagicMock()
+        mock_imap_success.login.return_value = ("OK", [b"Logged in"])
+        mock_imap_success.select.return_value = ("OK", [b"1"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+        ) as mock_imap_class, patch(
+            "services.importer.email_plugin.time.sleep"
+        ) as mock_sleep:
+            # 最初の2回は失敗、3回目で成功
+            mock_imap_class.side_effect = [
+                socket.error("Connection refused"),
+                socket.timeout("Connection timed out"),
+                mock_imap_success,
+            ]
+
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            # 3回呼ばれることを確認
+            assert mock_imap_class.call_count == 3
+            # 指数バックオフで待機: 2^0=1秒、2^1=2秒
+            assert mock_sleep.call_count == 2
+            mock_sleep.assert_any_call(1.0)  # 2^0
+            mock_sleep.assert_any_call(2.0)  # 2^1
+            assert plugin.is_connected is True
+
+    def test_connect_raises_after_max_retries(self) -> None:
+        """最大リトライ回数を超えた場合にエラーが発生することを確認."""
+        from services.importer.email_plugin import EmailConnectionError
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+        ) as mock_imap_class, patch(
+            "services.importer.email_plugin.time.sleep"
+        ) as mock_sleep:
+            # 全回失敗
+            mock_imap_class.side_effect = socket.error("Connection refused")
+
+            config = self._create_valid_config(retry_max=3)
+            plugin = EmailPlugin(config)
+
+            with pytest.raises(EmailConnectionError) as exc_info:
+                plugin.connect()
+
+            # 初回 + 3回リトライ = 4回
+            assert mock_imap_class.call_count == 4
+            assert mock_sleep.call_count == 3
+            assert plugin.is_connected is False
+            assert "GS-303" in str(exc_info.value)
+
+    def test_connect_with_zero_retries(self) -> None:
+        """リトライ回数0の場合、リトライなしでエラーが発生することを確認."""
+        from services.importer.email_plugin import EmailConnectionError
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+        ) as mock_imap_class, patch(
+            "services.importer.email_plugin.time.sleep"
+        ) as mock_sleep:
+            mock_imap_class.side_effect = socket.error("Connection refused")
+
+            config = self._create_valid_config(retry_max=0)
+            plugin = EmailPlugin(config)
+
+            with pytest.raises(EmailConnectionError):
+                plugin.connect()
+
+            assert mock_imap_class.call_count == 1
+            assert mock_sleep.call_count == 0
+
+    def test_connect_retries_with_custom_backoff_base(self) -> None:
+        """カスタムバックオフ基数でリトライすることを確認."""
+        from services.importer.email_plugin import EmailConnectionError
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+        ) as mock_imap_class, patch(
+            "services.importer.email_plugin.time.sleep"
+        ) as mock_sleep:
+            mock_imap_class.side_effect = socket.error("Connection refused")
+
+            config = self._create_valid_config(retry_max=2, retry_backoff_base=3.0)
+            plugin = EmailPlugin(config)
+
+            with pytest.raises(EmailConnectionError):
+                plugin.connect()
+
+            # バックオフ: 3^0=1秒、3^1=3秒
+            mock_sleep.assert_any_call(1.0)  # 3^0
+            mock_sleep.assert_any_call(3.0)  # 3^1
+
+    # --- 認証エラーのテスト ---
+
+    def test_connect_fails_on_login_error(self) -> None:
+        """ログインエラー時に接続が失敗することを確認."""
+        from services.importer.email_plugin import EmailAuthenticationError
+
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("NO", [b"Invalid credentials"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+
+            with pytest.raises(EmailAuthenticationError) as exc_info:
+                plugin.connect()
+
+            assert plugin.is_connected is False
+            assert "GS-320" in str(exc_info.value)
+
+    def test_connect_fails_on_folder_not_found(self) -> None:
+        """フォルダが見つからない場合に接続が失敗することを確認."""
+        from services.importer.email_plugin import EmailFolderError
+
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("NO", [b"Folder not found"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config(folder="NonExistent")
+            plugin = EmailPlugin(config)
+
+            with pytest.raises(EmailFolderError) as exc_info:
+                plugin.connect()
+
+            assert plugin.is_connected is False
+            assert "GS-321" in str(exc_info.value)
+
+    # --- 切断のテスト ---
+
+    def test_disconnect_success(self) -> None:
+        """切断が成功することを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            plugin.disconnect()
+
+            mock_imap.close.assert_called_once()
+            mock_imap.logout.assert_called_once()
+            assert plugin.is_connected is False
+
+    def test_disconnect_when_not_connected(self) -> None:
+        """未接続状態での切断が安全に行えることを確認."""
+        config = self._create_valid_config()
+        plugin = EmailPlugin(config)
+
+        # エラーが発生しないことを確認
+        plugin.disconnect()
+        assert plugin.is_connected is False
+
+    def test_disconnect_handles_connection_errors(self) -> None:
+        """切断時のエラーが適切に処理されることを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        mock_imap.close.side_effect = Exception("Connection lost")
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            # エラーが発生しても切断処理が完了することを確認
+            plugin.disconnect()
+            assert plugin.is_connected is False
+
+    # --- 接続状態の確認 ---
+
+    def test_is_connected_initially_false(self) -> None:
+        """初期状態では接続されていないことを確認."""
+        config = self._create_valid_config()
+        plugin = EmailPlugin(config)
+
+        assert plugin.is_connected is False
+
+    def test_double_connect_succeeds(self) -> None:
+        """既に接続済みの場合、再接続が安全に行えることを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+            plugin.connect()  # 再接続
+
+            assert plugin.is_connected is True
+
+    # --- タイムアウトのテスト ---
+
+    def test_connect_uses_30_second_timeout(self) -> None:
+        """接続時に30秒のタイムアウトが設定されることを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ) as mock_imap_class:
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            # タイムアウトが30秒に設定されていることを確認
+            call_args = mock_imap_class.call_args
+            assert call_args[1]["timeout"] == 30
+
+    def test_connect_timeout_triggers_retry(self) -> None:
+        """タイムアウト時にリトライが実行されることを確認."""
+        mock_imap_success = MagicMock()
+        mock_imap_success.login.return_value = ("OK", [b"Logged in"])
+        mock_imap_success.select.return_value = ("OK", [b"1"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+        ) as mock_imap_class, patch("services.importer.email_plugin.time.sleep"):
+            # 最初はタイムアウト、2回目で成功
+            mock_imap_class.side_effect = [
+                socket.timeout("Connection timed out"),
+                mock_imap_success,
+            ]
+
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            assert mock_imap_class.call_count == 2
+            assert plugin.is_connected is True
