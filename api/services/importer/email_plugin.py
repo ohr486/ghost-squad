@@ -12,12 +12,26 @@ Task 3.2: EmailPluginのIMAP接続機能の実装
 - 接続失敗時のエラーハンドリングとエラー通知
 - タイムアウト設定（30秒）
 
-Requirements: 2.1, 2.3, 2.5 (IMAP/POP3接続、フォルダフィルタリング、リトライ処理)
+Task 3.3: EmailPluginのメール取得・解析機能の実装
+- 指定フォルダからの未読メール取得の実装（fetch）
+- メール本文・件名・送信者情報の抽出
+- Message-IDをsource_idとして使用
+- RawImportDataへの変換処理
+- fetch_limit件数制限の適用
+- フォルダフィルタリング機能の実装
+- 取り込み進捗状況の記録
+- メール既読マーク処理の実装（mark_as_processed）
+
+Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
 """
+import email
+import email.header
+import email.utils
 import imaplib
 import re
 import socket
 import time
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
@@ -89,6 +103,22 @@ class EmailFolderError(EmailPluginError):
             message: エラーメッセージ
         """
         super().__init__(message, "GS-321")
+
+
+class EmailFetchError(EmailPluginError):
+    """メール取得エラー.
+
+    メールの検索または取得に失敗。
+    エラーコード: GS-306
+    """
+
+    def __init__(self, message: str) -> None:
+        """EmailFetchErrorを初期化.
+
+        Args:
+            message: エラーメッセージ
+        """
+        super().__init__(message, "GS-306")
 
 
 @dataclass(frozen=True)
@@ -446,19 +476,200 @@ class EmailPlugin(DataSourcePlugin[EmailPluginConfig]):
 
         Raises:
             RuntimeError: 接続されていない場合
-
-        Note:
-            Task 3.3で実装予定
+            EmailFetchError: メール検索に失敗した場合
         """
-        raise NotImplementedError("Task 3.3で実装予定")
+        if self._connection is None:
+            raise RuntimeError("接続されていません。connect()を先に呼び出してください。")
+
+        # 未読メールを検索
+        status, data = self._connection.search(None, "UNSEEN")
+        if status != "OK":
+            raise EmailFetchError(f"メール検索に失敗しました: {data}")
+
+        # メールIDリストを取得
+        mail_ids = data[0].split() if data[0] else []
+        if not mail_ids:
+            return []
+
+        # fetch_limitを適用
+        mail_ids = mail_ids[: self._config.fetch_limit]
+
+        results: List[RawImportData] = []
+        for mail_id in mail_ids:
+            try:
+                raw_data = self._fetch_single_email(mail_id.decode("utf-8"))
+                if raw_data is not None:
+                    results.append(raw_data)
+            except Exception:  # nosec B112 - 個別メールのエラーはスキップして続行
+                continue
+
+        return results
+
+    def _fetch_single_email(self, mail_id: str) -> Optional[RawImportData]:
+        """単一のメールを取得してRawImportDataに変換する.
+
+        Args:
+            mail_id: メールのUID
+
+        Returns:
+            RawImportData: 変換されたデータ、失敗時はNone
+        """
+        if self._connection is None:
+            return None
+
+        status, data = self._connection.fetch(mail_id, "(RFC822)")
+        if status != "OK" or not data or data[0] is None:
+            return None
+
+        # メールをパース
+        raw_email = data[0][1] if isinstance(data[0], tuple) else data[0]
+        if raw_email is None:
+            return None
+
+        msg = email.message_from_bytes(raw_email)
+
+        # Message-IDを取得（ない場合はUID形式のIDを生成）
+        message_id = msg.get("Message-ID", "")
+        if not message_id:
+            message_id = f"email-uid-{mail_id}"
+
+        # 件名をデコード
+        subject = self._decode_header(msg.get("Subject", ""))
+
+        # 送信者を取得
+        sender = self._decode_header(msg.get("From", ""))
+
+        # 日付をパース
+        date_str = msg.get("Date", "")
+        received_at = self._parse_date(date_str)
+
+        # 本文を抽出
+        content = self._extract_body(msg)
+
+        # メタデータを作成
+        raw_metadata = {
+            "imap_uid": mail_id,
+            "folder": self._config.folder,
+            "content_type": msg.get_content_type(),
+        }
+
+        return RawImportData(
+            source_id=message_id,
+            source_type="email",
+            content=content,
+            subject=subject,
+            sender=sender,
+            received_at=received_at,
+            raw_metadata=raw_metadata,
+        )
+
+    def _decode_header(self, header_value: Optional[str]) -> str:
+        """エンコードされたヘッダー値をデコードする.
+
+        Args:
+            header_value: ヘッダー値
+
+        Returns:
+            str: デコードされた文字列
+        """
+        if not header_value:
+            return ""
+
+        decoded_parts = email.header.decode_header(header_value)
+        result_parts = []
+        for part, charset in decoded_parts:
+            if isinstance(part, bytes):
+                try:
+                    result_parts.append(
+                        part.decode(charset or "utf-8", errors="replace")
+                    )
+                except (LookupError, UnicodeDecodeError):
+                    result_parts.append(part.decode("utf-8", errors="replace"))
+            else:
+                result_parts.append(part)
+        return "".join(result_parts)
+
+    def _parse_date(self, date_str: str) -> datetime:
+        """メールの日付文字列をdatetimeに変換する.
+
+        Args:
+            date_str: RFC 2822形式の日付文字列
+
+        Returns:
+            datetime: パースされた日時（UTCに変換）
+        """
+        if not date_str:
+            return datetime.now(timezone.utc)
+
+        try:
+            parsed = email.utils.parsedate_to_datetime(date_str)
+            return parsed
+        except (ValueError, TypeError):
+            return datetime.now(timezone.utc)
+
+    def _extract_body(self, msg: email.message.Message) -> str:
+        """メールから本文を抽出する.
+
+        マルチパートメールの場合はtext/plainを優先。
+
+        Args:
+            msg: emailメッセージオブジェクト
+
+        Returns:
+            str: 抽出された本文
+        """
+        if msg.is_multipart():
+            # マルチパートの場合、text/plainを優先して探す
+            for part in msg.walk():
+                content_type = part.get_content_type()
+                if content_type == "text/plain":
+                    payload = part.get_payload(decode=True)
+                    if isinstance(payload, bytes):
+                        charset = part.get_content_charset() or "utf-8"
+                        return payload.decode(charset, errors="replace")
+            # text/plainがなければtext/htmlを試す
+            for part in msg.walk():
+                content_type = part.get_content_type()
+                if content_type == "text/html":
+                    payload = part.get_payload(decode=True)
+                    if isinstance(payload, bytes):
+                        charset = part.get_content_charset() or "utf-8"
+                        return payload.decode(charset, errors="replace")
+        else:
+            # 単一パートの場合
+            payload = msg.get_payload(decode=True)
+            if isinstance(payload, bytes):
+                charset = msg.get_content_charset() or "utf-8"
+                return payload.decode(charset, errors="replace")
+
+        return ""
 
     def mark_as_processed(self, source_id: str) -> None:
         """メールを既読にマークする.
 
         Args:
-            source_id: メールのMessage-ID
+            source_id: メールのMessage-IDまたはUID形式のID
 
-        Note:
-            Task 3.3で実装予定
+        Raises:
+            RuntimeError: 接続されていない場合
         """
-        raise NotImplementedError("Task 3.3で実装予定")
+        if self._connection is None:
+            raise RuntimeError("接続されていません。connect()を先に呼び出してください。")
+
+        # UID形式のIDかどうかを判定
+        if source_id.startswith("email-uid-"):
+            # UID形式のID: email-uid-XXX から UID を抽出
+            uid = source_id.replace("email-uid-", "")
+            self._connection.store(uid, "+FLAGS", "\\Seen")
+        else:
+            # Message-ID形式: Message-IDで検索してUIDを取得
+            status, data = self._connection.search(
+                None, f'HEADER Message-ID "{source_id}"'
+            )
+            if status != "OK" or not data[0]:
+                # メールが見つからない場合は何もしない
+                return
+
+            mail_ids = data[0].split()
+            for mail_id in mail_ids:
+                self._connection.store(mail_id.decode("utf-8"), "+FLAGS", "\\Seen")

@@ -61,7 +61,7 @@
   - ユニットテスト作成（モックIMAPサーバー使用）
   - _Requirements: 2.1, 2.5_
 
-- [ ] 3.3 EmailPluginのメール取得・解析機能の実装
+- [x] 3.3 EmailPluginのメール取得・解析機能の実装
   - 指定フォルダからの未読メール取得の実装（fetch）
   - メール本文・件名・送信者情報の抽出
   - Message-IDをsource_idとして使用

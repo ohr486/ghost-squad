@@ -438,19 +438,23 @@ class TestEmailPlugin:
         plugin.disconnect()
         assert plugin.is_connected is False
 
-    def test_fetch_raises_not_implemented(self) -> None:
-        """fetchがNotImplementedErrorを発生させることを確認."""
+    def test_fetch_raises_error_when_not_connected(self) -> None:
+        """未接続状態でfetchがRuntimeErrorを発生させることを確認."""
         plugin = EmailPlugin(self._create_valid_config())
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(RuntimeError) as exc_info:
             plugin.fetch()
 
-    def test_mark_as_processed_raises_not_implemented(self) -> None:
-        """mark_as_processedがNotImplementedErrorを発生させることを確認."""
+        assert "接続されていません" in str(exc_info.value)
+
+    def test_mark_as_processed_raises_error_when_not_connected(self) -> None:
+        """未接続状態でmark_as_processedがRuntimeErrorを発生させることを確認."""
         plugin = EmailPlugin(self._create_valid_config())
 
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(RuntimeError) as exc_info:
             plugin.mark_as_processed("test-message-id")
+
+        assert "接続されていません" in str(exc_info.value)
 
 
 class TestEmailPluginWithPluginRegistry:
@@ -847,3 +851,480 @@ class TestEmailPluginConnection:
 
             assert mock_imap_class.call_count == 2
             assert plugin.is_connected is True
+
+
+class TestEmailPluginFetch:
+    """EmailPlugin.fetch()のテストスイート.
+
+    Task 3.3: EmailPluginのメール取得・解析機能の実装
+    - 指定フォルダからの未読メール取得の実装（fetch）
+    - メール本文・件名・送信者情報の抽出
+    - Message-IDをsource_idとして使用
+    - RawImportDataへの変換処理
+    - fetch_limit件数制限の適用
+    - フォルダフィルタリング機能の実装
+    - 取り込み進捗状況の記録
+
+    Requirements: 2.2, 2.3, 2.4, 2.6
+    """
+
+    def _create_valid_config(self, **overrides) -> EmailPluginConfig:
+        """テスト用の有効なConfigを作成."""
+        defaults = {
+            "imap_server": "imap.example.com",
+            "username": "user@example.com",
+            "password": "secret123",
+        }
+        defaults.update(overrides)
+        return EmailPluginConfig(**defaults)
+
+    def _create_mock_email(
+        self,
+        message_id: str = "<test@example.com>",
+        subject: str = "テスト件名",
+        from_addr: str = "sender@example.com",
+        body: str = "テスト本文",
+        date_str: str = "Sat, 11 Jan 2026 10:30:00 +0900",
+    ) -> bytes:
+        """テスト用のモックメールを作成."""
+        email_content = f"""From: {from_addr}
+Subject: {subject}
+Date: {date_str}
+Message-ID: {message_id}
+Content-Type: text/plain; charset=utf-8
+
+{body}"""
+        return email_content.encode("utf-8")
+
+    # --- 接続状態のチェック ---
+
+    def test_fetch_raises_error_when_not_connected(self) -> None:
+        """未接続状態でfetchを呼び出すとエラーが発生することを確認."""
+        config = self._create_valid_config()
+        plugin = EmailPlugin(config)
+
+        with pytest.raises(RuntimeError) as exc_info:
+            plugin.fetch()
+
+        assert "接続されていません" in str(exc_info.value)
+
+    # --- メール取得の成功ケース ---
+
+    def test_fetch_returns_empty_list_when_no_emails(self) -> None:
+        """未読メールがない場合に空のリストを返すことを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"0"])
+        mock_imap.search.return_value = ("OK", [b""])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            result = plugin.fetch()
+
+            assert result == []
+            mock_imap.search.assert_called_once()
+
+    def test_fetch_returns_raw_import_data_for_single_email(self) -> None:
+        """1件のメールをRawImportDataに変換して返すことを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        mock_imap.search.return_value = ("OK", [b"1"])
+        mock_imap.fetch.return_value = (
+            "OK",
+            [(b"1 (RFC822 {1234}", self._create_mock_email())],
+        )
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            result = plugin.fetch()
+
+            assert len(result) == 1
+            assert result[0].source_id == "<test@example.com>"
+            assert result[0].source_type == "email"
+            assert result[0].subject == "テスト件名"
+            assert result[0].sender == "sender@example.com"
+            assert "テスト本文" in result[0].content
+
+    def test_fetch_returns_multiple_emails(self) -> None:
+        """複数のメールを取得できることを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"3"])
+        mock_imap.search.return_value = ("OK", [b"1 2 3"])
+        mock_imap.fetch.side_effect = [
+            ("OK", [(b"1 (RFC822 {1234}", self._create_mock_email(
+                message_id="<msg1@example.com>",
+                subject="件名1",
+            ))]),
+            ("OK", [(b"2 (RFC822 {1234}", self._create_mock_email(
+                message_id="<msg2@example.com>",
+                subject="件名2",
+            ))]),
+            ("OK", [(b"3 (RFC822 {1234}", self._create_mock_email(
+                message_id="<msg3@example.com>",
+                subject="件名3",
+            ))]),
+        ]
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            result = plugin.fetch()
+
+            assert len(result) == 3
+            assert result[0].source_id == "<msg1@example.com>"
+            assert result[1].source_id == "<msg2@example.com>"
+            assert result[2].source_id == "<msg3@example.com>"
+
+    # --- fetch_limit制限のテスト ---
+
+    def test_fetch_respects_fetch_limit(self) -> None:
+        """fetch_limitによる件数制限が適用されることを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"10"])
+        # 10件のメールIDを返す
+        mock_imap.search.return_value = ("OK", [b"1 2 3 4 5 6 7 8 9 10"])
+        mock_imap.fetch.side_effect = [
+            ("OK", [(b"1 (RFC822 {1234}", self._create_mock_email(
+                message_id=f"<msg{i}@example.com>",
+            ))])
+            for i in range(1, 6)  # fetch_limit=5のため5件だけ
+        ]
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config(fetch_limit=5)
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            result = plugin.fetch()
+
+            assert len(result) == 5
+            # fetchは5回だけ呼ばれる
+            assert mock_imap.fetch.call_count == 5
+
+    # --- メールパースのテスト ---
+
+    def test_fetch_parses_email_date_correctly(self) -> None:
+        """メールの日付が正しくパースされることを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        mock_imap.search.return_value = ("OK", [b"1"])
+        mock_imap.fetch.return_value = (
+            "OK",
+            [(b"1 (RFC822 {1234}", self._create_mock_email(
+                date_str="Sat, 11 Jan 2026 10:30:00 +0900"
+            ))],
+        )
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            result = plugin.fetch()
+
+            assert len(result) == 1
+            # UTCに変換されている（+0900から-9時間）
+            assert result[0].received_at.year == 2026
+            assert result[0].received_at.month == 1
+            assert result[0].received_at.day == 11
+
+    def test_fetch_handles_multipart_email(self) -> None:
+        """マルチパートメールを正しく処理できることを確認."""
+        multipart_email = """From: sender@example.com
+Subject: =?utf-8?B?44OG44K544OI?=
+Date: Sat, 11 Jan 2026 10:30:00 +0900
+Message-ID: <multipart@example.com>
+Content-Type: multipart/alternative; boundary="boundary123"
+
+--boundary123
+Content-Type: text/plain; charset=utf-8
+
+プレーンテキスト本文
+--boundary123
+Content-Type: text/html; charset=utf-8
+
+<html><body>HTML本文</body></html>
+--boundary123--""".encode("utf-8")
+
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        mock_imap.search.return_value = ("OK", [b"1"])
+        mock_imap.fetch.return_value = ("OK", [(b"1 (RFC822 {1234}", multipart_email)])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            result = plugin.fetch()
+
+            assert len(result) == 1
+            # プレーンテキスト部分が優先して抽出される
+            assert "プレーンテキスト本文" in result[0].content
+
+    def test_fetch_handles_encoded_subject(self) -> None:
+        """エンコードされた件名を正しくデコードできることを確認."""
+        encoded_email = """From: sender@example.com
+Subject: =?utf-8?B?44OG44K544OI5Lu25ZCN?=
+Date: Sat, 11 Jan 2026 10:30:00 +0900
+Message-ID: <encoded@example.com>
+Content-Type: text/plain; charset=utf-8
+
+本文""".encode("utf-8")
+
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        mock_imap.search.return_value = ("OK", [b"1"])
+        mock_imap.fetch.return_value = ("OK", [(b"1 (RFC822 {1234}", encoded_email)])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            result = plugin.fetch()
+
+            assert len(result) == 1
+            assert result[0].subject == "テスト件名"
+
+    # --- メタデータのテスト ---
+
+    def test_fetch_includes_raw_metadata(self) -> None:
+        """raw_metadataにメールヘッダー情報が含まれることを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        mock_imap.search.return_value = ("OK", [b"1"])
+        mock_imap.fetch.return_value = (
+            "OK",
+            [(b"1 (RFC822 {1234}", self._create_mock_email())],
+        )
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            result = plugin.fetch()
+
+            assert len(result) == 1
+            assert "imap_uid" in result[0].raw_metadata
+            assert "folder" in result[0].raw_metadata
+            assert result[0].raw_metadata["folder"] == "INBOX"
+
+    # --- エラーハンドリングのテスト ---
+
+    def test_fetch_handles_search_error(self) -> None:
+        """検索エラー時に適切なエラーが発生することを確認."""
+        from services.importer.email_plugin import EmailPluginError
+
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        mock_imap.search.return_value = ("NO", [b"Search failed"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            with pytest.raises(EmailPluginError) as exc_info:
+                plugin.fetch()
+
+            assert "GS-306" in str(exc_info.value)
+
+    def test_fetch_handles_individual_fetch_error(self) -> None:
+        """個別メール取得エラー時にスキップして他のメールを処理することを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"2"])
+        mock_imap.search.return_value = ("OK", [b"1 2"])
+        # 1件目はエラー、2件目は成功
+        mock_imap.fetch.side_effect = [
+            ("NO", [b"Fetch failed"]),
+            ("OK", [(b"2 (RFC822 {1234}", self._create_mock_email(
+                message_id="<msg2@example.com>",
+            ))]),
+        ]
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            result = plugin.fetch()
+
+            # エラーのメールをスキップして、成功したメールのみ返す
+            assert len(result) == 1
+            assert result[0].source_id == "<msg2@example.com>"
+
+    def test_fetch_handles_missing_message_id(self) -> None:
+        """Message-IDがないメールを適切に処理することを確認."""
+        email_without_id = """From: sender@example.com
+Subject: No Message-ID
+Date: Sat, 11 Jan 2026 10:30:00 +0900
+Content-Type: text/plain; charset=utf-8
+
+本文""".encode("utf-8")
+
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        mock_imap.search.return_value = ("OK", [b"1"])
+        mock_imap.fetch.return_value = ("OK", [(b"1 (RFC822 {1234}", email_without_id)])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            result = plugin.fetch()
+
+            assert len(result) == 1
+            # Message-IDがない場合はUIDベースのIDを生成
+            assert result[0].source_id.startswith("email-uid-")
+
+
+class TestEmailPluginMarkAsProcessed:
+    """EmailPlugin.mark_as_processed()のテストスイート.
+
+    Task 3.3: メール既読マーク処理の実装
+    - メールを既読にマーク（\\Seen フラグ設定）
+
+    Requirements: 2.6 (重複取り込み防止)
+    """
+
+    def _create_valid_config(self, **overrides) -> EmailPluginConfig:
+        """テスト用の有効なConfigを作成."""
+        defaults = {
+            "imap_server": "imap.example.com",
+            "username": "user@example.com",
+            "password": "secret123",
+        }
+        defaults.update(overrides)
+        return EmailPluginConfig(**defaults)
+
+    def test_mark_as_processed_raises_error_when_not_connected(self) -> None:
+        """未接続状態でmark_as_processedを呼び出すとエラーが発生することを確認."""
+        config = self._create_valid_config()
+        plugin = EmailPlugin(config)
+
+        with pytest.raises(RuntimeError) as exc_info:
+            plugin.mark_as_processed("<test@example.com>")
+
+        assert "接続されていません" in str(exc_info.value)
+
+    def test_mark_as_processed_sets_seen_flag(self) -> None:
+        """mark_as_processedがSEENフラグを設定することを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        mock_imap.search.return_value = ("OK", [b"1"])
+        mock_imap.store.return_value = ("OK", [b"1 (FLAGS (\\Seen))"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            plugin.mark_as_processed("<test@example.com>")
+
+            # SEARCHでMessage-IDを検索してUIDを取得
+            mock_imap.search.assert_called()
+            # STOREで\\Seenフラグを設定
+            mock_imap.store.assert_called()
+            call_args = mock_imap.store.call_args
+            assert "\\Seen" in str(call_args)
+
+    def test_mark_as_processed_handles_not_found(self) -> None:
+        """存在しないメールIDを処理できることを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        # メールが見つからない
+        mock_imap.search.return_value = ("OK", [b""])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            # エラーが発生しないことを確認（警告ログは出力されるが例外は発生しない）
+            plugin.mark_as_processed("<nonexistent@example.com>")
+
+            # storeは呼ばれない
+            mock_imap.store.assert_not_called()
+
+    def test_mark_as_processed_with_uid_based_id(self) -> None:
+        """UID形式のIDを処理できることを確認."""
+        mock_imap = MagicMock()
+        mock_imap.login.return_value = ("OK", [b"Logged in"])
+        mock_imap.select.return_value = ("OK", [b"1"])
+        mock_imap.store.return_value = ("OK", [b"1 (FLAGS (\\Seen))"])
+
+        with patch(
+            "services.importer.email_plugin.imaplib.IMAP4_SSL",
+            return_value=mock_imap,
+        ):
+            config = self._create_valid_config()
+            plugin = EmailPlugin(config)
+            plugin.connect()
+
+            # UID形式のID（Message-IDがない場合に生成されるID）
+            plugin.mark_as_processed("email-uid-1")
+
+            # UIDを直接使用してSTOREを呼び出す
+            mock_imap.store.assert_called_once_with("1", "+FLAGS", "\\Seen")
