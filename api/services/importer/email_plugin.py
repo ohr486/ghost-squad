@@ -118,7 +118,7 @@ class EmailPluginConfigValidator:
             )
 
         # password検証
-        if not config.password:
+        if not config.password or not config.password.strip():
             errors.append(
                 ValidationError(
                     field="password",

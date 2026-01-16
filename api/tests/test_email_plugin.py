@@ -226,6 +226,14 @@ class TestEmailPluginConfigValidator:
         assert result.errors[0].code == "GS-313"
         assert "必須" in result.errors[0].message
 
+    def test_whitespace_password_fails(self) -> None:
+        """空白のみのパスワードが検証に失敗することを確認."""
+        config = self._create_valid_config(password="   ")
+        result = EmailPluginConfigValidator.validate(config)
+
+        assert result.valid is False
+        assert any(e.field == "password" for e in result.errors)
+
     # --- folder検証のテスト ---
 
     def test_empty_folder_fails(self) -> None:
