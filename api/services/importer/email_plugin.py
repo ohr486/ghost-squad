@@ -38,8 +38,9 @@ class EmailPluginConfig:
         - usernameは空でないこと
         - passwordは空でないこと（機密情報、ログに出力しない）
         - folderは有効なIMAPフォルダ名形式
-        - fetch_limitは1以上
+        - fetch_limitは1〜1000の範囲
         - retry_maxは0以上
+        - retry_backoff_baseは0より大きいこと
     """
 
     imap_server: str
