@@ -5,14 +5,90 @@ Task 3.1: EmailPluginConfigと設定検証の実装
   folder、use_ssl、fetch_limit、retry_max、retry_backoff_base）
 - 設定検証ロジックの実装（必須フィールド、ポート範囲、フォルダ名形式）
 
-Requirements: 2.1, 2.3 (IMAP/POP3接続、フォルダフィルタリング)
+Task 3.2: EmailPluginのIMAP接続機能の実装
+- IMAP4_SSLによるメールサーバー接続の実装（connect）
+- 接続切断の実装（disconnect）
+- 指数バックオフによるリトライ戦略の実装（最大3回、2^n秒）
+- 接続失敗時のエラーハンドリングとエラー通知
+- タイムアウト設定（30秒）
+
+Requirements: 2.1, 2.3, 2.5 (IMAP/POP3接続、フォルダフィルタリング、リトライ処理)
 """
+import imaplib
 import re
+import socket
+import time
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional, Union
 
 from services.importer.plugin_base import (DataSourcePlugin, RawImportData,
                                            ValidationError, ValidationResult)
+
+# IMAP接続タイムアウト（秒）
+IMAP_CONNECTION_TIMEOUT = 30
+
+
+class EmailPluginError(Exception):
+    """EmailPluginの基底例外クラス."""
+
+    def __init__(self, message: str, code: str) -> None:
+        """EmailPluginErrorを初期化.
+
+        Args:
+            message: エラーメッセージ
+            code: エラーコード（GS-3xx形式）
+        """
+        super().__init__(f"[{code}] {message}")
+        self.message = message
+        self.code = code
+
+
+class EmailConnectionError(EmailPluginError):
+    """メールサーバー接続エラー.
+
+    接続失敗、タイムアウト、ネットワークエラーなど。
+    エラーコード: GS-303
+    """
+
+    def __init__(self, message: str) -> None:
+        """EmailConnectionErrorを初期化.
+
+        Args:
+            message: エラーメッセージ
+        """
+        super().__init__(message, "GS-303")
+
+
+class EmailAuthenticationError(EmailPluginError):
+    """メール認証エラー.
+
+    ユーザー名またはパスワードが無効。
+    エラーコード: GS-320
+    """
+
+    def __init__(self, message: str) -> None:
+        """EmailAuthenticationErrorを初期化.
+
+        Args:
+            message: エラーメッセージ
+        """
+        super().__init__(message, "GS-320")
+
+
+class EmailFolderError(EmailPluginError):
+    """メールフォルダエラー.
+
+    指定されたフォルダが見つからない。
+    エラーコード: GS-321
+    """
+
+    def __init__(self, message: str) -> None:
+        """EmailFolderErrorを初期化.
+
+        Args:
+            message: エラーメッセージ
+        """
+        super().__init__(message, "GS-321")
 
 
 @dataclass(frozen=True)
@@ -208,7 +284,7 @@ class EmailPlugin(DataSourcePlugin[EmailPluginConfig]):
             config: プラグイン設定
         """
         self._config = config
-        self._connection = None  # Task 3.2で実装
+        self._connection: Optional[Union[imaplib.IMAP4_SSL, imaplib.IMAP4]] = None
 
     @property
     def plugin_type(self) -> str:
@@ -228,6 +304,15 @@ class EmailPlugin(DataSourcePlugin[EmailPluginConfig]):
         """
         return self._config
 
+    @property
+    def is_connected(self) -> bool:
+        """接続状態を取得する.
+
+        Returns:
+            bool: 接続中の場合True
+        """
+        return self._connection is not None
+
     def validate_config(self, config: EmailPluginConfig) -> ValidationResult:
         """設定情報を検証する.
 
@@ -242,21 +327,116 @@ class EmailPlugin(DataSourcePlugin[EmailPluginConfig]):
     def connect(self) -> None:
         """IMAPサーバーに接続する.
 
-        Raises:
-            ConnectionError: 接続に失敗した場合
+        接続失敗時は指数バックオフによるリトライ戦略を実行。
+        タイムアウトは30秒に設定。
 
-        Note:
-            Task 3.2で実装予定
+        Raises:
+            EmailConnectionError: 最大リトライ回数を超えても接続に失敗した場合
+            EmailAuthenticationError: 認証に失敗した場合
+            EmailFolderError: 指定されたフォルダが見つからない場合
         """
-        raise NotImplementedError("Task 3.2で実装予定")
+        # 既に接続済みの場合は一度切断
+        if self._connection is not None:
+            self.disconnect()
+
+        last_error: Optional[Exception] = None
+        attempts = 0
+        max_attempts = self._config.retry_max + 1  # 初回 + リトライ回数
+
+        while attempts < max_attempts:
+            attempts += 1  # 試行回数をカウント（1始まり）
+            try:
+                # IMAP接続を確立
+                self._connection = self._create_imap_connection()
+
+                # ログイン
+                login_status, login_data = self._connection.login(
+                    self._config.username, self._config.password
+                )
+                if login_status != "OK":
+                    self._connection = None
+                    raise EmailAuthenticationError(f"認証に失敗しました: {login_data}")
+
+                # フォルダを選択
+                select_status, select_data = self._connection.select(
+                    self._config.folder
+                )
+                if select_status != "OK":
+                    self._safe_logout()
+                    self._connection = None
+                    raise EmailFolderError(
+                        f"フォルダ '{self._config.folder}' が見つかりません: {select_data}"
+                    )
+
+                # 接続成功
+                return
+
+            except (EmailAuthenticationError, EmailFolderError):
+                # 認証・フォルダエラーはリトライしない
+                raise
+            except (socket.error, socket.timeout, OSError, imaplib.IMAP4.error) as e:
+                # ネットワークエラーおよびIMAPプロトコルエラーはリトライ対象
+                last_error = e
+                self._connection = None
+
+                if attempts < max_attempts:
+                    # 指数バックオフで待機: base^(attempts-1)秒
+                    wait_time = self._config.retry_backoff_base ** (attempts - 1)
+                    time.sleep(wait_time)
+
+        # 最大リトライ回数を超えた
+        raise EmailConnectionError(
+            f"メールサーバーへの接続に失敗しました（{max_attempts}回試行）: {last_error}"
+        )
+
+    def _create_imap_connection(
+        self,
+    ) -> Union[imaplib.IMAP4_SSL, imaplib.IMAP4]:
+        """IMAP接続を作成する.
+
+        Returns:
+            IMAP4_SSL or IMAP4: IMAP接続オブジェクト
+        """
+        if self._config.use_ssl:
+            return imaplib.IMAP4_SSL(
+                self._config.imap_server,
+                self._config.imap_port,
+                timeout=IMAP_CONNECTION_TIMEOUT,
+            )
+        else:
+            return imaplib.IMAP4(
+                self._config.imap_server,
+                self._config.imap_port,
+                timeout=IMAP_CONNECTION_TIMEOUT,
+            )
+
+    def _safe_logout(self) -> None:
+        """安全にログアウトする（エラーを無視）."""
+        if self._connection is not None:
+            try:
+                self._connection.logout()
+            except Exception:  # nosec B110 - 切断時のエラーは意図的に無視
+                pass
 
     def disconnect(self) -> None:
         """IMAP接続を切断する.
 
-        Note:
-            Task 3.2で実装予定
+        切断中のエラーは無視し、必ず接続を解放する。
         """
-        raise NotImplementedError("Task 3.2で実装予定")
+        if self._connection is None:
+            return
+
+        try:
+            self._connection.close()
+        except Exception:  # nosec B110 - 切断時のエラーは意図的に無視
+            pass
+
+        try:
+            self._connection.logout()
+        except Exception:  # nosec B110 - 切断時のエラーは意図的に無視
+            pass
+
+        self._connection = None
 
     def fetch(self) -> List[RawImportData]:
         """未読メールを取得する.
