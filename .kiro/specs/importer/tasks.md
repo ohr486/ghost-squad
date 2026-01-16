@@ -34,7 +34,7 @@
   - ユニットテスト作成
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 2.2 AIProviderRegistryサービスの実装
+- [x] 2.2 AIProviderRegistryサービスの実装
   - プロバイダー登録・解除機能の実装（register、unregister）
   - デフォルトプロバイダー設定機能の実装（set_default）
   - プロバイダー取得機能の実装（get_provider、引数未指定時はデフォルト返却）

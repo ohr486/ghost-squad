@@ -6,6 +6,10 @@ from services.importer.ai_provider_base import (AIAnalysisRequest,
                                                 AIAnalysisResponse, AIProvider,
                                                 AIProviderConfig,
                                                 AIProviderType)
+from services.importer.ai_provider_registry import (AIProviderError,
+                                                    AIProviderRegistryService,
+                                                    AIProviderStatus)
+from services.importer.ai_provider_registry import Result as AIProviderResult
 from services.importer.plugin_base import (DataSourcePlugin, RawImportData,
                                            ValidationError, ValidationResult)
 from services.importer.plugin_registry import (PluginError,
@@ -29,4 +33,9 @@ __all__ = [
     "AIAnalysisRequest",
     "AIAnalysisResponse",
     "AIProvider",
+    # AI provider registry
+    "AIProviderError",
+    "AIProviderRegistryService",
+    "AIProviderStatus",
+    "AIProviderResult",
 ]
