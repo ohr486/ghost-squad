@@ -205,7 +205,7 @@ class AIProviderRegistryService:
             self._default_provider = provider_type
 
         logger.info(
-            f"AIプロバイダー '{provider_type.value}' を登録しました " f"(デフォルト: {is_default})"
+            f"AIプロバイダー '{provider_type.value}' を登録しました (デフォルト: {is_default})"
         )
 
         return Result.ok(
