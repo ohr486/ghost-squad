@@ -9,14 +9,17 @@ from services.importer.ai_provider_base import (AIAnalysisRequest,
 from services.importer.ai_provider_registry import (AIProviderError,
                                                     AIProviderRegistryService,
                                                     AIProviderStatus)
-from services.importer.ai_provider_registry import Result as AIProviderResult
 from services.importer.plugin_base import (DataSourcePlugin, RawImportData,
                                            ValidationError, ValidationResult)
 from services.importer.plugin_registry import (PluginError,
                                                PluginRegistryService,
-                                               PluginStatus, Result)
+                                               PluginStatus)
+from services.importer.result import BaseError, Result
 
 __all__ = [
+    # Common result type
+    "BaseError",
+    "Result",
     # Plugin base
     "DataSourcePlugin",
     "RawImportData",
@@ -26,7 +29,6 @@ __all__ = [
     "PluginError",
     "PluginRegistryService",
     "PluginStatus",
-    "Result",
     # AI provider base
     "AIProviderType",
     "AIProviderConfig",
@@ -37,5 +39,4 @@ __all__ = [
     "AIProviderError",
     "AIProviderRegistryService",
     "AIProviderStatus",
-    "AIProviderResult",
 ]
