@@ -11,7 +11,7 @@ Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6
 """
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 from services.importer.ai_provider_base import AIProvider, AIProviderType
 from services.importer.result import BaseError, Result
@@ -132,9 +132,7 @@ class AIProviderRegistryService:
             temp_instance.initialize()
         except Exception as e:
             logger.error(f"AIプロバイダーの初期化に失敗しました: {e}")
-            return Result.err(
-                AIProviderError("GS-309", f"AIプロバイダーの初期化に失敗しました: {e}")
-            )
+            return Result.err(AIProviderError("GS-309", f"AIプロバイダーの初期化に失敗しました: {e}"))
         # 最初のプロバイダーはデフォルトにする
         is_first = len(self._providers) == 0
         is_default = is_first
@@ -155,9 +153,7 @@ class AIProviderRegistryService:
         if is_default:
             self._default_provider = provider_type
 
-        logger.info(
-            f"AIプロバイダー '{provider_type.value}' を登録しました (デフォルト: {is_default})"
-        )
+        logger.info(f"AIプロバイダー '{provider_type.value}' を登録しました (デフォルト: {is_default})")
 
         return Result.ok(
             AIProviderStatus(

@@ -11,7 +11,7 @@ Requirements: 1.1, 1.2, 1.3, 1.5
 """
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 from services.importer.plugin_base import DataSourcePlugin
 from services.importer.result import BaseError, Result
