@@ -373,8 +373,8 @@ class EmailPlugin(DataSourcePlugin[EmailPluginConfig]):
             except (EmailAuthenticationError, EmailFolderError):
                 # 認証・フォルダエラーはリトライしない
                 raise
-            except (socket.error, socket.timeout, OSError) as e:
-                # ネットワークエラーはリトライ対象
+            except (socket.error, socket.timeout, OSError, imaplib.IMAP4.error) as e:
+                # ネットワークエラーおよびIMAPプロトコルエラーはリトライ対象
                 last_error = e
                 self._connection = None
                 attempts += 1
