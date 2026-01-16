@@ -1050,7 +1050,7 @@ Content-Type: text/plain; charset=utf-8
             result = plugin.fetch()
 
             assert len(result) == 1
-            # UTCに変換されている（+0900から-9時間）
+            # メールヘッダーの日付（+0900のタイムゾーン情報を含む）が正しくパースされていることを確認
             assert result[0].received_at.year == 2026
             assert result[0].received_at.month == 1
             assert result[0].received_at.day == 11
