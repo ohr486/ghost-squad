@@ -62,6 +62,12 @@ models/
   - バリデーション（`story_validator.py` - ストーリーデータ検証、95%カバレッジ）
   - ワークフローサービス（`story_workflow_service.py` - 承認・却下処理、ステータス遷移管理、一括承認、100%カバレッジ）
   - AI統合（`story_generation_service.py` - OpenAI API統合、ストーリー自動生成、リトライ戦略、88%カバレッジ）
+- **Importer関連（基盤実装済み、`services/importer/`）**:
+  - プラグイン基盤（`plugin_base.py` - DataSourcePlugin抽象クラス、RawImportDataデータクラス）
+  - プラグイン管理（`plugin_registry.py` - PluginRegistryService、登録・有効/無効切替）
+  - AIプロバイダー基盤（`ai_provider_base.py` - AIProvider抽象クラス、AIAnalysisRequest/Response）
+  - AIプロバイダー管理（`ai_provider_registry.py` - AIProviderRegistryService、デフォルト設定）
+  - メールプラグイン（`email_plugin.py` - IMAP接続、メール取得・解析、リトライ戦略）
 
 **API層** (`routers/`)
 - FastAPIルーター定義

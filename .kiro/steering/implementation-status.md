@@ -98,6 +98,13 @@ inclusion: always
   - Design（生成済み・承認済み）
   - Tasks（生成済み・承認済み）
   - Dependencies: inquiry
+- `.kiro/specs/importer/` - Importer機能仕様
+  - Phase: tasks-generated
+  - Requirements（生成済み・承認済み）
+  - Design（生成済み・承認済み）
+  - Tasks（生成済み・承認済み）
+  - Dependencies: inquiry
+  - 実装進捗: Tasks 1.1-1.2, 2.1-2.2, 3.1-3.3完了（プラグイン基盤、AIプロバイダー基盤、メールプラグイン）
 
 **5. ステアリングドキュメント（`.kiro/steering/`）**
 - `product.md` - プロダクト開発ガイドライン
@@ -239,7 +246,25 @@ Story機能（サービス層完了・API層実装済み）:
 10. ❌ Tailwind CSS設定
 11. ❌ React Router設定
 
-**Phase 4: Story機能の実装（優先度：中）** - 🎉 **バックエンド完全実装完了**
+**Phase 4: Importer機能の実装（優先度：中）** - 🚧 **基盤実装中**
+- `.kiro/specs/importer/` の設計・タスクに従って実装
+- ダブルプラグインアーキテクチャ（データソース + AIプロバイダー）
+- 実装状況:
+  - ✅ ~~DataSourcePlugin抽象基底クラス~~ （完了 - `services/importer/plugin_base.py`）
+  - ✅ ~~PluginRegistryサービス~~ （完了 - `services/importer/plugin_registry.py`）
+  - ✅ ~~AIProvider抽象基底クラス~~ （完了 - `services/importer/ai_provider_base.py`）
+  - ✅ ~~AIProviderRegistryサービス~~ （完了 - `services/importer/ai_provider_registry.py`）
+  - ✅ ~~EmailPluginConfig設定・検証~~ （完了 - Task 3.1）
+  - ✅ ~~EmailPlugin IMAP接続機能~~ （完了 - Task 3.2）
+  - ✅ ~~EmailPluginメール取得・解析機能~~ （完了 - Task 3.3）
+  - ❌ OpenAIProvider実装（Task 4.1, 4.2）
+  - ❌ AnthropicProvider実装（Task 5.1, 5.2）
+  - ❌ ImporterAnalysisService実装（Task 6.1）
+  - ❌ ImporterService実装（Task 9.1-9.4）
+  - ❌ Importer API実装（Task 10.1-10.4）
+  - ❌ フロントエンド実装（Task 12-13）
+
+**Phase 5: Story機能の実装（優先度：中）** - 🎉 **バックエンド完全実装完了**
 - `.kiro/specs/story/` の設計・タスクに従って実装完了
 - Inquiry機能への依存関係を満たし、バックエンド全層実装済み
 - 実装状況:
@@ -380,14 +405,22 @@ Story機能（サービス層完了・API層実装済み）:
 - ✅ **Story API層完全実装**（routers/story.py、全8エンドポイント - CRUD・ワークフロー・AI生成）
 - ✅ **Story型定義**（src/types/story.ts、StoryStatus/StoryResponse/各種Request型）
 - ✅ **Story APIクライアント**（src/services/storyApi.ts、18テスト、82.45%カバレッジ、CRUD・ワークフロー・AI生成）
+- ✅ **Importerプラグイン基盤**（DataSourcePlugin抽象クラス、PluginRegistryサービス）
+- ✅ **Importer AIプロバイダー基盤**（AIProvider抽象クラス、AIProviderRegistryサービス）
+- ✅ **EmailPlugin**（IMAP接続、メール取得・解析、リトライ戦略、エラーハンドリング）
 
-### 進行中（5%）
+### 進行中（10%）
 - 🔄 Story UIコンポーネント実装
   - ✅ StoryList完了（タスク9.1、9.2）
   - ✅ StoryForm完了（タスク10.1、10.2）
   - ✅ StoryDetail完了（タスク11.1、11.2）
   - ✅ UI統合・ストーリー生成トリガー完了（タスク12.1）
   - ✅ E2E統合テスト完了（タスク12.2）
+- 🔄 Importer機能実装（Tasks 4-14残り）
+  - ❌ OpenAIProvider/AnthropicProvider実装
+  - ❌ ImporterAnalysisService実装
+  - ❌ ImporterService実装
+  - ❌ Importer API/フロントエンド実装
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
@@ -397,26 +430,15 @@ Story機能（サービス層完了・API層実装済み）:
 
 ---
 
-**最終更新**: 2026年1月11日
-**更新理由**: Story UIコンポーネント実装完了（タスク11.1、11.2、12.1、12.2）
-- StoryDetailコンポーネント実装完了（src/components/StoryDetail.tsx）
-  - 詳細表示・編集モード切り替え
-  - インライン編集（タイトル、説明、優先度、推定工数、担当者、期限）
-  - 承認・却下ワークフロー（ステータス='waiting_review'のみ）
-  - 確認ダイアログ・却下理由入力モーダル
-  - 93.85% statementsカバレッジ
-- StoryDetailテスト完了（src/components/StoryDetail.test.tsx、26テスト）
-- ストーリー生成トリガー追加（InquiryDetail.tsx）
-  - 問い合わせ詳細ページからストーリー生成ボタン
-  - task_workingステータス時のみ表示
-  - エラーハンドリング（APIエラーメッセージ表示）
-  - 7テスト追加（InquiryDetail.test.tsx）
-- StoryIntegration E2Eテスト追加（src/components/StoryIntegration.test.tsx、10テスト）
-  - ストーリー生成フロー
-  - 手動作成フロー
-  - 承認・却下フロー
-  - ナビゲーション・ステータス別UI動作
-- storyApi.ts修正: generateStory関数がundefinedをボディとして送信（AI自動生成モード）
-- setupTests.ts: React Query警告抑制追加
-- フロントエンド全体: 178テスト、10テストスイート
-- 次のステップ: ページレイアウト・ルーティング統合、レスポンシブデザイン最適化
+**最終更新**: 2026年1月17日
+**更新理由**: Importer機能のステアリング反映
+- Importer機能仕様（`.kiro/specs/importer/`）のステータス追加
+- Importer基盤実装の追記（Tasks 1.1-1.2, 2.1-2.2, 3.1-3.3完了）
+  - DataSourcePlugin抽象基底クラス（plugin_base.py）
+  - PluginRegistryサービス（plugin_registry.py）
+  - AIProvider抽象基底クラス（ai_provider_base.py）
+  - AIProviderRegistryサービス（ai_provider_registry.py）
+  - EmailPlugin実装（email_plugin.py - IMAP接続、メール取得・解析）
+- ダブルプラグインアーキテクチャパターンの記録
+- エラーコード体系（GS-301〜GS-399）の追加
+- 次のステップ: OpenAI/Anthropicプロバイダー実装、ImporterService、API層

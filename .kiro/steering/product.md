@@ -36,6 +36,13 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 - **開発環境**: Docker Compose + Makefile統合
 - **テスト**: 189テスト、高カバレッジ（inquiry: 91%、database接続テスト含む）
 
+**Importer機能（基盤実装済み）**
+- **ダブルプラグインアーキテクチャ**: データソースとAIプロバイダーの二層拡張構造
+- **プラグイン基盤**: DataSourcePlugin抽象基底クラス、PluginRegistryサービス
+- **AIプロバイダー基盤**: AIProvider抽象基底クラス、AIProviderRegistryサービス
+- **メールプラグイン**: EmailPlugin（IMAP接続、メール取得・解析、リトライ戦略）
+- **エラーコード体系**: GS-301〜GS-399（Importer用）
+
 **フロントエンド（基盤完成、98%実装）**
 - **TypeScript基盤**: strict mode、型定義完備（InquiryResponse、StoryResponse等）
 - **APIクライアント**: Axios統合、エラーハンドリング、CORS対応
@@ -55,6 +62,7 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 ### 🚧 開発中機能
 - **フロントエンド統合**: レスポンシブデザイン最適化、E2Eテスト
 - **ストーリー管理**: バックエンド・フロントエンド実装完了、統合テスト・UI最適化が進行中
+- **Importer機能**: AIプロバイダー実装（OpenAI/Anthropic）、サービス層、API、フロントエンド
 
 ## ドメインモデル
 
