@@ -46,7 +46,7 @@
 
 ### 3. メールプラグインの実装
 
-- [ ] 3.1 EmailPluginConfigと設定検証の実装
+- [x] 3.1 EmailPluginConfigと設定検証の実装
   - EmailPluginConfigデータクラスの定義（imap_server、imap_port、username、password、folder、use_ssl、fetch_limit、retry_max、retry_backoff_base）
   - 設定検証ロジックの実装（必須フィールド、ポート範囲、フォルダ名形式）
   - ユニットテスト作成
