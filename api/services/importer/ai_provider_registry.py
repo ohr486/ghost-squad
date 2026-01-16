@@ -176,6 +176,14 @@ class AIProviderRegistryService:
                 AIProviderError("GS-309", f"設定検証に失敗しました: {error_messages}")
             )
 
+        # プロバイダーの初期化
+        try:
+            temp_instance.initialize()
+        except Exception as e:
+            logger.error(f"AIプロバイダーの初期化に失敗しました: {e}")
+            return Result.err(
+                AIProviderError("GS-309", f"AIプロバイダーの初期化に失敗しました: {e}")
+            )
         # 最初のプロバイダーはデフォルトにする
         is_first = len(self._providers) == 0
         is_default = is_first
