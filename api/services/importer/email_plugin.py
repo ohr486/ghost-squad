@@ -344,6 +344,7 @@ class EmailPlugin(DataSourcePlugin[EmailPluginConfig]):
         max_attempts = self._config.retry_max + 1  # 初回 + リトライ回数
 
         while attempts < max_attempts:
+            attempts += 1  # 試行回数をカウント（1始まり）
             try:
                 # IMAP接続を確立
                 self._connection = self._create_imap_connection()
@@ -377,7 +378,6 @@ class EmailPlugin(DataSourcePlugin[EmailPluginConfig]):
                 # ネットワークエラーおよびIMAPプロトコルエラーはリトライ対象
                 last_error = e
                 self._connection = None
-                attempts += 1
 
                 if attempts < max_attempts:
                     # 指数バックオフで待機: base^(attempts-1)秒
