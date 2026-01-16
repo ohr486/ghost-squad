@@ -11,9 +11,10 @@ Requirements: 1.1, 1.2, 1.3, 1.5
 """
 import logging
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Generic, List, Optional, TypeVar
+from typing import Any, Callable, Dict, List, Optional, TypeVar
 
 from services.importer.plugin_base import DataSourcePlugin
+from services.importer.result import BaseError, Result
 
 # ジェネリック型パラメータ
 T = TypeVar("T")
@@ -40,7 +41,8 @@ class PluginStatus:
     error_message: Optional[str] = None
 
 
-class PluginError(Exception):
+@dataclass
+class PluginError(BaseError):
     """プラグイン関連のエラー.
 
     Attributes:
@@ -48,58 +50,7 @@ class PluginError(Exception):
         message: エラーメッセージ
     """
 
-    def __init__(self, code: str, message: str) -> None:
-        self.code = code
-        self.message = message
-        super().__init__(f"[{code}] {message}")
-
-    def __str__(self) -> str:
-        return f"[{self.code}] {self.message}"
-
-
-class Result(Generic[T]):
-    """Result型：成功または失敗を表す.
-
-    Rust風のResult型を簡易実装。
-    """
-
-    def __init__(
-        self, value: Optional[T] = None, error: Optional[PluginError] = None
-    ) -> None:
-        self._value = value
-        self._error = error
-
-    @classmethod
-    def ok(cls, value: T) -> "Result[T]":
-        """成功結果を作成."""
-        return cls(value=value)
-
-    @classmethod
-    def err(cls, error: PluginError) -> "Result[T]":
-        """失敗結果を作成."""
-        return cls(error=error)
-
-    @property
-    def is_ok(self) -> bool:
-        """成功かどうかを返す."""
-        return self._error is None
-
-    @property
-    def is_err(self) -> bool:
-        """失敗かどうかを返す."""
-        return self._error is not None
-
-    def unwrap(self) -> T:
-        """成功時の値を取得。成功でない場合は例外を発生。"""
-        if self._error is not None:
-            raise ValueError(f"Called unwrap on an Err value: {self._error}")
-        return self._value  # type: ignore
-
-    def unwrap_err(self) -> PluginError:
-        """失敗時のエラーを取得.失敗でない場合は例外を発生."""
-        if self._error is None:
-            raise ValueError("Called unwrap_err on an Ok value")
-        return self._error
+    pass
 
 
 @dataclass
