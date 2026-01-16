@@ -682,9 +682,10 @@ class TestEmailPluginConnection:
             with pytest.raises(EmailConnectionError):
                 plugin.connect()
 
-            # バックオフ: 3^0=1秒、3^1=3秒
-            mock_sleep.assert_any_call(1.0)  # 3^0
-            mock_sleep.assert_any_call(3.0)  # 3^1
+            # バックオフ: リトライ回数 n (1 始まり) に対して base^(n-1)
+            # 今回は 3^(1-1)=1 秒、3^(2-1)=3 秒 となる
+            mock_sleep.assert_any_call(1.0)  # 1回目のリトライ: 3^(1-1)=1
+            mock_sleep.assert_any_call(3.0)  # 2回目のリトライ: 3^(2-1)=3
 
     # --- 認証エラーのテスト ---
 
