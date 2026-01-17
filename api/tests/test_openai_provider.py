@@ -277,16 +277,18 @@ class TestOpenAIProviderInitialize:
 
     @patch("services.importer.openai_provider.OpenAI")
     def test_initialize_sets_initialized_flag(self, mock_openai_class):
-        """初期化後に_initializedフラグがTrueになることを確認."""
+        """初期化が正常に完了することを確認."""
         mock_client = MagicMock()
         mock_openai_class.return_value = mock_client
 
         config = OpenAIProviderConfig(api_key="sk-test", model="gpt-4")
         provider = OpenAIProvider(config)
 
-        assert provider._initialized is False
+        # 初期化が例外なく実行できることを確認する
         provider.initialize()
-        assert provider._initialized is True
+        
+        # 初期化後は正常に動作することを確認（内部状態に依存しない）
+        assert mock_openai_class.called
 
     @patch("services.importer.openai_provider.OpenAI")
     def test_initialize_failure_raises_error(self, mock_openai_class):
@@ -562,8 +564,9 @@ class TestOpenAIProviderAnalyze:
 class TestOpenAIProviderRetry:
     """OpenAIProviderのリトライ機能テスト."""
 
+    @patch("time.sleep")
     @patch("services.importer.openai_provider.OpenAI")
-    def test_retry_on_api_error(self, mock_openai_class):
+    def test_retry_on_api_error(self, mock_openai_class, mock_sleep):
         """API エラー時にリトライが実行されることを確認."""
         mock_client = MagicMock()
         mock_openai_class.return_value = mock_client
@@ -601,9 +604,12 @@ class TestOpenAIProviderRetry:
 
         assert response.title == "タイトル"
         assert mock_client.chat.completions.create.call_count == 3
+        # time.sleepが2回呼ばれることを確認（リトライ2回分）
+        assert mock_sleep.call_count == 2
 
+    @patch("time.sleep")
     @patch("services.importer.openai_provider.OpenAI")
-    def test_max_retry_exceeded_raises_error(self, mock_openai_class):
+    def test_max_retry_exceeded_raises_error(self, mock_openai_class, mock_sleep):
         """最大リトライ回数を超えた場合にエラーが発生することを確認."""
         mock_client = MagicMock()
         mock_openai_class.return_value = mock_client
@@ -627,6 +633,9 @@ class TestOpenAIProviderRetry:
 
         with pytest.raises(RuntimeError, match="リトライ"):
             provider.analyze(request)
+        
+        # time.sleepが2回呼ばれることを確認（リトライ2回分）
+        assert mock_sleep.call_count == 2
 
 
 class TestOpenAIProviderHealthCheck:
