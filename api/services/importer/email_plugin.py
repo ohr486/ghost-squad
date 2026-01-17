@@ -31,8 +31,8 @@ import imaplib
 import re
 import socket
 import time
-from datetime import datetime, timezone
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import List, Optional, Union
 
 from services.importer.plugin_base import (DataSourcePlugin, RawImportData,
