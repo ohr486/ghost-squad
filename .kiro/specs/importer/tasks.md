@@ -97,7 +97,7 @@
 
 ### 5. Anthropicプロバイダーの実装
 
-- [ ] 5.1 (P) AnthropicProviderConfigと設定検証の実装
+- [x] 5.1 (P) AnthropicProviderConfigと設定検証の実装
   - AnthropicProviderConfigデータクラスの定義（AIProviderConfig継承）
   - サポートモデル一覧の定義（claude-3-opus、claude-3-sonnet、claude-3-haiku、claude-3-5-sonnet）
   - API Key形式検証の実装
@@ -105,7 +105,7 @@
   - ユニットテスト作成
   - _Requirements: 3.1, 3.6_
 
-- [ ] 5.2 (P) AnthropicProviderの解析機能の実装
+- [x] 5.2 (P) AnthropicProviderの解析機能の実装
   - Anthropicクライアント初期化の実装（initialize）
   - 問い合わせ解析プロンプトの構築（日本語対応、OpenAIProviderと共通化）
   - AI解析リクエストの実行（analyze）

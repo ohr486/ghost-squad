@@ -9,6 +9,8 @@ from services.importer.ai_provider_base import (AIAnalysisRequest,
 from services.importer.ai_provider_registry import (AIProviderError,
                                                     AIProviderRegistryService,
                                                     AIProviderStatus)
+from services.importer.anthropic_provider import (AnthropicProvider,
+                                                  AnthropicProviderConfig)
 from services.importer.openai_provider import (OpenAIProvider,
                                                OpenAIProviderConfig)
 from services.importer.plugin_base import (DataSourcePlugin, RawImportData,
@@ -44,4 +46,7 @@ __all__ = [
     # OpenAI provider
     "OpenAIProvider",
     "OpenAIProviderConfig",
+    # Anthropic provider
+    "AnthropicProvider",
+    "AnthropicProviderConfig",
 ]
