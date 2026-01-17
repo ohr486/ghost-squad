@@ -287,7 +287,7 @@ class AnthropicProvider(AIProvider[AnthropicProviderConfig]):
                 last_error = e
                 retry_max = self._config.retry_max
                 logger.warning(
-                    f"Anthropic API呼び出しに失敗しました " f"(試行 {attempt + 1}/{retry_max}): {e}"
+                    f"Anthropic API呼び出しに失敗しました(試行 {attempt + 1}/{retry_max}): {e}"
                 )
 
                 if attempt < self._config.retry_max - 1:
@@ -297,8 +297,7 @@ class AnthropicProvider(AIProvider[AnthropicProviderConfig]):
                     time.sleep(wait_time)
 
         raise RuntimeError(
-            f"Anthropic API呼び出しが最大リトライ回数"
-            f"({self._config.retry_max})を超えました: {last_error}"
+            f"Anthropic API呼び出しが最大リトライ回数({self._config.retry_max})を超えました: {last_error}"
         )
 
     def _parse_response(self, raw_content: str) -> Dict[str, Any]:
