@@ -26,13 +26,10 @@ from typing import Any, Dict, List, Optional
 
 from openai import OpenAI
 
-from services.importer.ai_provider_base import (
-    AIAnalysisRequest,
-    AIAnalysisResponse,
-    AIProvider,
-    AIProviderConfig,
-    AIProviderType,
-)
+from services.importer.ai_provider_base import (AIAnalysisRequest,
+                                                AIAnalysisResponse, AIProvider,
+                                                AIProviderConfig,
+                                                AIProviderType)
 from services.importer.plugin_base import ValidationError, ValidationResult
 
 # ロガー設定
@@ -288,8 +285,7 @@ class OpenAIProvider(AIProvider[OpenAIProviderConfig]):
                 last_error = e
                 retry_max = self._config.retry_max
                 logger.warning(
-                    f"OpenAI API呼び出しに失敗しました "
-                    f"(試行 {attempt + 1}/{retry_max}): {e}"
+                    f"OpenAI API呼び出しに失敗しました " f"(試行 {attempt + 1}/{retry_max}): {e}"
                 )
 
                 if attempt < self._config.retry_max - 1:

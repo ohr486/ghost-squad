@@ -966,18 +966,42 @@ Content-Type: text/plain; charset=utf-8
         mock_imap.select.return_value = ("OK", [b"3"])
         mock_imap.search.return_value = ("OK", [b"1 2 3"])
         mock_imap.fetch.side_effect = [
-            ("OK", [(b"1 (RFC822 {1234}", self._create_mock_email(
-                message_id="<msg1@example.com>",
-                subject="件名1",
-            ))]),
-            ("OK", [(b"2 (RFC822 {1234}", self._create_mock_email(
-                message_id="<msg2@example.com>",
-                subject="件名2",
-            ))]),
-            ("OK", [(b"3 (RFC822 {1234}", self._create_mock_email(
-                message_id="<msg3@example.com>",
-                subject="件名3",
-            ))]),
+            (
+                "OK",
+                [
+                    (
+                        b"1 (RFC822 {1234}",
+                        self._create_mock_email(
+                            message_id="<msg1@example.com>",
+                            subject="件名1",
+                        ),
+                    )
+                ],
+            ),
+            (
+                "OK",
+                [
+                    (
+                        b"2 (RFC822 {1234}",
+                        self._create_mock_email(
+                            message_id="<msg2@example.com>",
+                            subject="件名2",
+                        ),
+                    )
+                ],
+            ),
+            (
+                "OK",
+                [
+                    (
+                        b"3 (RFC822 {1234}",
+                        self._create_mock_email(
+                            message_id="<msg3@example.com>",
+                            subject="件名3",
+                        ),
+                    )
+                ],
+            ),
         ]
 
         with patch(
@@ -1005,9 +1029,17 @@ Content-Type: text/plain; charset=utf-8
         # 10件のメールIDを返す
         mock_imap.search.return_value = ("OK", [b"1 2 3 4 5 6 7 8 9 10"])
         mock_imap.fetch.side_effect = [
-            ("OK", [(b"1 (RFC822 {1234}", self._create_mock_email(
-                message_id=f"<msg{i}@example.com>",
-            ))])
+            (
+                "OK",
+                [
+                    (
+                        b"1 (RFC822 {1234}",
+                        self._create_mock_email(
+                            message_id=f"<msg{i}@example.com>",
+                        ),
+                    )
+                ],
+            )
             for i in range(1, 6)  # fetch_limit=5のため5件だけ
         ]
 
@@ -1035,9 +1067,12 @@ Content-Type: text/plain; charset=utf-8
         mock_imap.search.return_value = ("OK", [b"1"])
         mock_imap.fetch.return_value = (
             "OK",
-            [(b"1 (RFC822 {1234}", self._create_mock_email(
-                date_str="Sat, 11 Jan 2026 10:30:00 +0900"
-            ))],
+            [
+                (
+                    b"1 (RFC822 {1234}",
+                    self._create_mock_email(date_str="Sat, 11 Jan 2026 10:30:00 +0900"),
+                )
+            ],
         )
 
         with patch(
@@ -1076,7 +1111,9 @@ Content-Type: text/plain; charset=utf-8
 Content-Type: text/html; charset=utf-8
 
 <html><body>HTML本文</body></html>
---boundary123--""".encode("utf-8")
+--boundary123--""".encode(
+            "utf-8"
+        )
 
         mock_imap = MagicMock()
         mock_imap.login.return_value = ("OK", [b"Logged in"])
@@ -1106,7 +1143,9 @@ Date: Sat, 11 Jan 2026 10:30:00 +0900
 Message-ID: <encoded@example.com>
 Content-Type: text/plain; charset=utf-8
 
-本文""".encode("utf-8")
+本文""".encode(
+            "utf-8"
+        )
 
         mock_imap = MagicMock()
         mock_imap.login.return_value = ("OK", [b"Logged in"])
@@ -1188,9 +1227,17 @@ Content-Type: text/plain; charset=utf-8
         # 1件目はエラー、2件目は成功
         mock_imap.fetch.side_effect = [
             ("NO", [b"Fetch failed"]),
-            ("OK", [(b"2 (RFC822 {1234}", self._create_mock_email(
-                message_id="<msg2@example.com>",
-            ))]),
+            (
+                "OK",
+                [
+                    (
+                        b"2 (RFC822 {1234}",
+                        self._create_mock_email(
+                            message_id="<msg2@example.com>",
+                        ),
+                    )
+                ],
+            ),
         ]
 
         with patch(
@@ -1214,7 +1261,9 @@ Subject: No Message-ID
 Date: Sat, 11 Jan 2026 10:30:00 +0900
 Content-Type: text/plain; charset=utf-8
 
-本文""".encode("utf-8")
+本文""".encode(
+            "utf-8"
+        )
 
         mock_imap = MagicMock()
         mock_imap.login.return_value = ("OK", [b"Logged in"])

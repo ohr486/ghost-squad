@@ -22,15 +22,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.importer.ai_provider_base import (
-    AIAnalysisRequest,
-    AIAnalysisResponse,
-    AIProviderType,
-)
-from services.importer.openai_provider import (
-    OpenAIProvider,
-    OpenAIProviderConfig,
-)
+from services.importer.ai_provider_base import (AIAnalysisRequest,
+                                                AIAnalysisResponse,
+                                                AIProviderType)
+from services.importer.openai_provider import (OpenAIProvider,
+                                               OpenAIProviderConfig)
 
 
 class TestOpenAIProviderConfig:
@@ -286,7 +282,7 @@ class TestOpenAIProviderInitialize:
 
         # 初期化が例外なく実行できることを確認する
         provider.initialize()
-        
+
         # 初期化後は正常に動作することを確認（内部状態に依存しない）
         assert mock_openai_class.called
 
@@ -633,7 +629,7 @@ class TestOpenAIProviderRetry:
 
         with pytest.raises(RuntimeError, match="リトライ"):
             provider.analyze(request)
-        
+
         # time.sleepが2回呼ばれることを確認（リトライ2回分）
         assert mock_sleep.call_count == 2
 
