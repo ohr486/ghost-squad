@@ -119,7 +119,7 @@
 
 ### 6. Analysis Serviceの実装
 
-- [ ] 6.1 ImporterAnalysisServiceの実装
+- [x] 6.1 ImporterAnalysisServiceの実装
   - AIProviderRegistryとの統合
   - 解析用プロンプトの構築（全プロバイダー共通、日本語対応）
   - プロバイダー選択機能（引数指定またはデフォルト使用）
