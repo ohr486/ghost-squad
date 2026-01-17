@@ -9,6 +9,7 @@ from services.importer.ai_provider_base import (AIAnalysisRequest,
 from services.importer.ai_provider_registry import (AIProviderError,
                                                     AIProviderRegistryService,
                                                     AIProviderStatus)
+from services.importer.openai_provider import OpenAIProvider, OpenAIProviderConfig
 from services.importer.plugin_base import (DataSourcePlugin, RawImportData,
                                            ValidationError, ValidationResult)
 from services.importer.plugin_registry import (PluginError,
@@ -39,4 +40,7 @@ __all__ = [
     "AIProviderError",
     "AIProviderRegistryService",
     "AIProviderStatus",
+    # OpenAI provider
+    "OpenAIProvider",
+    "OpenAIProviderConfig",
 ]
