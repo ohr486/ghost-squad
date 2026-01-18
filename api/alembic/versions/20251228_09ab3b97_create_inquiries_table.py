@@ -8,6 +8,7 @@ Create Date: 2025-12-28 14:14:18.990627
 from typing import Sequence, Union
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
@@ -50,7 +51,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "inquiry_metadata",
-            sa.JSON(),
+            postgresql.JSONB(),
             nullable=False,
             server_default="{}",
         ),
