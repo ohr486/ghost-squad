@@ -413,6 +413,111 @@ class TestImporterServiceExecuteImport:
 
         assert result.is_ok
 
+    def test_execute_import_success(
+        self,
+        mock_session: MagicMock,
+        sample_raw_data: RawImportData,
+        sample_analysis_result: AnalysisResult,
+    ) -> None:
+        """成功時のインポート実行の完全なハッピーパステスト."""
+        # モックプラグインを登録してデータを設定
+        plugin_registry = PluginRegistryService()
+        plugin = MockDataSourcePlugin({})
+        plugin.set_data([sample_raw_data])
+        plugin_registry.register(MockDataSourcePlugin, {})
+
+        # モックAnalysisServiceを作成
+        mock_analysis_service = MagicMock(spec=ImporterAnalysisService)
+        mock_analysis_service.analyze.return_value.is_ok = True
+        mock_analysis_service.analyze.return_value.unwrap.return_value = (
+            sample_analysis_result
+        )
+
+        # モックInquiryRepositoryを作成
+        mock_inquiry_repository = MagicMock()
+        mock_inquiry = MagicMock()
+        mock_inquiry.id = 123
+        mock_inquiry.inquiry_metadata = {}
+        mock_inquiry_repository.create.return_value = mock_inquiry
+        mock_inquiry_repository.find_by_metadata.return_value = None
+
+        # ImporterServiceを作成
+        service = ImporterService(
+            session=mock_session,
+            plugin_registry=plugin_registry,
+            analysis_service=mock_analysis_service,
+        )
+        service._inquiry_repository = mock_inquiry_repository
+
+        # インポートを実行
+        result = service.execute_import("mock_plugin")
+
+        # 結果の検証
+        assert result.is_ok
+        import_result = result.unwrap()
+        assert import_result.total_fetched == 1
+        assert import_result.total_imported == 1
+        assert import_result.total_skipped == 0
+        assert import_result.total_failed == 0
+        assert len(import_result.imported_inquiry_ids) == 1
+        assert import_result.imported_inquiry_ids[0] == 123
+        assert len(import_result.errors) == 0
+
+        # AI解析が呼ばれたことを確認
+        mock_analysis_service.analyze.assert_called_once()
+
+        # Inquiryが作成されたことを確認
+        mock_inquiry_repository.create.assert_called_once()
+        create_call_args = mock_inquiry_repository.create.call_args
+        create_data = create_call_args[0][0]
+        assert create_data.content == sample_analysis_result.content
+        assert create_data.user_id == "importer:mock_plugin"
+        assert create_data.source_system == "importer:mock_plugin"
+
+        # メタデータが正しく設定されたことを確認
+        assert mock_inquiry.inquiry_metadata["importer"]["source_type"] == "mock_plugin"
+        assert (
+            mock_inquiry.inquiry_metadata["importer"]["source_id"]
+            == sample_raw_data.source_id
+        )
+        assert (
+            mock_inquiry.inquiry_metadata["importer"]["confidence_score"]
+            == sample_analysis_result.confidence_score
+        )
+        assert (
+            mock_inquiry.inquiry_metadata["importer"]["needs_review"]
+            == sample_analysis_result.needs_review
+        )
+        assert (
+            mock_inquiry.inquiry_metadata["importer"]["original_subject"]
+            == sample_raw_data.subject
+        )
+        assert (
+            mock_inquiry.inquiry_metadata["importer"]["original_sender"]
+            == sample_raw_data.sender
+        )
+        assert (
+            mock_inquiry.inquiry_metadata["importer"]["ai_provider"]
+            == sample_analysis_result.provider_type
+        )
+        assert (
+            mock_inquiry.inquiry_metadata["importer"]["ai_model"]
+            == sample_analysis_result.model
+        )
+        # AI生成のタイトルと優先度が保存されていることを確認
+        assert (
+            mock_inquiry.inquiry_metadata["importer"]["ai_generated_title"]
+            == sample_analysis_result.title
+        )
+        assert (
+            mock_inquiry.inquiry_metadata["importer"]["ai_generated_priority"]
+            == sample_analysis_result.priority.value
+        )
+
+        # セッションのコミットが呼ばれたことを確認
+        assert mock_session.commit.called
+        assert mock_session.refresh.called
+
 
 class TestImporterServiceCheckDuplicate:
     """ImporterServiceの重複チェック機能のテスト (Task 9.2)."""
