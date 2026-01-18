@@ -2,7 +2,8 @@
 from datetime import datetime
 from typing import Any, Dict
 
-from sqlalchemy import JSON, CheckConstraint, DateTime, Enum, String, Text
+from sqlalchemy import CheckConstraint, DateTime, Enum, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.database.base import BaseModel
@@ -29,7 +30,7 @@ class InquiryModel(BaseModel):
         index=True,
     )
     inquiry_metadata: Mapped[Dict[str, Any]] = mapped_column(
-        JSON,
+        JSONB,
         nullable=False,
         default=lambda: {},
     )
