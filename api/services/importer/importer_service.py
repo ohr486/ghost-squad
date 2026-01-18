@@ -217,6 +217,8 @@ class ImporterService:
                     else:
                         # 重複によるスキップ
                         total_skipped += 1
+                        # 重複は正常系のため、連続エラーカウントをリセット
+                        self._consecutive_errors = 0
                 else:
                     error = result.unwrap_err()
                     total_failed += 1
