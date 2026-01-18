@@ -594,6 +594,11 @@ class ImporterService:
                     else:
                         # 重複によるスキップ
                         total_skipped += 1
+                        # リトライ成功としてエラーログを解決済みにマーク
+                        self._error_log_repository.mark_resolved_by_source(
+                            plugin_type=plugin_type,
+                            source_id=source_id,
+                        )
                 else:
                     error = result.unwrap_err()
                     total_failed += 1
