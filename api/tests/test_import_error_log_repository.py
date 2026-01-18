@@ -318,7 +318,7 @@ class TestImportErrorLogRepositoryStats:
     def test_get_error_stats_unresolved_only(self, repository, sample_error_logs):
         """未解決のみのエラー統計を取得できる."""
         # Act
-        stats = repository.get_error_stats(resolved_only=False)
+        stats = repository.get_error_stats(unresolved_only=True)
 
         # Assert
         stats_dict = {s.error_code: s for s in stats}

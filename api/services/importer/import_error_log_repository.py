@@ -174,7 +174,7 @@ class ImportErrorLogRepository:
     def get_error_stats(
         self,
         plugin_type: Optional[str] = None,
-        resolved_only: bool = True,
+        unresolved_only: bool = False,
     ) -> list[ErrorStats]:
         """エラー統計を取得する（要件5.4）.
 
@@ -182,7 +182,8 @@ class ImportErrorLogRepository:
 
         Args:
             plugin_type: プラグイン種別でフィルタ（オプション）
-            resolved_only: Falseの場合、未解決のエラーのみ集計
+            unresolved_only: Trueの場合、未解決のエラーのみ集計。
+                Falseの場合（デフォルト）、解決済み・未解決を区別せず全て集計
 
         Returns:
             list[ErrorStats]: エラー統計のリスト（件数の降順）
@@ -196,7 +197,7 @@ class ImportErrorLogRepository:
         if plugin_type is not None:
             query = query.filter(ImportErrorLogModel.plugin_type == plugin_type)
 
-        if not resolved_only:
+        if unresolved_only:
             query = query.filter(ImportErrorLogModel.resolved == False)  # noqa: E712
 
         query = query.group_by(ImportErrorLogModel.error_code).order_by(desc("count"))
