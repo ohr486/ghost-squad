@@ -396,6 +396,8 @@ class ImporterService:
                 "original_sender": importer_metadata.original_sender,
                 "ai_provider": importer_metadata.ai_provider,
                 "ai_model": importer_metadata.ai_model,
+                "ai_generated_title": analysis.title,
+                "ai_generated_priority": analysis.priority.value,
             }
         }
         self._session.commit()
