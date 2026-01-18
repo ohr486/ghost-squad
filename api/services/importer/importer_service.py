@@ -602,6 +602,12 @@ class ImporterService:
                             error_message=error.message,
                         )
                     )
+                    # リトライ失敗時もエラーログに記録する
+                    self._log_error(
+                        plugin_type=plugin_type,
+                        source_id=source_id,
+                        error=error,
+                    )
 
         except ConnectionError as e:
             logger.error(f"データソース接続に失敗しました: {e}")
