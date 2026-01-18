@@ -740,7 +740,7 @@ db-tables:
 	docker compose exec -T db psql -U gs_user -d gs_db -c "\dt"
 	@echo ""
 	@echo "📋 Table details:"
-	@for table in inquiries stories; do \
+	@for table in inquiries stories import_error_logs; do \
 		echo ""; \
 		echo "🔍 Table: $$table"; \
 		docker compose exec -T db psql -U gs_user -d gs_db -c "\d $$table" 2>/dev/null || echo "  Table $$table not found"; \

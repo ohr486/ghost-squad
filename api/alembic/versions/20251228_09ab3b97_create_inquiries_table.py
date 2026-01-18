@@ -8,6 +8,7 @@ Create Date: 2025-12-28 14:14:18.990627
 from typing import Sequence, Union
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
@@ -50,7 +51,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             "inquiry_metadata",
-            sa.JSON(),
+            postgresql.JSONB(),
             nullable=False,
             server_default="{}",
         ),
@@ -78,10 +79,23 @@ def upgrade() -> None:
     op.create_index("ix_inquiries_status", "inquiries", ["status"])
     op.create_index("ix_inquiries_created_at", "inquiries", ["created_at"])
 
+    # Create GIN index for importer duplicate check optimization
+    # This index speeds up queries like:
+    # SELECT id FROM inquiries
+    # WHERE inquiry_metadata->'importer'->>'source_type' = 'email'
+    #   AND inquiry_metadata->'importer'->>'source_id' = 'message-id-xxx';
+    op.create_index(
+        "ix_inquiries_importer_source",
+        "inquiries",
+        [sa.text("(inquiry_metadata->'importer')")],
+        postgresql_using="gin",
+    )
+
 
 def downgrade() -> None:
     """Drop inquiries table and enum type."""
-    # Drop indexes first
+    # Drop indexes first (in reverse order of creation)
+    op.drop_index("ix_inquiries_importer_source", table_name="inquiries")
     op.drop_index("ix_inquiries_created_at", table_name="inquiries")
     op.drop_index("ix_inquiries_status", table_name="inquiries")
     op.drop_index("ix_inquiries_user_id", table_name="inquiries")

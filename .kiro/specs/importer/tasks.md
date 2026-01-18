@@ -147,7 +147,7 @@
 
 ### 8. 重複チェック用インデックスの追加
 
-- [ ] 8.1 (P) inquiry_metadataへのGINインデックス追加
+- [x] 8.1 (P) inquiry_metadataへのGINインデックス追加
   - Alembicマイグレーションファイルの作成
   - inquiry_metadata->'importer'へのGINインデックス追加
   - 重複チェッククエリの最適化確認
