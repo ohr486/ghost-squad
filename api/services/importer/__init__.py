@@ -11,6 +11,8 @@ from services.importer.ai_provider_registry import (AIProviderError,
                                                     AIProviderStatus)
 from services.importer.anthropic_provider import (AnthropicProvider,
                                                   AnthropicProviderConfig)
+from services.importer.import_error_log_repository import (
+    CreateErrorLogData, ErrorLogFilter, ErrorStats, ImportErrorLogRepository)
 from services.importer.openai_provider import (OpenAIProvider,
                                                OpenAIProviderConfig)
 from services.importer.plugin_base import (DataSourcePlugin, RawImportData,
@@ -21,6 +23,11 @@ from services.importer.plugin_registry import (PluginError,
 from services.importer.result import BaseError, Result
 
 __all__ = [
+    # Error log repository
+    "CreateErrorLogData",
+    "ErrorLogFilter",
+    "ErrorStats",
+    "ImportErrorLogRepository",
     # Common result type
     "BaseError",
     "Result",

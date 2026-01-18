@@ -776,4 +776,7 @@ db-data:
 	@echo "📋 Stories (ストーリー):"
 	@docker compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, inquiry_id, LEFT(title, 40) || '...' as title_preview, priority, status, estimated_effort, created_at FROM stories ORDER BY created_at DESC;" 2>/dev/null || echo "  No stories table found"
 	@echo ""
+	@echo "📋 Import Error Logs (インポートエラーログ):"
+	@docker compose exec -T db psql -U gs_user -d gs_db -c "SELECT id, error_code, plugin_type, LEFT(error_message, 40) || '...' as message_preview, resolved, occurred_at FROM import_error_logs ORDER BY occurred_at DESC LIMIT 20;" 2>/dev/null || echo "  No import_error_logs table found"
+	@echo ""
 	@echo "💡 Use 'make db-connect' for interactive database access"

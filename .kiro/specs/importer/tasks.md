@@ -131,14 +131,14 @@
 
 ### 7. エラーログ永続化の実装
 
-- [ ] 7.1 (P) ImportErrorLogモデルとマイグレーションの実装
+- [x] 7.1 (P) ImportErrorLogモデルとマイグレーションの実装
   - ImportErrorLogモデルの定義（id、error_code、plugin_type、source_id、error_message、occurred_at、resolved）
   - インデックスの定義（error_code + occurred_at、plugin_type）
   - Alembicマイグレーションファイルの作成
   - ユニットテスト作成
   - _Requirements: 5.1, 5.4_
 
-- [ ] 7.2 (P) ImportErrorLogRepositoryの実装
+- [x] 7.2 (P) ImportErrorLogRepositoryの実装
   - エラーログ作成機能の実装
   - 解決済みマーク機能の実装（resolved = true）
   - エラー統計取得機能の実装（error_code別集計）
