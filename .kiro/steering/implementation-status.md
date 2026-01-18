@@ -6,7 +6,7 @@ inclusion: always
 
 このファイルは、Ghost Squadプロジェクトの現在の実装状況と開発優先度を明確にします。新しい機能を実装する際は、この状況を考慮してください。
 
-## 🎯 現在の実装状況（2025年12月30日時点）
+## 🎯 現在の実装状況（2026年1月19日時点）
 
 ### ✅ 実装済み機能
 
@@ -246,10 +246,11 @@ Story機能（サービス層完了・API層実装済み）:
 10. ❌ Tailwind CSS設定
 11. ❌ React Router設定
 
-**Phase 4: Importer機能の実装（優先度：中）** - 🚧 **基盤実装中**
+**Phase 4: Importer機能の実装（優先度：中）** - 🚧 **基盤＋AIプロバイダー実装完了**
 - `.kiro/specs/importer/` の設計・タスクに従って実装
 - ダブルプラグインアーキテクチャ（データソース + AIプロバイダー）
 - 実装状況:
+  - ✅ ~~共通Result型~~ （完了 - `services/importer/result.py`、Rust風Result型、BaseError）
   - ✅ ~~DataSourcePlugin抽象基底クラス~~ （完了 - `services/importer/plugin_base.py`）
   - ✅ ~~PluginRegistryサービス~~ （完了 - `services/importer/plugin_registry.py`）
   - ✅ ~~AIProvider抽象基底クラス~~ （完了 - `services/importer/ai_provider_base.py`）
@@ -257,9 +258,11 @@ Story機能（サービス層完了・API層実装済み）:
   - ✅ ~~EmailPluginConfig設定・検証~~ （完了 - Task 3.1）
   - ✅ ~~EmailPlugin IMAP接続機能~~ （完了 - Task 3.2）
   - ✅ ~~EmailPluginメール取得・解析機能~~ （完了 - Task 3.3）
-  - ❌ OpenAIProvider実装（Task 4.1, 4.2）
-  - ❌ AnthropicProvider実装（Task 5.1, 5.2）
-  - ❌ ImporterAnalysisService実装（Task 6.1）
+  - ✅ ~~OpenAIProvider実装~~ （完了 - `services/importer/openai_provider.py`）
+  - ✅ ~~AnthropicProvider実装~~ （完了 - `services/importer/anthropic_provider.py`）
+  - ✅ ~~ImporterAnalysisService実装~~ （完了 - `services/importer/analysis_service.py`、信頼度判定）
+  - ✅ ~~ImportErrorLogModel~~ （完了 - `models/database/import_error_log.py`）
+  - ✅ ~~ImportErrorLogRepository~~ （完了 - `services/importer/import_error_log_repository.py`）
   - ❌ ImporterService実装（Task 9.1-9.4）
   - ❌ Importer API実装（Task 10.1-10.4）
   - ❌ フロントエンド実装（Task 12-13）
@@ -408,6 +411,12 @@ Story機能（サービス層完了・API層実装済み）:
 - ✅ **Importerプラグイン基盤**（DataSourcePlugin抽象クラス、PluginRegistryサービス）
 - ✅ **Importer AIプロバイダー基盤**（AIProvider抽象クラス、AIProviderRegistryサービス）
 - ✅ **EmailPlugin**（IMAP接続、メール取得・解析、リトライ戦略、エラーハンドリング）
+- ✅ **OpenAIProvider**（GPT-4統合、構造化プロンプト、リトライ戦略）
+- ✅ **AnthropicProvider**（Claude統合、構造化プロンプト、リトライ戦略）
+- ✅ **ImporterAnalysisService**（AI解析サービス、信頼度判定、needs_reviewフラグ）
+- ✅ **ImportErrorLogModel**（エラーログモデル、インデックス設定）
+- ✅ **ImportErrorLogRepository**（エラー記録・統計・自動解決マーク）
+- ✅ **共通Result型**（Rust風Result型、BaseError基底クラス）
 
 ### 進行中（10%）
 - 🔄 Story UIコンポーネント実装
@@ -416,10 +425,11 @@ Story機能（サービス層完了・API層実装済み）:
   - ✅ StoryDetail完了（タスク11.1、11.2）
   - ✅ UI統合・ストーリー生成トリガー完了（タスク12.1）
   - ✅ E2E統合テスト完了（タスク12.2）
-- 🔄 Importer機能実装（Tasks 4-14残り）
-  - ❌ OpenAIProvider/AnthropicProvider実装
-  - ❌ ImporterAnalysisService実装
-  - ❌ ImporterService実装
+- 🔄 Importer機能実装（残りTasks）
+  - ✅ OpenAIProvider/AnthropicProvider実装（完了）
+  - ✅ ImporterAnalysisService実装（完了）
+  - ✅ ImportErrorLogModel/Repository実装（完了）
+  - ❌ ImporterService実装（統合層）
   - ❌ Importer API/フロントエンド実装
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
@@ -430,15 +440,14 @@ Story機能（サービス層完了・API層実装済み）:
 
 ---
 
-**最終更新**: 2026年1月17日
-**更新理由**: Importer機能のステアリング反映
-- Importer機能仕様（`.kiro/specs/importer/`）のステータス追加
-- Importer基盤実装の追記（Tasks 1.1-1.2, 2.1-2.2, 3.1-3.3完了）
-  - DataSourcePlugin抽象基底クラス（plugin_base.py）
-  - PluginRegistryサービス（plugin_registry.py）
-  - AIProvider抽象基底クラス（ai_provider_base.py）
-  - AIProviderRegistryサービス（ai_provider_registry.py）
-  - EmailPlugin実装（email_plugin.py - IMAP接続、メール取得・解析）
-- ダブルプラグインアーキテクチャパターンの記録
-- エラーコード体系（GS-301〜GS-399）の追加
-- 次のステップ: OpenAI/Anthropicプロバイダー実装、ImporterService、API層
+**最終更新**: 2026年1月19日
+**更新理由**: Importer機能のAIプロバイダー・サービス層実装完了反映
+- OpenAIProvider実装完了（openai_provider.py - GPT-4統合、構造化プロンプト）
+- AnthropicProvider実装完了（anthropic_provider.py - Claude統合）
+- ImporterAnalysisService実装完了（analysis_service.py - 信頼度判定、needs_reviewフラグ）
+- ImportErrorLogModel実装完了（import_error_log.py - エラーログモデル）
+- ImportErrorLogRepository実装完了（import_error_log_repository.py - エラー統計・自動解決）
+- 共通Result型実装完了（result.py - Rust風Result型、BaseError）
+- エラーコード体系の詳細化（GS-301〜GS-329）
+- Importer services/importer/ パッケージの完全な__init__.py公開API
+- 次のステップ: ImporterService統合層、Importer API層、フロントエンド実装

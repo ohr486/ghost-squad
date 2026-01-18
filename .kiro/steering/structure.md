@@ -37,10 +37,11 @@ models/
 │   ├── base.py       # ベースモデルクラス（実装済み）
 │   ├── inquiry.py    # 問い合わせモデル（実装済み）
 │   ├── story.py      # ストーリーモデル（実装済み）
+│   ├── import_error_log.py  # インポートエラーログモデル（実装済み）
 │   └── story_template.py  # テンプレートモデル（未実装）
 ├── schemas/          # Pydanticスキーマ（APIシリアライゼーション）
 │   ├── inquiry.py    # 問い合わせスキーマ（実装済み）
-│   └── story.py      # ストーリースキーマ（未実装）
+│   └── story.py      # ストーリースキーマ（実装済み）
 ├── enums/           # 列挙型定義
 │   ├── inquiry_status.py  # InquiryStatus列挙型（実装済み）
 │   ├── story_status.py    # StoryStatus列挙型（実装済み）
@@ -63,11 +64,20 @@ models/
   - ワークフローサービス（`story_workflow_service.py` - 承認・却下処理、ステータス遷移管理、一括承認、100%カバレッジ）
   - AI統合（`story_generation_service.py` - OpenAI API統合、ストーリー自動生成、リトライ戦略、88%カバレッジ）
 - **Importer関連（基盤実装済み、`services/importer/`）**:
-  - プラグイン基盤（`plugin_base.py` - DataSourcePlugin抽象クラス、RawImportDataデータクラス）
-  - プラグイン管理（`plugin_registry.py` - PluginRegistryService、登録・有効/無効切替）
-  - AIプロバイダー基盤（`ai_provider_base.py` - AIProvider抽象クラス、AIAnalysisRequest/Response）
-  - AIプロバイダー管理（`ai_provider_registry.py` - AIProviderRegistryService、デフォルト設定）
-  - メールプラグイン（`email_plugin.py` - IMAP接続、メール取得・解析、リトライ戦略）
+  - **共通基盤**:
+    - 共通Result型（`result.py` - Rust風Result型、BaseError基底クラス）
+    - エラーログモデル（`import_error_log_repository.py` - エラー記録・統計・自動解決）
+  - **データソースプラグイン層**:
+    - プラグイン基盤（`plugin_base.py` - DataSourcePlugin抽象クラス、RawImportData、ValidationResult）
+    - プラグイン管理（`plugin_registry.py` - PluginRegistryService、登録・解除・有効/無効切替）
+    - メールプラグイン（`email_plugin.py` - IMAP接続、メール取得・解析、リトライ戦略、EmailPluginConfig）
+  - **AIプロバイダー層**:
+    - AIプロバイダー基盤（`ai_provider_base.py` - AIProvider抽象クラス、AIProviderType列挙型、AIAnalysisRequest/Response）
+    - AIプロバイダー管理（`ai_provider_registry.py` - AIProviderRegistryService、デフォルト設定、初期化管理）
+    - OpenAIプロバイダー（`openai_provider.py` - GPT-4統合、リトライ戦略）
+    - Anthropicプロバイダー（`anthropic_provider.py` - Claude統合、リトライ戦略）
+  - **解析サービス層**:
+    - 解析サービス（`analysis_service.py` - ImporterAnalysisService、信頼度判定、needs_reviewフラグ）
 
 **API層** (`routers/`)
 - FastAPIルーター定義

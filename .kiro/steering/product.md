@@ -36,12 +36,27 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 - **開発環境**: Docker Compose + Makefile統合
 - **テスト**: 189テスト、高カバレッジ（inquiry: 91%、database接続テスト含む）
 
-**Importer機能（基盤実装済み）**
+**Importer機能（基盤＋AIプロバイダー実装済み）**
 - **ダブルプラグインアーキテクチャ**: データソースとAIプロバイダーの二層拡張構造
-- **プラグイン基盤**: DataSourcePlugin抽象基底クラス、PluginRegistryサービス
-- **AIプロバイダー基盤**: AIProvider抽象基底クラス、AIProviderRegistryサービス
-- **メールプラグイン**: EmailPlugin（IMAP接続、メール取得・解析、リトライ戦略）
-- **エラーコード体系**: GS-301〜GS-399（Importer用）
+- **プラグイン基盤**:
+  - DataSourcePlugin抽象基底クラス（RawImportData、ValidationResult）
+  - PluginRegistryサービス（登録・解除・有効/無効切替）
+- **AIプロバイダー基盤**:
+  - AIProvider抽象基底クラス（AIAnalysisRequest/Response、AIProviderType列挙型）
+  - AIProviderRegistryサービス（登録・初期化・デフォルト設定）
+  - OpenAIProvider（GPT-4統合、構造化プロンプト）
+  - AnthropicProvider（Claude統合）
+- **メールプラグイン**: EmailPlugin（IMAP接続、メール取得・解析、リトライ戦略、EmailPluginConfig）
+- **解析サービス**: ImporterAnalysisService（信頼度判定、needs_reviewフラグ、AnalysisResult）
+- **エラーログ管理**: ImportErrorLogRepository（エラー記録・統計・自動解決マーク）
+- **共通Result型**: Rust風Result型によるエラーハンドリング
+- **エラーコード体系**:
+  - GS-301〜GS-309: プラグイン管理エラー
+  - GS-310〜GS-319: メールプラグイン設定エラー
+  - GS-320〜GS-329: メール接続・認証エラー
+  - GS-304: AI解析失敗
+  - GS-306: データ取得失敗
+  - GS-308: AIプロバイダー未登録
 
 **フロントエンド（基盤完成、98%実装）**
 - **TypeScript基盤**: strict mode、型定義完備（InquiryResponse、StoryResponse等）
