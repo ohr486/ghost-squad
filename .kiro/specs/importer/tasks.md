@@ -155,14 +155,14 @@
 
 ### 9. Importer Serviceの実装
 
-- [ ] 9.1 ImporterMetadataとImportResultの定義
+- [x] 9.1 ImporterMetadataとImportResultの定義
   - ImporterMetadataデータクラスの定義（source_type、source_id、imported_at、confidence_score、needs_review、original_subject、original_sender、ai_provider、ai_model）
   - ImportResultデータクラスの定義（total_fetched、total_imported、total_skipped、total_failed、imported_inquiry_ids、errors）
   - ErrorStatsデータクラスの定義（error_code、count、last_occurred）
   - ユニットテスト作成
   - _Requirements: 4.2, 5.4_
 
-- [ ] 9.2 ImporterServiceのインポート実行機能の実装
+- [x] 9.2 ImporterServiceのインポート実行機能の実装
   - PluginRegistryからプラグイン取得
   - プラグインによるデータ取得
   - 重複チェック機能の実装（inquiry_metadata内のsource_type + source_idで検索）
@@ -175,7 +175,7 @@
   - ユニットテスト作成
   - _Requirements: 4.1, 4.2, 4.3, 4.5_
 
-- [ ] 9.3 ImporterServiceのエラーハンドリング機能の実装
+- [x] 9.3 ImporterServiceのエラーハンドリング機能の実装
   - エラーログ出力（structlog使用）
   - ImportErrorLogへのエラー記録
   - 生成失敗時の手動対応用キューへの追加（error_logsに未解決として記録）
@@ -185,7 +185,7 @@
   - ユニットテスト作成
   - _Requirements: 4.4, 5.1, 5.3, 5.4, 5.5_
 
-- [ ] 9.4 ImporterServiceのリトライ機能の実装
+- [x] 9.4 ImporterServiceのリトライ機能の実装
   - 失敗したインポートのリトライ処理（retry_failed）
   - source_idsリストによる対象指定
   - AIプロバイダー切り替えオプション

@@ -9,10 +9,16 @@ from services.importer.ai_provider_base import (AIAnalysisRequest,
 from services.importer.ai_provider_registry import (AIProviderError,
                                                     AIProviderRegistryService,
                                                     AIProviderStatus)
+from services.importer.analysis_service import (AnalysisError, AnalysisResult,
+                                                ImporterAnalysisService)
 from services.importer.anthropic_provider import (AnthropicProvider,
                                                   AnthropicProviderConfig)
 from services.importer.import_error_log_repository import (
     CreateErrorLogData, ErrorLogFilter, ErrorStats, ImportErrorLogRepository)
+from services.importer.importer_service import (ImporterMetadata, ImportError,
+                                                ImporterService,
+                                                ImporterServiceError,
+                                                ImportResult)
 from services.importer.openai_provider import (OpenAIProvider,
                                                OpenAIProviderConfig)
 from services.importer.plugin_base import (DataSourcePlugin, RawImportData,
@@ -50,6 +56,16 @@ __all__ = [
     "AIProviderError",
     "AIProviderRegistryService",
     "AIProviderStatus",
+    # Analysis service
+    "AnalysisError",
+    "AnalysisResult",
+    "ImporterAnalysisService",
+    # Importer service
+    "ImportError",
+    "ImporterMetadata",
+    "ImporterService",
+    "ImporterServiceError",
+    "ImportResult",
     # OpenAI provider
     "OpenAIProvider",
     "OpenAIProviderConfig",
