@@ -15,7 +15,7 @@ from services.importer.anthropic_provider import (AnthropicProvider,
                                                   AnthropicProviderConfig)
 from services.importer.import_error_log_repository import (
     CreateErrorLogData, ErrorLogFilter, ErrorStats, ImportErrorLogRepository)
-from services.importer.importer_service import (ImportError, ImporterMetadata,
+from services.importer.importer_service import (ImporterMetadata, ImportError,
                                                 ImporterService,
                                                 ImporterServiceError,
                                                 ImportResult)

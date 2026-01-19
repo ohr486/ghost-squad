@@ -20,8 +20,7 @@ from services.importer.ai_provider_registry import AIProviderRegistryService
 from services.importer.analysis_service import (AnalysisResult,
                                                 ImporterAnalysisService)
 from services.importer.importer_service import (CONSECUTIVE_ERROR_THRESHOLD,
-                                                ImportError,
-                                                ImporterMetadata,
+                                                ImporterMetadata, ImportError,
                                                 ImporterService,
                                                 ImporterServiceError,
                                                 ImportResult)
