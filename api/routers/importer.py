@@ -33,7 +33,7 @@ from models.schemas.importer import (AIProviderListResponse,
 from services.importer.ai_provider_base import AIProviderType
 from services.importer.ai_provider_registry import AIProviderRegistryService
 from services.importer.analysis_service import ImporterAnalysisService
-from services.importer.importer_service import ImporterService
+from services.importer.importer_service import ImporterService, ImportResult
 from services.importer.plugin_registry import PluginRegistryService
 
 router = APIRouter(prefix="/api", tags=["importer"])
@@ -485,7 +485,7 @@ def _validate_ai_provider(provider_type_str: Optional[str]) -> Optional[AIProvid
     return ai_provider_type
 
 
-def _create_import_result_response(import_result) -> ImportResultResponse:
+def _create_import_result_response(import_result: ImportResult) -> ImportResultResponse:
     """インポート結果からレスポンスを作成する.
 
     Args:
