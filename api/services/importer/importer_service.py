@@ -614,8 +614,9 @@ class ImporterService:
                     # リトライ失敗時もエラーログに記録する
                     self._log_error(
                         plugin_type=plugin_type,
+                        error_code=error.code,
+                        error_message=error.message,
                         source_id=source_id,
-                        error=error,
                     )
 
         except ConnectionError as e:

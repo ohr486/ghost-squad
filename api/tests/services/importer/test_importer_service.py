@@ -422,16 +422,22 @@ class TestImporterServiceExecuteImport:
         """成功時のインポート実行の完全なハッピーパステスト."""
         # モックプラグインを登録してデータを設定
         plugin_registry = PluginRegistryService()
-        plugin = MockDataSourcePlugin({})
-        plugin.set_data([sample_raw_data])
         plugin_registry.register(MockDataSourcePlugin, {})
+        # 登録後にプラグインインスタンスを取得してデータを設定
+        plugin = plugin_registry.get_plugin("mock_plugin")
+        assert plugin is not None
+        plugin.set_data([sample_raw_data])
+
+        # 重複チェックでNone（重複なし）を返すようにモック
+        mock_session.query.return_value.filter.return_value.first.return_value = None
 
         # モックAnalysisServiceを作成
         mock_analysis_service = MagicMock(spec=ImporterAnalysisService)
-        mock_analysis_service.analyze.return_value.is_ok = True
-        mock_analysis_service.analyze.return_value.unwrap.return_value = (
-            sample_analysis_result
-        )
+        mock_analyze_result = MagicMock()
+        mock_analyze_result.is_ok = True
+        mock_analyze_result.is_err = False
+        mock_analyze_result.unwrap.return_value = sample_analysis_result
+        mock_analysis_service.analyze.return_value = mock_analyze_result
 
         # モックInquiryRepositoryを作成
         mock_inquiry_repository = MagicMock()
