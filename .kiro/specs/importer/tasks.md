@@ -195,7 +195,7 @@
 
 ### 10. Importer APIエンドポイントの実装
 
-- [ ] 10.1 プラグイン管理APIの実装
+- [x] 10.1 プラグイン管理APIの実装
   - GET /api/plugins - プラグイン一覧取得
   - POST /api/plugins/{type}/enable - プラグイン有効化
   - POST /api/plugins/{type}/disable - プラグイン無効化
