@@ -204,7 +204,7 @@
   - ユニットテスト作成
   - _Requirements: 1.1, 1.2_
 
-- [ ] 10.2 AIプロバイダー管理APIの実装
+- [x] 10.2 AIプロバイダー管理APIの実装
   - GET /api/ai-providers - プロバイダー一覧取得
   - POST /api/ai-providers/{type}/set-default - デフォルト設定
   - Pydanticスキーマの定義（AIProviderStatusResponse）
