@@ -33,9 +33,7 @@ class TestPluginListEndpoint:
         要件1.1: プラグイン登録・解除
         """
         # Mock PluginRegistryService
-        with patch(
-            "routers.importer.get_plugin_registry"
-        ) as mock_get_registry:
+        with patch("routers.importer.get_plugin_registry") as mock_get_registry:
             mock_registry = Mock()
             mock_registry.list_plugins.return_value = []
             mock_get_registry.return_value = mock_registry
@@ -57,9 +55,7 @@ class TestPluginListEndpoint:
         from services.importer.plugin_registry import PluginStatus
 
         # Mock PluginRegistryService
-        with patch(
-            "routers.importer.get_plugin_registry"
-        ) as mock_get_registry:
+        with patch("routers.importer.get_plugin_registry") as mock_get_registry:
             mock_registry = Mock()
             mock_registry.list_plugins.return_value = [
                 PluginStatus(
@@ -98,9 +94,7 @@ class TestPluginListEndpoint:
         from services.importer.plugin_registry import PluginStatus
 
         # Mock PluginRegistryService
-        with patch(
-            "routers.importer.get_plugin_registry"
-        ) as mock_get_registry:
+        with patch("routers.importer.get_plugin_registry") as mock_get_registry:
             mock_registry = Mock()
             mock_registry.list_plugins.return_value = [
                 PluginStatus(
@@ -135,9 +129,7 @@ class TestPluginEnableEndpoint:
         from services.importer.result import Result
 
         # Mock PluginRegistryService
-        with patch(
-            "routers.importer.get_plugin_registry"
-        ) as mock_get_registry:
+        with patch("routers.importer.get_plugin_registry") as mock_get_registry:
             mock_registry = Mock()
             mock_registry.enable.return_value = Result.ok(
                 PluginStatus(
@@ -168,9 +160,7 @@ class TestPluginEnableEndpoint:
         from services.importer.result import Result
 
         # Mock PluginRegistryService
-        with patch(
-            "routers.importer.get_plugin_registry"
-        ) as mock_get_registry:
+        with patch("routers.importer.get_plugin_registry") as mock_get_registry:
             mock_registry = Mock()
             mock_registry.enable.return_value = Result.err(
                 PluginError("GS-301", "プラグイン 'unknown' が見つかりません")
@@ -199,9 +189,7 @@ class TestPluginDisableEndpoint:
         from services.importer.result import Result
 
         # Mock PluginRegistryService
-        with patch(
-            "routers.importer.get_plugin_registry"
-        ) as mock_get_registry:
+        with patch("routers.importer.get_plugin_registry") as mock_get_registry:
             mock_registry = Mock()
             mock_registry.disable.return_value = Result.ok(
                 PluginStatus(
@@ -232,9 +220,7 @@ class TestPluginDisableEndpoint:
         from services.importer.result import Result
 
         # Mock PluginRegistryService
-        with patch(
-            "routers.importer.get_plugin_registry"
-        ) as mock_get_registry:
+        with patch("routers.importer.get_plugin_registry") as mock_get_registry:
             mock_registry = Mock()
             mock_registry.disable.return_value = Result.err(
                 PluginError("GS-301", "プラグイン 'unknown' が見つかりません")
@@ -259,9 +245,7 @@ class TestPluginDisableEndpoint:
         from services.importer.result import Result
 
         # Mock PluginRegistryService
-        with patch(
-            "routers.importer.get_plugin_registry"
-        ) as mock_get_registry:
+        with patch("routers.importer.get_plugin_registry") as mock_get_registry:
             mock_registry = Mock()
             mock_registry.disable.return_value = Result.ok(
                 PluginStatus(
@@ -291,9 +275,7 @@ class TestPluginResponseSchema:
         from services.importer.result import Result
 
         # Mock PluginRegistryService
-        with patch(
-            "routers.importer.get_plugin_registry"
-        ) as mock_get_registry:
+        with patch("routers.importer.get_plugin_registry") as mock_get_registry:
             mock_registry = Mock()
             mock_registry.enable.return_value = Result.ok(
                 PluginStatus(
@@ -322,9 +304,7 @@ class TestPluginResponseSchema:
         from services.importer.result import Result
 
         # Mock PluginRegistryService
-        with patch(
-            "routers.importer.get_plugin_registry"
-        ) as mock_get_registry:
+        with patch("routers.importer.get_plugin_registry") as mock_get_registry:
             mock_registry = Mock()
             mock_registry.enable.return_value = Result.err(
                 PluginError("GS-301", "プラグイン 'unknown' が見つかりません")

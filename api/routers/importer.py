@@ -14,12 +14,9 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from fastapi import status as http_status
 
-from models.schemas.importer import (
-    ErrorResponse,
-    PluginListResponse,
-    PluginStatusResponse,
-    ValidationErrorDetail,
-)
+from models.schemas.importer import (ErrorResponse, PluginListResponse,
+                                     PluginStatusResponse,
+                                     ValidationErrorDetail)
 from services.importer.plugin_registry import PluginRegistryService
 
 router = APIRouter(prefix="/api", tags=["importer"])
@@ -165,9 +162,7 @@ async def enable_plugin(plugin_type: str) -> PluginStatusResponse:
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response(
-            "GS-302", f"プラグイン有効化に失敗しました: {str(e)}"
-        )
+        error_response = _create_error_response("GS-302", f"プラグイン有効化に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
@@ -218,9 +213,7 @@ async def disable_plugin(plugin_type: str) -> PluginStatusResponse:
     except HTTPException:
         raise
     except Exception as e:
-        error_response = _create_error_response(
-            "GS-310", f"プラグイン無効化に失敗しました: {str(e)}"
-        )
+        error_response = _create_error_response("GS-310", f"プラグイン無効化に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
