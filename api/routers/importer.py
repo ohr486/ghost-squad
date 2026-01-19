@@ -219,7 +219,7 @@ async def disable_plugin(plugin_type: str) -> PluginStatusResponse:
         raise
     except Exception as e:
         error_response = _create_error_response(
-            "GS-302", f"プラグイン無効化に失敗しました: {str(e)}"
+            "GS-310", f"プラグイン無効化に失敗しました: {str(e)}"
         )
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
