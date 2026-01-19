@@ -88,6 +88,90 @@ class PluginListResponse(BaseModel):
 
 
 # =============================================================================
+# AIプロバイダー管理スキーマ（タスク10.2）
+# =============================================================================
+
+
+class AIProviderStatusResponse(BaseModel):
+    """AIプロバイダーステータスレスポンス.
+
+    要件3.1-3.6: AI解析機能
+    """
+
+    provider_type: str = Field(
+        ...,
+        description="プロバイダー種別（例: openai, anthropic）",
+    )
+    enabled: bool = Field(
+        ...,
+        description="プロバイダーが有効かどうか",
+    )
+    initialized: bool = Field(
+        ...,
+        description="プロバイダーが正常に初期化されたかどうか",
+    )
+    is_default: bool = Field(
+        ...,
+        description="デフォルトプロバイダーかどうか",
+    )
+    model: str = Field(
+        ...,
+        description="使用しているモデル名",
+    )
+    error_message: Optional[str] = Field(
+        None,
+        description="初期化失敗時のエラーメッセージ",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "provider_type": "openai",
+                "enabled": True,
+                "initialized": True,
+                "is_default": True,
+                "model": "gpt-4",
+                "error_message": None,
+            }
+        }
+    )
+
+
+class AIProviderListResponse(BaseModel):
+    """AIプロバイダー一覧レスポンス.
+
+    要件3.1: カテゴリ判定
+    """
+
+    data: List[AIProviderStatusResponse] = Field(
+        ...,
+        description="プロバイダーステータスリスト",
+    )
+    timestamp: str = Field(
+        ...,
+        description="レスポンスタイムスタンプ（ISO 8601形式）",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "data": [
+                    {
+                        "provider_type": "openai",
+                        "enabled": True,
+                        "initialized": True,
+                        "is_default": True,
+                        "model": "gpt-4",
+                        "error_message": None,
+                    }
+                ],
+                "timestamp": "2024-01-01T00:00:00+00:00",
+            }
+        }
+    )
+
+
+# =============================================================================
 # 共通エラースキーマ
 # =============================================================================
 
