@@ -513,6 +513,27 @@ class TestRetryImportEndpoint:
         # Assert
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
+    def test_retry_import_invalid_ai_provider(self, client: TestClient):
+        """無効なAIプロバイダー種別は404エラー.
+
+        要件3.1: カテゴリ判定
+        """
+        # Act
+        response = client.post(
+            "/api/importers/retry",
+            json={
+                "plugin_type": "email",
+                "source_ids": ["source1", "source2"],
+                "ai_provider_type": "invalid",
+            },
+        )
+
+        # Assert
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        data = response.json()
+        assert "errors" in data["detail"]
+        assert data["detail"]["errors"][0]["code"] == "GS-308"
+
 
 # =============================================================================
 # レスポンススキーマのテスト
