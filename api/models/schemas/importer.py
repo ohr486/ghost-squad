@@ -229,3 +229,161 @@ class ErrorResponse(BaseModel):
             }
         }
     )
+
+
+# =============================================================================
+# インポート実行スキーマ（タスク10.3）
+# =============================================================================
+
+
+class ExecuteImportRequest(BaseModel):
+    """インポート実行リクエスト.
+
+    要件2.1-2.6, 4.1-4.5: メールインポートと問い合わせ生成
+    """
+
+    plugin_type: str = Field(
+        ...,
+        description="データソースプラグイン種別（例: email）",
+        min_length=1,
+        max_length=50,
+    )
+    ai_provider_type: Optional[str] = Field(
+        None,
+        description="AIプロバイダー種別（例: openai, anthropic）。未指定時はデフォルト使用",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "plugin_type": "email",
+                "ai_provider_type": "openai",
+            }
+        }
+    )
+
+
+class RetryImportRequest(BaseModel):
+    """インポートリトライリクエスト.
+
+    要件5.2: 手動リトライ機能
+    """
+
+    plugin_type: str = Field(
+        ...,
+        description="データソースプラグイン種別（例: email）",
+        min_length=1,
+        max_length=50,
+    )
+    source_ids: List[str] = Field(
+        ...,
+        description="リトライ対象のソースIDリスト",
+        min_length=1,
+    )
+    ai_provider_type: Optional[str] = Field(
+        None,
+        description="AIプロバイダー種別（例: openai, anthropic）。未指定時はデフォルト使用",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "plugin_type": "email",
+                "source_ids": [
+                    "<message-id-1@example.com>",
+                    "<message-id-2@example.com>",
+                ],
+                "ai_provider_type": None,
+            }
+        }
+    )
+
+
+class ImportErrorResponse(BaseModel):
+    """インポートエラー情報.
+
+    要件5.1: エラーログ出力
+    """
+
+    source_id: str = Field(
+        ...,
+        description="エラーが発生したソースID",
+    )
+    error_code: str = Field(
+        ...,
+        description="エラーコード（GS-3xx形式）",
+    )
+    error_message: str = Field(
+        ...,
+        description="エラーメッセージ（日本語）",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "source_id": "<message-id@example.com>",
+                "error_code": "GS-304",
+                "error_message": "AI解析に失敗しました",
+            }
+        }
+    )
+
+
+class ImportResultResponse(BaseModel):
+    """インポート結果レスポンス.
+
+    要件2.1-2.6, 4.1-4.5: インポート実行結果
+    """
+
+    total_fetched: int = Field(
+        ...,
+        description="取得件数",
+        ge=0,
+    )
+    total_imported: int = Field(
+        ...,
+        description="インポート成功件数",
+        ge=0,
+    )
+    total_skipped: int = Field(
+        ...,
+        description="スキップ件数（重複等）",
+        ge=0,
+    )
+    total_failed: int = Field(
+        ...,
+        description="失敗件数",
+        ge=0,
+    )
+    imported_inquiry_ids: List[int] = Field(
+        ...,
+        description="インポートされた問い合わせIDリスト",
+    )
+    errors: List[ImportErrorResponse] = Field(
+        default_factory=list,
+        description="エラー情報リスト",
+    )
+    timestamp: str = Field(
+        ...,
+        description="レスポンスタイムスタンプ（ISO 8601形式）",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "total_fetched": 10,
+                "total_imported": 8,
+                "total_skipped": 1,
+                "total_failed": 1,
+                "imported_inquiry_ids": [101, 102, 103, 104, 105, 106, 107, 108],
+                "errors": [
+                    {
+                        "source_id": "<error-message@example.com>",
+                        "error_code": "GS-304",
+                        "error_message": "AI解析に失敗しました",
+                    }
+                ],
+                "timestamp": "2024-01-01T00:00:00+00:00",
+            }
+        }
+    )

@@ -9,21 +9,31 @@
 - GET /api/ai-providers - プロバイダー一覧取得
 - POST /api/ai-providers/{type}/set-default - デフォルト設定
 
-Requirements: 1.1, 1.2, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6
+タスク10.3: インポート実行APIの実装
+- POST /api/importers/execute - インポート実行
+- POST /api/importers/retry - リトライ実行
+
+Requirements: 1.1, 1.2, 2.1-2.6, 3.1-3.6, 4.1-4.5, 5.2
 """
 
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi import status as http_status
+from sqlalchemy.orm import Session
 
+from database import get_db
 from models.schemas.importer import (AIProviderListResponse,
                                      AIProviderStatusResponse, ErrorResponse,
-                                     PluginListResponse, PluginStatusResponse,
+                                     ExecuteImportRequest, ImportErrorResponse,
+                                     ImportResultResponse, PluginListResponse,
+                                     PluginStatusResponse, RetryImportRequest,
                                      ValidationErrorDetail)
 from services.importer.ai_provider_base import AIProviderType
 from services.importer.ai_provider_registry import AIProviderRegistryService
+from services.importer.analysis_service import ImporterAnalysisService
+from services.importer.importer_service import ImporterService
 from services.importer.plugin_registry import PluginRegistryService
 
 router = APIRouter(prefix="/api", tags=["importer"])
@@ -381,6 +391,244 @@ async def set_default_ai_provider(provider_type: str) -> AIProviderStatusRespons
         error_response = _create_error_response(
             "GS-309", f"デフォルトAIプロバイダー設定に失敗しました: {str(e)}"
         )
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_response.model_dump(),
+        )
+
+
+# =============================================================================
+# ImporterService管理（タスク10.3用）
+# =============================================================================
+
+_importer_service: Optional[ImporterService] = None
+
+
+def get_importer_service(db: Session = Depends(get_db)) -> ImporterService:
+    """ImporterServiceインスタンスを取得する.
+
+    依存関係注入で使用。テスト時はset_importer_serviceで差し替え可能。
+
+    Args:
+        db: データベースセッション
+
+    Returns:
+        ImporterService: インポートサービスインスタンス
+    """
+    global _importer_service
+    if _importer_service is not None:
+        return _importer_service
+
+    plugin_registry = get_plugin_registry()
+    ai_provider_registry = get_ai_provider_registry()
+    analysis_service = ImporterAnalysisService(ai_provider_registry)
+    return ImporterService(
+        session=db,
+        plugin_registry=plugin_registry,
+        analysis_service=analysis_service,
+    )
+
+
+def set_importer_service(service: Optional[ImporterService]) -> None:
+    """ImporterServiceインスタンスを設定する.
+
+    テスト用にサービスインスタンスを差し替える際に使用。
+
+    Args:
+        service: 設定するImporterServiceインスタンス（Noneでリセット）
+    """
+    global _importer_service
+    _importer_service = service
+
+
+def _determine_error_status_code(error_code: str) -> int:
+    """エラーコードから適切なHTTPステータスコードを決定する.
+
+    Args:
+        error_code: エラーコード（GS-xxx形式）
+
+    Returns:
+        int: HTTPステータスコード
+    """
+    # 404系: プラグイン/プロバイダーが見つからない
+    if error_code in ("GS-301", "GS-308"):
+        return http_status.HTTP_404_NOT_FOUND
+    # 500系: 接続エラー、データ取得エラー等
+    return http_status.HTTP_500_INTERNAL_SERVER_ERROR
+
+
+# =============================================================================
+# インポート実行API（タスク10.3）
+# =============================================================================
+
+
+@router.post(
+    "/importers/execute",
+    response_model=ImportResultResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "プラグインまたはAIプロバイダーが見つかりません"},
+        500: {"model": ErrorResponse, "description": "サーバーエラー"},
+    },
+)
+async def execute_import(
+    request: ExecuteImportRequest,
+    service: ImporterService = Depends(get_importer_service),
+) -> ImportResultResponse:
+    """インポートを実行する.
+
+    指定されたデータソースプラグインからデータを取得し、
+    AI解析を行い、問い合わせとして登録する。
+
+    要件2.1-2.6: メールインポート
+    要件4.1-4.5: 問い合わせ自動生成
+
+    Args:
+        request: インポート実行リクエスト
+        service: ImporterServiceインスタンス
+
+    Returns:
+        ImportResultResponse: インポート結果
+
+    Raises:
+        HTTPException: プラグインが見つからない、接続エラー等
+    """
+    try:
+        # AIプロバイダー種別をパース（指定時のみ）
+        ai_provider_type: Optional[AIProviderType] = None
+        if request.ai_provider_type:
+            ai_provider_type = _parse_provider_type(request.ai_provider_type)
+            # 無効なプロバイダー種別の場合もサービスに渡してエラーにする
+            # （サービス層でより詳細なエラーを返す）
+            if ai_provider_type is None and request.ai_provider_type:
+                # 明示的に無効なプロバイダーが指定された場合
+                error_response = _create_error_response(
+                    "GS-308",
+                    f"AIプロバイダー '{request.ai_provider_type}' が見つかりません",
+                )
+                raise HTTPException(
+                    status_code=http_status.HTTP_404_NOT_FOUND,
+                    detail=error_response.model_dump(),
+                )
+
+        result = service.execute_import(
+            plugin_type=request.plugin_type,
+            ai_provider_type=ai_provider_type,
+        )
+
+        if result.is_err:
+            error = result.unwrap_err()
+            error_response = _create_error_response(error.code, error.message)
+            raise HTTPException(
+                status_code=_determine_error_status_code(error.code),
+                detail=error_response.model_dump(),
+            )
+
+        import_result = result.unwrap()
+        return ImportResultResponse(
+            total_fetched=import_result.total_fetched,
+            total_imported=import_result.total_imported,
+            total_skipped=import_result.total_skipped,
+            total_failed=import_result.total_failed,
+            imported_inquiry_ids=import_result.imported_inquiry_ids,
+            errors=[
+                ImportErrorResponse(
+                    source_id=e.source_id,
+                    error_code=e.error_code,
+                    error_message=e.error_message,
+                )
+                for e in import_result.errors
+            ],
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_response = _create_error_response("GS-306", f"インポート実行に失敗しました: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_response.model_dump(),
+        )
+
+
+@router.post(
+    "/importers/retry",
+    response_model=ImportResultResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "プラグインまたはAIプロバイダーが見つかりません"},
+        500: {"model": ErrorResponse, "description": "サーバーエラー"},
+    },
+)
+async def retry_import(
+    request: RetryImportRequest,
+    service: ImporterService = Depends(get_importer_service),
+) -> ImportResultResponse:
+    """失敗したインポートをリトライする.
+
+    指定されたソースIDのデータを再取得・再解析し、
+    問い合わせとして登録する。
+
+    要件5.2: 手動リトライ
+
+    Args:
+        request: リトライリクエスト
+        service: ImporterServiceインスタンス
+
+    Returns:
+        ImportResultResponse: リトライ結果
+
+    Raises:
+        HTTPException: プラグインが見つからない、接続エラー等
+    """
+    try:
+        # AIプロバイダー種別をパース（指定時のみ）
+        ai_provider_type: Optional[AIProviderType] = None
+        if request.ai_provider_type:
+            ai_provider_type = _parse_provider_type(request.ai_provider_type)
+            if ai_provider_type is None:
+                error_response = _create_error_response(
+                    "GS-308",
+                    f"AIプロバイダー '{request.ai_provider_type}' が見つかりません",
+                )
+                raise HTTPException(
+                    status_code=http_status.HTTP_404_NOT_FOUND,
+                    detail=error_response.model_dump(),
+                )
+
+        result = service.retry_failed(
+            plugin_type=request.plugin_type,
+            source_ids=request.source_ids,
+            ai_provider_type=ai_provider_type,
+        )
+
+        if result.is_err:
+            error = result.unwrap_err()
+            error_response = _create_error_response(error.code, error.message)
+            raise HTTPException(
+                status_code=_determine_error_status_code(error.code),
+                detail=error_response.model_dump(),
+            )
+
+        import_result = result.unwrap()
+        return ImportResultResponse(
+            total_fetched=import_result.total_fetched,
+            total_imported=import_result.total_imported,
+            total_skipped=import_result.total_skipped,
+            total_failed=import_result.total_failed,
+            imported_inquiry_ids=import_result.imported_inquiry_ids,
+            errors=[
+                ImportErrorResponse(
+                    source_id=e.source_id,
+                    error_code=e.error_code,
+                    error_message=e.error_message,
+                )
+                for e in import_result.errors
+            ],
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_response = _create_error_response("GS-306", f"リトライ実行に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
