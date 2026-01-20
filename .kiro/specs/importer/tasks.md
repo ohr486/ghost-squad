@@ -212,7 +212,7 @@
   - ユニットテスト作成
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 10.3 インポート実行APIの実装
+- [x] 10.3 インポート実行APIの実装
   - POST /api/importers/execute - インポート実行
   - POST /api/importers/retry - リトライ実行
   - Pydanticスキーマの定義（ExecuteImportRequest、RetryImportRequest、ImportResultResponse）
