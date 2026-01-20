@@ -33,7 +33,7 @@ from models.schemas.importer import (AIProviderListResponse,
 from services.importer.ai_provider_base import AIProviderType
 from services.importer.ai_provider_registry import AIProviderRegistryService
 from services.importer.analysis_service import ImporterAnalysisService
-from services.importer.importer_service import ImporterService
+from services.importer.importer_service import ImporterService, ImportResult
 from services.importer.plugin_registry import PluginRegistryService
 
 router = APIRouter(prefix="/api", tags=["importer"])
@@ -457,6 +457,61 @@ def _determine_error_status_code(error_code: str) -> int:
     return http_status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
+def _validate_ai_provider(provider_type_str: Optional[str]) -> Optional[AIProviderType]:
+    """AIプロバイダー種別を検証し、パースする.
+
+    Args:
+        provider_type_str: プロバイダー種別文字列（指定時のみ）
+
+    Returns:
+        Optional[AIProviderType]: パース済みのプロバイダー種別
+
+    Raises:
+        HTTPException: 無効なプロバイダー種別が指定された場合
+    """
+    if not provider_type_str:
+        return None
+    
+    ai_provider_type = _parse_provider_type(provider_type_str)
+    if ai_provider_type is None:
+        error_response = _create_error_response(
+            "GS-308",
+            f"AIプロバイダー '{provider_type_str}' が見つかりません",
+        )
+        raise HTTPException(
+            status_code=http_status.HTTP_404_NOT_FOUND,
+            detail=error_response.model_dump(),
+        )
+    return ai_provider_type
+
+
+def _create_import_result_response(import_result: ImportResult) -> ImportResultResponse:
+    """インポート結果からレスポンスを作成する.
+
+    Args:
+        import_result: インポート結果オブジェクト
+
+    Returns:
+        ImportResultResponse: API応答用のレスポンス
+    """
+    return ImportResultResponse(
+        total_fetched=import_result.total_fetched,
+        total_imported=import_result.total_imported,
+        total_skipped=import_result.total_skipped,
+        total_failed=import_result.total_failed,
+        imported_inquiry_ids=import_result.imported_inquiry_ids,
+        errors=[
+            ImportErrorResponse(
+                source_id=e.source_id,
+                error_code=e.error_code,
+                error_message=e.error_message,
+            )
+            for e in import_result.errors
+        ],
+        timestamp=datetime.now(timezone.utc).isoformat(),
+    )
+
+
 # =============================================================================
 # インポート実行API（タスク10.3）
 # =============================================================================
@@ -493,22 +548,8 @@ async def execute_import(
         HTTPException: プラグインが見つからない、接続エラー等
     """
     try:
-        # AIプロバイダー種別をパース（指定時のみ）
-        ai_provider_type: Optional[AIProviderType] = None
-        if request.ai_provider_type:
-            ai_provider_type = _parse_provider_type(request.ai_provider_type)
-            # 無効なプロバイダー種別の場合もサービスに渡してエラーにする
-            # （サービス層でより詳細なエラーを返す）
-            if ai_provider_type is None and request.ai_provider_type:
-                # 明示的に無効なプロバイダーが指定された場合
-                error_response = _create_error_response(
-                    "GS-308",
-                    f"AIプロバイダー '{request.ai_provider_type}' が見つかりません",
-                )
-                raise HTTPException(
-                    status_code=http_status.HTTP_404_NOT_FOUND,
-                    detail=error_response.model_dump(),
-                )
+        # AIプロバイダー種別を検証
+        ai_provider_type = _validate_ai_provider(request.ai_provider_type)
 
         result = service.execute_import(
             plugin_type=request.plugin_type,
@@ -524,22 +565,7 @@ async def execute_import(
             )
 
         import_result = result.unwrap()
-        return ImportResultResponse(
-            total_fetched=import_result.total_fetched,
-            total_imported=import_result.total_imported,
-            total_skipped=import_result.total_skipped,
-            total_failed=import_result.total_failed,
-            imported_inquiry_ids=import_result.imported_inquiry_ids,
-            errors=[
-                ImportErrorResponse(
-                    source_id=e.source_id,
-                    error_code=e.error_code,
-                    error_message=e.error_message,
-                )
-                for e in import_result.errors
-            ],
-            timestamp=datetime.now(timezone.utc).isoformat(),
-        )
+        return _create_import_result_response(import_result)
     except HTTPException:
         raise
     except Exception as e:
@@ -580,19 +606,8 @@ async def retry_import(
         HTTPException: プラグインが見つからない、接続エラー等
     """
     try:
-        # AIプロバイダー種別をパース（指定時のみ）
-        ai_provider_type: Optional[AIProviderType] = None
-        if request.ai_provider_type:
-            ai_provider_type = _parse_provider_type(request.ai_provider_type)
-            if ai_provider_type is None:
-                error_response = _create_error_response(
-                    "GS-308",
-                    f"AIプロバイダー '{request.ai_provider_type}' が見つかりません",
-                )
-                raise HTTPException(
-                    status_code=http_status.HTTP_404_NOT_FOUND,
-                    detail=error_response.model_dump(),
-                )
+        # AIプロバイダー種別を検証
+        ai_provider_type = _validate_ai_provider(request.ai_provider_type)
 
         result = service.retry_failed(
             plugin_type=request.plugin_type,
@@ -609,22 +624,7 @@ async def retry_import(
             )
 
         import_result = result.unwrap()
-        return ImportResultResponse(
-            total_fetched=import_result.total_fetched,
-            total_imported=import_result.total_imported,
-            total_skipped=import_result.total_skipped,
-            total_failed=import_result.total_failed,
-            imported_inquiry_ids=import_result.imported_inquiry_ids,
-            errors=[
-                ImportErrorResponse(
-                    source_id=e.source_id,
-                    error_code=e.error_code,
-                    error_message=e.error_message,
-                )
-                for e in import_result.errors
-            ],
-            timestamp=datetime.now(timezone.utc).isoformat(),
-        )
+        return _create_import_result_response(import_result)
     except HTTPException:
         raise
     except Exception as e:
