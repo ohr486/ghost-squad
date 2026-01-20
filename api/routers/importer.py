@@ -471,7 +471,7 @@ def _validate_ai_provider(provider_type_str: Optional[str]) -> Optional[AIProvid
     """
     if not provider_type_str:
         return None
-    
+
     ai_provider_type = _parse_provider_type(provider_type_str)
     if ai_provider_type is None:
         error_response = _create_error_response(
