@@ -5,6 +5,9 @@
 .env.test.local
 .env.production.local
 
+# 設定ファイル（機密情報を含む）
+importer_config.yaml
+
 # Python
 __pycache__/
 *.py[cod]
