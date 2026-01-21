@@ -28,3 +28,16 @@ export {
 } from "./storyApi";
 
 export { default as storyApi } from "./storyApi";
+
+export {
+  listPlugins,
+  enablePlugin,
+  disablePlugin,
+  listAIProviders,
+  setDefaultAIProvider,
+  executeImport,
+  retryImport,
+  getErrorStats,
+} from "./importerApi";
+
+export { default as importerApi } from "./importerApi";
