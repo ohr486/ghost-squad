@@ -241,7 +241,7 @@
 
 ### 12. フロントエンドAPIクライアントの実装
 
-- [ ] 12.1 (P) ImporterAPIサービスの実装
+- [x] 12.1 (P) ImporterAPIサービスの実装
   - TypeScript型定義の作成（PluginStatus、AIProviderStatus、ExecuteImportRequest、RetryImportRequest、ImportResult、ErrorStats）
   - プラグイン管理API呼び出し（listPlugins、enablePlugin、disablePlugin）
   - AIプロバイダー管理API呼び出し（listAIProviders、setDefaultAIProvider）
