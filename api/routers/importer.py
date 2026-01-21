@@ -1,4 +1,4 @@
-"""Importer API - プラグイン管理、AIプロバイダー管理、インポート実行.
+"""Importer API - プラグイン管理、AIプロバイダー管理、インポート実行、エラー統計.
 
 タスク10.1: プラグイン管理APIの実装
 - GET /api/plugins - プラグイン一覧取得
@@ -13,7 +13,10 @@
 - POST /api/importers/execute - インポート実行
 - POST /api/importers/retry - リトライ実行
 
-Requirements: 1.1, 1.2, 2.1-2.6, 3.1-3.6, 4.1-4.5, 5.2
+タスク10.4: エラー統計APIの実装
+- GET /api/importers/stats - エラー統計取得
+
+Requirements: 1.1, 1.2, 2.1-2.6, 3.1-3.6, 4.1-4.5, 5.2, 5.4
 """
 
 from datetime import datetime, timezone
@@ -26,10 +29,11 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.schemas.importer import (AIProviderListResponse,
                                      AIProviderStatusResponse, ErrorResponse,
-                                     ExecuteImportRequest, ImportErrorResponse,
-                                     ImportResultResponse, PluginListResponse,
-                                     PluginStatusResponse, RetryImportRequest,
-                                     ValidationErrorDetail)
+                                     ErrorStatsListResponse,
+                                     ErrorStatsResponse, ExecuteImportRequest,
+                                     ImportErrorResponse, ImportResultResponse,
+                                     PluginListResponse, PluginStatusResponse,
+                                     RetryImportRequest, ValidationErrorDetail)
 from services.importer.ai_provider_base import AIProviderType
 from services.importer.ai_provider_registry import AIProviderRegistryService
 from services.importer.analysis_service import ImporterAnalysisService
@@ -629,6 +633,61 @@ async def retry_import(
         raise
     except Exception as e:
         error_response = _create_error_response("GS-306", f"リトライ実行に失敗しました: {str(e)}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_response.model_dump(),
+        )
+
+
+# =============================================================================
+# エラー統計API（タスク10.4）
+# =============================================================================
+
+
+@router.get(
+    "/importers/stats",
+    response_model=ErrorStatsListResponse,
+    responses={
+        500: {"model": ErrorResponse, "description": "サーバーエラー"},
+    },
+)
+async def get_error_stats(
+    plugin_type: Optional[str] = None,
+    service: ImporterService = Depends(get_importer_service),
+) -> ErrorStatsListResponse:
+    """エラー統計を取得する.
+
+    エラーコード別に集計したエラー統計を返す。
+    プラグイン種別でフィルタリング可能。
+
+    要件5.4: エラー統計
+
+    Args:
+        plugin_type: プラグイン種別でフィルタ（オプション）
+        service: ImporterServiceインスタンス
+
+    Returns:
+        ErrorStatsListResponse: エラー統計一覧
+
+    Raises:
+        HTTPException: サーバーエラー
+    """
+    try:
+        stats = service.get_error_stats(plugin_type=plugin_type)
+
+        return ErrorStatsListResponse(
+            data=[
+                ErrorStatsResponse(
+                    error_code=s.error_code,
+                    count=s.count,
+                    last_occurred=s.last_occurred.isoformat(),
+                )
+                for s in stats
+            ],
+            timestamp=datetime.now(timezone.utc).isoformat(),
+        )
+    except Exception as e:
+        error_response = _create_error_response("GS-310", f"エラー統計の取得に失敗しました: {str(e)}")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_response.model_dump(),
