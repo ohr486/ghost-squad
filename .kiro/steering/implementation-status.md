@@ -263,9 +263,10 @@ Story機能（サービス層完了・API層実装済み）:
   - ✅ ~~ImporterAnalysisService実装~~ （完了 - `services/importer/analysis_service.py`、信頼度判定）
   - ✅ ~~ImportErrorLogModel~~ （完了 - `models/database/import_error_log.py`）
   - ✅ ~~ImportErrorLogRepository~~ （完了 - `services/importer/import_error_log_repository.py`）
-  - ❌ ImporterService実装（Task 9.1-9.4）
-  - ❌ Importer API実装（Task 10.1-10.4）
-  - ❌ フロントエンド実装（Task 12-13）
+  - ✅ ~~ImporterService実装~~ （完了 - Task 9.1-9.4、`services/importer/importer_service.py`）
+  - ✅ ~~ImporterConfigLoader実装~~ （完了 - Task 11.1、`services/importer/importer_config_loader.py`）
+  - ✅ ~~Importer API実装~~ （完了 - Task 10.1-10.4、`routers/importer.py`）
+  - ❌ フロントエンド実装（Task 12-14）
 
 **Phase 5: Story機能の実装（優先度：中）** - 🎉 **バックエンド完全実装完了**
 - `.kiro/specs/story/` の設計・タスクに従って実装完了
@@ -417,20 +418,31 @@ Story機能（サービス層完了・API層実装済み）:
 - ✅ **ImportErrorLogModel**（エラーログモデル、インデックス設定）
 - ✅ **ImportErrorLogRepository**（エラー記録・統計・自動解決マーク）
 - ✅ **共通Result型**（Rust風Result型、BaseError基底クラス）
+- ✅ **ImporterService**（インポート統括、重複チェック、リトライ機能）
+- ✅ **ImporterConfigLoader**（YAML設定読み込み、環境変数展開、レジストリ初期化）
+- ✅ **Importer API層**（routers/importer.py - プラグイン管理、AIプロバイダー管理、インポート実行、エラー統計）
 
-### 進行中（10%）
+### 進行中（5%）
 - 🔄 Story UIコンポーネント実装
   - ✅ StoryList完了（タスク9.1、9.2）
   - ✅ StoryForm完了（タスク10.1、10.2）
   - ✅ StoryDetail完了（タスク11.1、11.2）
   - ✅ UI統合・ストーリー生成トリガー完了（タスク12.1）
   - ✅ E2E統合テスト完了（タスク12.2）
-- 🔄 Importer機能実装（残りTasks）
-  - ✅ OpenAIProvider/AnthropicProvider実装（完了）
-  - ✅ ImporterAnalysisService実装（完了）
-  - ✅ ImportErrorLogModel/Repository実装（完了）
-  - ❌ ImporterService実装（統合層）
-  - ❌ Importer API/フロントエンド実装
+- 🔄 Importer機能実装（バックエンド完了、フロントエンド残り）
+  - ✅ プラグイン基盤実装（完了 - Task 1.1-1.2）
+  - ✅ AIプロバイダー基盤実装（完了 - Task 2.1-2.2）
+  - ✅ EmailPlugin実装（完了 - Task 3.1-3.3）
+  - ✅ OpenAIProvider/AnthropicProvider実装（完了 - Task 4.1-4.2, 5.1-5.2）
+  - ✅ ImporterAnalysisService実装（完了 - Task 6.1）
+  - ✅ ImportErrorLogModel/Repository実装（完了 - Task 7.1-7.2）
+  - ✅ GINインデックス追加（完了 - Task 8.1）
+  - ✅ ImporterService実装（完了 - Task 9.1-9.4）
+  - ✅ Importer API実装（完了 - Task 10.1-10.4）
+  - ✅ ImporterConfigLoader実装（完了 - Task 11.1）
+  - ❌ フロントエンドAPIクライアント（Task 12.1）
+  - ❌ フロントエンドコンポーネント（Task 13.1-13.5）
+  - ❌ 統合テスト（Task 14.1-14.2）
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
@@ -440,8 +452,11 @@ Story機能（サービス層完了・API層実装済み）:
 
 ---
 
-**最終更新**: 2026年1月19日
-**更新理由**: Importer機能のAIプロバイダー・サービス層実装完了反映
+**最終更新**: 2026年1月22日
+**更新理由**: Importer機能のバックエンド完全実装反映
+- ImporterService実装完了（importer_service.py - インポート統括、重複チェック、リトライ機能）
+- ImporterConfigLoader実装完了（importer_config_loader.py - YAML設定読み込み、環境変数展開、レジストリ初期化）
+- Importer API層実装完了（routers/importer.py - プラグイン管理、AIプロバイダー管理、インポート実行、エラー統計）
 - OpenAIProvider実装完了（openai_provider.py - GPT-4統合、構造化プロンプト）
 - AnthropicProvider実装完了（anthropic_provider.py - Claude統合）
 - ImporterAnalysisService実装完了（analysis_service.py - 信頼度判定、needs_reviewフラグ）
@@ -450,4 +465,4 @@ Story機能（サービス層完了・API層実装済み）:
 - 共通Result型実装完了（result.py - Rust風Result型、BaseError）
 - エラーコード体系の詳細化（GS-301〜GS-329）
 - Importer services/importer/ パッケージの完全な__init__.py公開API
-- 次のステップ: ImporterService統合層、Importer API層、フロントエンド実装
+- 次のステップ: フロントエンドコンポーネント実装（Task 12-14）

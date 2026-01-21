@@ -63,10 +63,10 @@ models/
   - バリデーション（`story_validator.py` - ストーリーデータ検証、95%カバレッジ）
   - ワークフローサービス（`story_workflow_service.py` - 承認・却下処理、ステータス遷移管理、一括承認、100%カバレッジ）
   - AI統合（`story_generation_service.py` - OpenAI API統合、ストーリー自動生成、リトライ戦略、88%カバレッジ）
-- **Importer関連（基盤実装済み、`services/importer/`）**:
+- **Importer関連（バックエンド実装完了、`services/importer/`）**:
   - **共通基盤**:
     - 共通Result型（`result.py` - Rust風Result型、BaseError基底クラス）
-    - エラーログモデル（`import_error_log_repository.py` - エラー記録・統計・自動解決）
+    - エラーログ永続化（`import_error_log_repository.py` - エラー記録・統計・自動解決）
   - **データソースプラグイン層**:
     - プラグイン基盤（`plugin_base.py` - DataSourcePlugin抽象クラス、RawImportData、ValidationResult）
     - プラグイン管理（`plugin_registry.py` - PluginRegistryService、登録・解除・有効/無効切替）
@@ -78,6 +78,9 @@ models/
     - Anthropicプロバイダー（`anthropic_provider.py` - Claude統合、リトライ戦略）
   - **解析サービス層**:
     - 解析サービス（`analysis_service.py` - ImporterAnalysisService、信頼度判定、needs_reviewフラグ）
+  - **統合サービス層**:
+    - インポート統括（`importer_service.py` - ImporterService、インポート実行、重複チェック、リトライ機能）
+    - 設定ローダー（`importer_config_loader.py` - ImporterConfigLoader、YAML設定、環境変数展開）
 
 **API層** (`routers/`)
 - FastAPIルーター定義
@@ -85,6 +88,7 @@ models/
 - 依存性注入
 - **Inquiry API（実装済み）**: `inquiry.py` - CRUD + ワークフロー全エンドポイント
 - **Story API（実装済み）**: `story.py` - CRUD + ワークフロー + AI変換 + 一括承認エンドポイント
+- **Importer API（実装済み）**: `importer.py` - プラグイン管理 + AIプロバイダー管理 + インポート実行 + エラー統計
 
 **テスト** (`tests/`)
 - `conftest.py` - pytest設定・フィクスチャ
