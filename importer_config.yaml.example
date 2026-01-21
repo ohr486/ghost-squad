@@ -1,0 +1,57 @@
+# Importer設定ファイル（サンプル）
+#
+# このファイルをimporter_config.yamlにコピーして使用してください。
+# 環境変数は${VAR_NAME}形式で参照できます。
+
+# プラグイン設定
+plugins:
+  email:
+    enabled: true
+    config:
+      # IMAPサーバー設定
+      imap_server: ${IMAP_SERVER}
+      imap_port: 993
+      username: ${IMAP_USERNAME}
+      password: ${IMAP_PASSWORD}
+
+      # 取り込み対象フォルダ
+      folder: "INBOX"
+
+      # SSL/TLS接続を使用
+      use_ssl: true
+
+      # 一度に取得するメールの最大件数
+      fetch_limit: 50
+
+      # リトライ設定
+      retry_max: 3
+      retry_backoff_base: 2.0
+
+# AIプロバイダー設定
+ai_providers:
+  # デフォルトで使用するプロバイダー
+  default: openai
+
+  providers:
+    openai:
+      enabled: true
+      api_key: ${OPENAI_API_KEY}
+      model: "gpt-4"
+      # オプション設定
+      # temperature: 0.7
+      # max_tokens: 1000
+      # timeout: 30
+      # retry_max: 3
+      # retry_backoff_base: 2.0
+      # organization: ${OPENAI_ORG_ID}
+
+    anthropic:
+      enabled: false
+      api_key: ${ANTHROPIC_API_KEY}
+      model: "claude-3-sonnet-20240229"
+      # オプション設定
+      # temperature: 0.7
+      # max_tokens: 1000
+      # timeout: 30
+      # retry_max: 3
+      # retry_backoff_base: 2.0
