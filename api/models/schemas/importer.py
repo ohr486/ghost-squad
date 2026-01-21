@@ -387,3 +387,75 @@ class ImportResultResponse(BaseModel):
             }
         }
     )
+
+
+# =============================================================================
+# エラー統計スキーマ（タスク10.4）
+# =============================================================================
+
+
+class ErrorStatsResponse(BaseModel):
+    """エラー統計レスポンス.
+
+    要件5.4: エラー統計
+    """
+
+    error_code: str = Field(
+        ...,
+        description="エラーコード（GS-3xx形式）",
+    )
+    count: int = Field(
+        ...,
+        description="エラー発生回数",
+        ge=0,
+    )
+    last_occurred: str = Field(
+        ...,
+        description="最終発生日時（ISO 8601形式）",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "error_code": "GS-304",
+                "count": 15,
+                "last_occurred": "2024-01-15T10:30:00+00:00",
+            }
+        }
+    )
+
+
+class ErrorStatsListResponse(BaseModel):
+    """エラー統計一覧レスポンス.
+
+    要件5.4: エラー統計
+    """
+
+    data: List[ErrorStatsResponse] = Field(
+        ...,
+        description="エラー統計リスト",
+    )
+    timestamp: str = Field(
+        ...,
+        description="レスポンスタイムスタンプ（ISO 8601形式）",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "data": [
+                    {
+                        "error_code": "GS-304",
+                        "count": 15,
+                        "last_occurred": "2024-01-15T10:30:00+00:00",
+                    },
+                    {
+                        "error_code": "GS-303",
+                        "count": 5,
+                        "last_occurred": "2024-01-14T14:20:00+00:00",
+                    },
+                ],
+                "timestamp": "2024-01-15T12:00:00+00:00",
+            }
+        }
+    )

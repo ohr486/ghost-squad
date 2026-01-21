@@ -221,7 +221,7 @@
   - ユニットテスト作成
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 4.1, 4.2, 4.3, 4.4, 4.5, 5.2_
 
-- [ ] 10.4 エラー統計APIの実装
+- [x] 10.4 エラー統計APIの実装
   - GET /api/importers/stats - エラー統計取得
   - Pydanticスキーマの定義（ErrorStatsResponse）
   - ユニットテスト作成
