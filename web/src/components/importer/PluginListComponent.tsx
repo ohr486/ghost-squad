@@ -60,15 +60,10 @@ const PluginListComponent: React.FC<PluginListComponentProps> = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plugins"] });
     },
-    onError: (error: ImporterErrorResponse, pluginType: string) => {
+    onError: (error: ImporterErrorResponse) => {
       setErrorMessage(
         error.errors?.[0]?.message || "プラグインの有効化に失敗しました",
       );
-      setTogglingPlugins((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(pluginType);
-        return newSet;
-      });
     },
     onSettled: (_data, _error, pluginType) => {
       setTogglingPlugins((prev) => {
@@ -89,15 +84,10 @@ const PluginListComponent: React.FC<PluginListComponentProps> = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["plugins"] });
     },
-    onError: (error: ImporterErrorResponse, pluginType: string) => {
+    onError: (error: ImporterErrorResponse) => {
       setErrorMessage(
         error.errors?.[0]?.message || "プラグインの無効化に失敗しました",
       );
-      setTogglingPlugins((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(pluginType);
-        return newSet;
-      });
     },
     onSettled: (_data, _error, pluginType) => {
       setTogglingPlugins((prev) => {
