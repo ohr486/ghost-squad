@@ -266,8 +266,8 @@ describe("AIProviderListComponent", () => {
 
       await waitFor(() => {
         expect(mockedSetDefaultAIProvider).toHaveBeenCalled();
-        expect(mockedSetDefaultAIProvider.mock.calls[0][0]).toBe("anthropic");
       });
+      expect(mockedSetDefaultAIProvider.mock.calls[0][0]).toBe("anthropic");
     });
 
     it("デフォルト設定中はローディング状態を表示する", async () => {
@@ -362,13 +362,13 @@ describe("AIProviderListComponent", () => {
         expect(
           screen.getByRole("radio", { name: "openaiをデフォルトに設定" }),
         ).toBeInTheDocument();
-        expect(
-          screen.getByRole("radio", { name: "anthropicをデフォルトに設定" }),
-        ).toBeInTheDocument();
-        expect(
-          screen.getByRole("radio", { name: "geminiをデフォルトに設定" }),
-        ).toBeInTheDocument();
       });
+      expect(
+        screen.getByRole("radio", { name: "anthropicをデフォルトに設定" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("radio", { name: "geminiをデフォルトに設定" }),
+      ).toBeInTheDocument();
     });
   });
 });

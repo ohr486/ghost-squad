@@ -177,21 +177,27 @@ describe("ImporterPage", () => {
 
   describe("レイアウト", () => {
     it("各セクションがセクション要素で囲まれている", async () => {
-      renderComponent();
+      const { container } = renderComponent();
 
       await waitFor(() => {
-        const sections = document.querySelectorAll("section");
-        expect(sections.length).toBe(4); // Executor, Plugin, AIProvider, ErrorStats
+        expect(screen.getByRole("main")).toBeInTheDocument();
       });
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const sections = container.querySelectorAll("section");
+      expect(sections.length).toBe(4); // Executor, Plugin, AIProvider, ErrorStats
     });
 
     it("セクション間に適切な余白がある", async () => {
-      renderComponent();
+      const { container } = renderComponent();
 
       await waitFor(() => {
-        const pageContainer = document.querySelector(".importer-page");
-        expect(pageContainer).toHaveClass("space-y-8");
+        expect(screen.getByRole("main")).toBeInTheDocument();
       });
+
+      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      const pageContainer = container.querySelector(".importer-page");
+      expect(pageContainer).toHaveClass("space-y-8");
     });
   });
 

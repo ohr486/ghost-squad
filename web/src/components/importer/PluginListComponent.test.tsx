@@ -240,8 +240,8 @@ describe("PluginListComponent", () => {
 
       await waitFor(() => {
         expect(mockedEnablePlugin).toHaveBeenCalled();
-        expect(mockedEnablePlugin.mock.calls[0][0]).toBe("sentry");
       });
+      expect(mockedEnablePlugin.mock.calls[0][0]).toBe("sentry");
     });
 
     it("トグルをクリックするとプラグインを無効化するAPIが呼ばれる", async () => {
@@ -267,8 +267,8 @@ describe("PluginListComponent", () => {
 
       await waitFor(() => {
         expect(mockedDisablePlugin).toHaveBeenCalled();
-        expect(mockedDisablePlugin.mock.calls[0][0]).toBe("email");
       });
+      expect(mockedDisablePlugin.mock.calls[0][0]).toBe("email");
     });
 
     it("トグル操作中はローディング状態を表示する", async () => {
@@ -362,17 +362,17 @@ describe("PluginListComponent", () => {
             name: "emailプラグインの有効/無効切り替え",
           }),
         ).toBeInTheDocument();
-        expect(
-          screen.getByRole("checkbox", {
-            name: "sentryプラグインの有効/無効切り替え",
-          }),
-        ).toBeInTheDocument();
-        expect(
-          screen.getByRole("checkbox", {
-            name: "slackプラグインの有効/無効切り替え",
-          }),
-        ).toBeInTheDocument();
       });
+      expect(
+        screen.getByRole("checkbox", {
+          name: "sentryプラグインの有効/無効切り替え",
+        }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("checkbox", {
+          name: "slackプラグインの有効/無効切り替え",
+        }),
+      ).toBeInTheDocument();
     });
   });
 });

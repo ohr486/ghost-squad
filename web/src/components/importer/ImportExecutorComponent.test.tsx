@@ -251,10 +251,10 @@ describe("ImportExecutorComponent", () => {
 
       await waitFor(() => {
         expect(mockedExecuteImport).toHaveBeenCalled();
-        expect(mockedExecuteImport.mock.calls[0][0]).toEqual({
-          plugin_type: "email",
-          ai_provider_type: null,
-        });
+      });
+      expect(mockedExecuteImport.mock.calls[0][0]).toEqual({
+        plugin_type: "email",
+        ai_provider_type: null,
       });
     });
 
@@ -279,10 +279,10 @@ describe("ImportExecutorComponent", () => {
 
       await waitFor(() => {
         expect(mockedExecuteImport).toHaveBeenCalled();
-        expect(mockedExecuteImport.mock.calls[0][0]).toEqual({
-          plugin_type: "email",
-          ai_provider_type: "anthropic",
-        });
+      });
+      expect(mockedExecuteImport.mock.calls[0][0]).toEqual({
+        plugin_type: "email",
+        ai_provider_type: "anthropic",
       });
     });
 
@@ -447,10 +447,10 @@ describe("ImportExecutorComponent", () => {
 
       await waitFor(() => {
         expect(screen.getByLabelText("データソース")).toBeInTheDocument();
-        expect(
-          screen.getByLabelText("AIプロバイダー（オプション）"),
-        ).toBeInTheDocument();
       });
+      expect(
+        screen.getByLabelText("AIプロバイダー（オプション）"),
+      ).toBeInTheDocument();
     });
   });
 });
