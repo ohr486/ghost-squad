@@ -42,7 +42,12 @@ const ImportExecutorComponent: React.FC<ImportExecutorComponentProps> = () => {
   });
 
   // AIプロバイダー一覧取得
-  const { data: providersResponse, isLoading: isLoadingProviders } = useQuery({
+  const {
+    data: providersResponse,
+    isLoading: isLoadingProviders,
+    isError: isProvidersError,
+    error: providersError,
+  } = useQuery({
     queryKey: ["ai-providers"],
     queryFn: listAIProviders,
   });
@@ -94,6 +99,7 @@ const ImportExecutorComponent: React.FC<ImportExecutorComponentProps> = () => {
         <h2 className="text-lg font-semibold text-gray-900">インポート実行</h2>
         <div className="p-4 bg-red-50 border border-red-200 rounded">
           <p className="text-red-800">
+            プラグインの読み込みに失敗しました:{" "}
             {pluginsError instanceof Error
               ? pluginsError.message
               : "不明なエラー"}
@@ -114,6 +120,21 @@ const ImportExecutorComponent: React.FC<ImportExecutorComponentProps> = () => {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-gray-900">インポート実行</h2>
+
+      {/* AIプロバイダー読み込みエラー表示 */}
+      {isProvidersError && (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">
+          <p className="text-yellow-800">
+            AIプロバイダーの読み込みに失敗しました:{" "}
+            {providersError instanceof Error
+              ? providersError.message
+              : "不明なエラー"}
+          </p>
+          <p className="text-sm text-yellow-700 mt-1">
+            プラグインのみを使用してインポートを実行できます
+          </p>
+        </div>
+      )}
 
       {/* エラーメッセージ表示 */}
       {errorMessage && (
