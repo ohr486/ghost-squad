@@ -12,6 +12,7 @@ import { InquiryForm } from "./components/InquiryForm";
 import { StoryForm } from "./components/StoryForm";
 import StoryList from "./components/StoryList";
 import StoryDetail from "./components/StoryDetail";
+import { ImporterPage } from "./components/importer";
 import { createInquiry, listInquiries } from "./services/inquiryApi";
 import { createStory } from "./services/storyApi";
 import type { CreateStoryRequest } from "./types";
@@ -25,7 +26,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type Tab = "inquiries" | "stories";
+type Tab = "inquiries" | "stories" | "importer";
 
 /**
  * アプリケーションのメインコンテンツ
@@ -148,12 +149,22 @@ function AppContent(): JSX.Element {
             >
               ストーリー
             </button>
+            <button
+              onClick={() => handleTabChange("importer")}
+              className={`${
+                activeTab === "importer"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              インポーター
+            </button>
           </nav>
         </div>
       </div>
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {activeTab === "inquiries" ? (
+        {activeTab === "inquiries" && (
           // 問い合わせタブのコンテンツ
           <>
             {showCreateForm ? (
@@ -200,7 +211,9 @@ function AppContent(): JSX.Element {
               </div>
             )}
           </>
-        ) : (
+        )}
+
+        {activeTab === "stories" && (
           // ストーリータブのコンテンツ
           <>
             {selectedStoryId ? (
@@ -230,6 +243,13 @@ function AppContent(): JSX.Element {
               </div>
             )}
           </>
+        )}
+
+        {activeTab === "importer" && (
+          // インポータータブのコンテンツ
+          <div className="px-4 py-6 sm:px-0">
+            <ImporterPage />
+          </div>
         )}
       </main>
 

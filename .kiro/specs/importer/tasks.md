@@ -254,7 +254,7 @@
 
 ### 13. フロントエンドコンポーネントの実装
 
-- [ ] 13.1 PluginListComponentの実装
+- [x] 13.1 PluginListComponentの実装
   - プラグイン一覧テーブルの表示
   - プラグインタイプ、状態（初期化状態）、エラーメッセージの表示
   - 有効/無効トグルスイッチの実装
@@ -263,7 +263,7 @@
   - ユニットテスト作成
   - _Requirements: 1.1, 1.2_
 
-- [ ] 13.2 (P) AIProviderListComponentの実装
+- [x] 13.2 (P) AIProviderListComponentの実装
   - プロバイダー一覧テーブルの表示
   - プロバイダータイプ、モデル、状態、エラーメッセージの表示
   - デフォルト選択ラジオボタンの実装
@@ -272,7 +272,7 @@
   - ユニットテスト作成
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 13.3 ImportExecutorComponentの実装
+- [x] 13.3 ImportExecutorComponentの実装
   - データソースプラグイン選択ドロップダウン
   - AIプロバイダー選択ドロップダウン（オプション、デフォルト使用可）
   - インポート実行ボタン
@@ -283,7 +283,7 @@
   - ユニットテスト作成
   - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 4.1, 4.2, 4.3, 4.4, 4.5_
 
-- [ ] 13.4 (P) ErrorStatsComponentの実装
+- [x] 13.4 (P) ErrorStatsComponentの実装
   - エラー統計テーブルの表示
   - エラーコード、発生回数、最終発生日時の表示
   - エラーなし時のメッセージ表示
@@ -292,7 +292,7 @@
   - ユニットテスト作成
   - _Requirements: 5.4_
 
-- [ ] 13.5 ImporterPageの実装
+- [x] 13.5 ImporterPageの実装
   - 各子コンポーネントの統合（ImportExecutor、PluginList、AIProviderList、ErrorStats）
   - セクションベースのレイアウト
   - 見出しとナビゲーション
