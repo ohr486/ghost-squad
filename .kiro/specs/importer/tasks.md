@@ -302,7 +302,7 @@
 
 ### 14. 統合テストの実装
 
-- [ ] 14.1 バックエンド統合テストの実装
+- [x] 14.1 バックエンド統合テストの実装
   - EmailPlugin + IMAPサーバーモックによる統合テスト
   - OpenAIProvider + OpenAI APIモックによる統合テスト
   - AnthropicProvider + Anthropic APIモックによる統合テスト
