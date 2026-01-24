@@ -37,9 +37,7 @@ from services.importer.analysis_service import (AnalysisResult,
 from services.importer.anthropic_provider import (AnthropicProvider,
                                                   AnthropicProviderConfig)
 from services.importer.email_plugin import EmailPlugin, EmailPluginConfig
-from services.importer.importer_service import (ImporterService,
-                                                ImporterServiceError,
-                                                ImportResult)
+from services.importer.importer_service import ImporterService
 from services.importer.openai_provider import (OpenAIProvider,
                                                OpenAIProviderConfig)
 from services.importer.plugin_base import DataSourcePlugin, RawImportData
