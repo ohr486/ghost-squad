@@ -154,6 +154,12 @@ src/
     - Priority（LOW/MEDIUM/HIGH/URGENT）
     - StoryResponse, CreateStoryRequest, UpdateStoryRequest（API型）
     - ApproveStoryRequest, RejectStoryRequest（ワークフロー型）
+  - `importer.ts` - Importer関連型定義（バックエンドPydanticスキーマと整合）
+    - PluginStatus, PluginListResponse（プラグイン管理型）
+    - AIProviderStatus, AIProviderListResponse（AIプロバイダー管理型）
+    - ExecuteImportRequest, RetryImportRequest, ImportResult（インポート実行型）
+    - ErrorStats, ErrorStatsListResponse（エラー統計型）
+    - ImporterValidationError, ImporterErrorResponse（共通エラー型）
 - **将来実装**:
   - `api/` - 追加のAPI関連型定義
   - `components/` - コンポーネントプロパティ型
@@ -170,6 +176,13 @@ src/
     - CRUD操作（createStory、listStories、getStory、updateStory、deleteStory）
     - ワークフロー操作（approveStory、rejectStory、batchApproveStories）
     - AI生成（generateStory）
+  - `importerApi.ts` - インポーターAPIクライアント（実装済み）
+    - Axiosインスタンス作成（30秒タイムアウト、CORS設定）
+    - エラーレスポンスインターセプター（ImporterErrorResponse標準化）
+    - プラグイン管理（listPlugins、enablePlugin、disablePlugin）
+    - AIプロバイダー管理（listAIProviders、setDefaultAIProvider）
+    - インポート実行（executeImport、retryImport）
+    - エラー統計（getErrorStats）
 - **将来実装**:
   - `authService.ts` - 認証サービス
 
@@ -224,6 +237,13 @@ src/
     - 承認・却下フロー（StoryDetailでのワークフロー）
     - ナビゲーション・ステータス別UI動作検証
     - 10テスト
+  - `importer/` - インポーター管理コンポーネント（実装済み）
+    - `ImporterPage.tsx` - インポーター管理統括ページ
+    - `PluginListComponent.tsx` - プラグイン一覧・有効/無効切替
+    - `AIProviderListComponent.tsx` - AIプロバイダー一覧・デフォルト設定
+    - `ImportExecutorComponent.tsx` - インポート実行コンポーネント
+    - `ErrorStatsComponent.tsx` - エラー統計表示コンポーネント
+    - 各コンポーネントにテストファイル（*.test.tsx）あり
 - **将来実装**:
   - `ui/` - 基本UIコンポーネント（Button、Input、Modal等）
   - `layout/` - レイアウトコンポーネント（Header、Footer、Sidebar等）
