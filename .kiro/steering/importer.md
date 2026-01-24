@@ -1,6 +1,6 @@
 ---
 inclusion: always
-updated_at: 2026-01-22
+updated_at: 2026-01-24
 ---
 
 # Importer機能 開発ガイドライン
@@ -213,4 +213,12 @@ def mock_imap():
 - ✅ ImporterConfigLoader（YAML設定、環境変数展開）
 - ✅ ImportErrorLogRepository（エラーログ永続化）
 - ✅ API層（`routers/importer.py`）
-- 🚧 フロントエンドコンポーネント（Task 12-14）
+- ✅ フロントエンド型定義（`types/importer.ts`）
+- ✅ フロントエンドAPIクライアント（`services/importerApi.ts`）
+- ✅ フロントエンドコンポーネント（`components/importer/`）
+  - ImporterPage（統括コンポーネント）
+  - PluginListComponent（プラグイン一覧・有効/無効切替）
+  - AIProviderListComponent（AIプロバイダー一覧・デフォルト設定）
+  - ImportExecutorComponent（インポート実行）
+  - ErrorStatsComponent（エラー統計表示）
+- ✅ App.tsx統合（インポータータブ追加）
