@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from sqlalchemy.orm import Session
 
+from conftest import MockDataSourcePlugin
 from models.enums.priority import Priority
 from services.importer.ai_provider_base import AIProviderType
 from services.importer.ai_provider_registry import AIProviderRegistryService
@@ -179,50 +180,6 @@ class TestImporterServiceError:
         assert error.code == "GS-301"
         assert error.message == "プラグインが見つかりません"
         assert str(error) == "[GS-301] プラグインが見つかりません"
-
-
-# ==============================================================================
-# Mock Classes for Testing
-# ==============================================================================
-
-
-class MockDataSourcePlugin(DataSourcePlugin[dict]):
-    """テスト用のモックプラグイン."""
-
-    def __init__(self, config: dict) -> None:
-        self._config = config
-        self._connected = False
-        self._data: List[RawImportData] = []
-        self._processed: List[str] = []
-
-    @property
-    def plugin_type(self) -> str:
-        return "mock_plugin"
-
-    def validate_config(self, config: dict) -> Any:
-        from services.importer.plugin_base import ValidationResult
-
-        return ValidationResult(valid=True, errors=[])
-
-    def connect(self) -> None:
-        if self._config.get("fail_connect"):
-            raise ConnectionError("接続に失敗しました")
-        self._connected = True
-
-    def disconnect(self) -> None:
-        self._connected = False
-
-    def fetch(self) -> List[RawImportData]:
-        if self._config.get("fail_fetch"):
-            raise RuntimeError("データ取得に失敗しました")
-        return self._data
-
-    def mark_as_processed(self, source_id: str) -> None:
-        self._processed.append(source_id)
-
-    def set_data(self, data: List[RawImportData]) -> None:
-        """テスト用にデータを設定."""
-        self._data = data
 
 
 # ==============================================================================
