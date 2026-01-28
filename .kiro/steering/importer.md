@@ -62,6 +62,27 @@ else:
 | `importer_config_loader.py` | YAML設定読み込み、レジストリ初期化 | 環境変数展開対応 |
 | `import_error_log_repository.py` | エラーログ永続化、統計 | 90日保持ポリシー |
 
+### スキーマ層 (`models/schemas/importer.py`)
+
+APIリクエスト/レスポンス用Pydanticスキーマを提供。
+- `PluginStatusResponse`, `PluginListResponse` - プラグイン管理
+- `AIProviderStatusResponse`, `AIProviderListResponse` - AIプロバイダー管理
+- `ExecuteImportRequest`, `RetryImportRequest`, `ImportResultResponse` - インポート実行
+- `ErrorStatsResponse`, `ErrorStatsListResponse` - エラー統計
+
+### API層 (`routers/importer.py`)
+
+| エンドポイント | メソッド | 概要 |
+|---------------|----------|------|
+| `/api/importer/plugins` | GET | プラグイン一覧取得 |
+| `/api/importer/plugins/{type}/enable` | POST | プラグイン有効化 |
+| `/api/importer/plugins/{type}/disable` | POST | プラグイン無効化 |
+| `/api/importer/ai-providers` | GET | AIプロバイダー一覧取得 |
+| `/api/importer/ai-providers/{type}/default` | POST | デフォルトAIプロバイダー設定 |
+| `/api/importer/importers/execute` | POST | インポート実行 |
+| `/api/importer/importers/retry` | POST | 失敗リトライ |
+| `/api/importer/importers/stats` | GET | エラー統計取得 |
+
 ### プラグイン基盤
 
 ```python
