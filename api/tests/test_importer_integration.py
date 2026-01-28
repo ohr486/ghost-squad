@@ -24,7 +24,6 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from conftest import MockDataSourcePlugin
 from models.database.base import Base
 from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
@@ -43,6 +42,7 @@ from services.importer.openai_provider import (OpenAIProvider,
                                                OpenAIProviderConfig)
 from services.importer.plugin_base import DataSourcePlugin, RawImportData
 from services.importer.plugin_registry import PluginRegistryService
+from tests.conftest import MockDataSourcePlugin
 
 # ==============================================================================
 # テスト用フィクスチャ
