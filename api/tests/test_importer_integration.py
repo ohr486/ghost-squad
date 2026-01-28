@@ -17,14 +17,12 @@ Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6,
 """
 import socket
 from datetime import UTC, datetime
-from typing import Any, List
 from unittest.mock import MagicMock, patch
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from conftest import MockDataSourcePlugin
 from models.database.base import Base
 from models.database.inquiry import InquiryModel
 from models.enums.inquiry_status import InquiryStatus
@@ -41,8 +39,9 @@ from services.importer.email_plugin import EmailPlugin, EmailPluginConfig
 from services.importer.importer_service import ImporterService
 from services.importer.openai_provider import (OpenAIProvider,
                                                OpenAIProviderConfig)
-from services.importer.plugin_base import DataSourcePlugin, RawImportData
+from services.importer.plugin_base import RawImportData
 from services.importer.plugin_registry import PluginRegistryService
+from tests.conftest import MockDataSourcePlugin
 
 # ==============================================================================
 # テスト用フィクスチャ

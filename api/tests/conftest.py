@@ -1,18 +1,14 @@
 """Pytest configuration and fixtures."""
 import sys
 from pathlib import Path
-from typing import Any, List
+from typing import List
 
 # Add the api directory to the Python path
 api_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(api_dir))
 
-from services.importer.plugin_base import (  # noqa: E402
-    DataSourcePlugin,
-    RawImportData,
-    ValidationResult,
-)
-
+from services.importer.plugin_base import (DataSourcePlugin,  # noqa: E402
+                                           RawImportData, ValidationResult)
 
 # ==============================================================================
 # Shared Test Utilities
@@ -21,7 +17,7 @@ from services.importer.plugin_base import (  # noqa: E402
 
 class MockDataSourcePlugin(DataSourcePlugin[dict]):
     """テスト用モックプラグイン.
-    
+
     複数のテストファイルで使用される共通のモックプラグイン。
     DataSourcePluginインターフェースを実装し、テストデータの設定と
     取得をサポートする。

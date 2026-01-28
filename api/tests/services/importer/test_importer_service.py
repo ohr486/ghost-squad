@@ -8,13 +8,11 @@ Task 9.1, 9.2, 9.3, 9.4のテスト
 """
 from dataclasses import asdict
 from datetime import UTC, datetime
-from typing import Any, List
 from unittest.mock import MagicMock, patch
 
 import pytest
 from sqlalchemy.orm import Session
 
-from conftest import MockDataSourcePlugin
 from models.enums.priority import Priority
 from services.importer.ai_provider_base import AIProviderType
 from services.importer.ai_provider_registry import AIProviderRegistryService
@@ -25,8 +23,9 @@ from services.importer.importer_service import (CONSECUTIVE_ERROR_THRESHOLD,
                                                 ImporterService,
                                                 ImporterServiceError,
                                                 ImportResult)
-from services.importer.plugin_base import DataSourcePlugin, RawImportData
+from services.importer.plugin_base import RawImportData
 from services.importer.plugin_registry import PluginRegistryService
+from tests.conftest import MockDataSourcePlugin
 
 
 class TestImporterMetadata:
