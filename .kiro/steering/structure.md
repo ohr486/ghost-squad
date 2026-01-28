@@ -243,6 +243,7 @@ src/
     - `AIProviderListComponent.tsx` - AIプロバイダー一覧・デフォルト設定
     - `ImportExecutorComponent.tsx` - インポート実行コンポーネント
     - `ErrorStatsComponent.tsx` - エラー統計表示コンポーネント
+    - `ImporterIntegration.test.tsx` - E2E統合テスト
     - 各コンポーネントにテストファイル（*.test.tsx）あり
 - **将来実装**:
   - `ui/` - 基本UIコンポーネント（Button、Input、Modal等）
