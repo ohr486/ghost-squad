@@ -1,7 +1,7 @@
 """Pytest configuration and fixtures."""
 import sys
 from pathlib import Path
-from typing import Any, List
+from typing import List
 
 # Add the api directory to the Python path
 api_dir = Path(__file__).parent.parent
