@@ -1,6 +1,6 @@
 ---
 inclusion: always
-updated_at: 2026-01-24
+updated_at: 2026-01-28
 ---
 
 # Importer機能 開発ガイドライン
@@ -213,6 +213,11 @@ def mock_imap():
 - ✅ ImporterConfigLoader（YAML設定、環境変数展開）
 - ✅ ImportErrorLogRepository（エラーログ永続化）
 - ✅ API層（`routers/importer.py`）
+- ✅ バックエンド統合テスト（`tests/test_importer_integration.py`）
+  - EmailPlugin + IMAPサーバーモック統合テスト
+  - OpenAI/Anthropicプロバイダー統合テスト
+  - ImporterService + InquiryRepository統合テスト
+  - 完全インポートフロー（メール取得→解析→問い合わせ作成）
 - ✅ フロントエンド型定義（`types/importer.ts`）
 - ✅ フロントエンドAPIクライアント（`services/importerApi.ts`）
 - ✅ フロントエンドコンポーネント（`components/importer/`）
@@ -221,4 +226,5 @@ def mock_imap():
   - AIProviderListComponent（AIプロバイダー一覧・デフォルト設定）
   - ImportExecutorComponent（インポート実行）
   - ErrorStatsComponent（エラー統計表示）
+  - ImporterIntegration.test.tsx（E2E統合テスト）
 - ✅ App.tsx統合（インポータータブ追加）

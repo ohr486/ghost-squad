@@ -432,6 +432,12 @@ Story機能（サービス層完了・API層実装済み）:
   - AIProviderListComponent（AIプロバイダー一覧・デフォルト設定）
   - ImportExecutorComponent（インポート実行）
   - ErrorStatsComponent（エラー統計表示）
+  - ImporterIntegration.test.tsx（E2E統合テスト）
+- ✅ **Importerバックエンド統合テスト**（api/tests/test_importer_integration.py）
+  - EmailPlugin + IMAPサーバーモック統合テスト
+  - OpenAI/Anthropicプロバイダー統合テスト
+  - ImporterService + InquiryRepository統合テスト
+  - 完全なインポートフロー（メール取得→解析→問い合わせ作成）
 - ✅ **App.tsx インポータータブ統合**
 
 ### 進行中（5%）
@@ -444,15 +450,8 @@ Story機能（サービス層完了・API層実装済み）:
 
 ---
 
-**最終更新**: 2026年1月24日
-**更新理由**: Importer機能のフロントエンド完全実装反映
-- フロントエンド型定義完了（types/importer.ts - PluginStatus、AIProviderStatus、ImportResult等）
-- フロントエンドAPIクライアント完了（services/importerApi.ts - プラグイン管理、AIプロバイダー管理、インポート実行、エラー統計）
-- フロントエンドコンポーネント完了（components/importer/）
-  - ImporterPage.tsx - 統括ページコンポーネント
-  - PluginListComponent.tsx - プラグイン一覧・有効/無効切替
-  - AIProviderListComponent.tsx - AIプロバイダー一覧・デフォルト設定
-  - ImportExecutorComponent.tsx - インポート実行
-  - ErrorStatsComponent.tsx - エラー統計表示
-- App.tsx統合完了（インポータータブ追加）
-- 各コンポーネントにテストファイル（*.test.tsx）あり
+**最終更新**: 2026年1月28日
+**更新理由**: Importer統合テスト追加を反映
+- フロントエンド統合テスト追加（ImporterIntegration.test.tsx）
+- バックエンド統合テスト追加（test_importer_integration.py - Task 14.1）
+- 完全なインポートフロー統合テスト（メール取得→AI解析→問い合わせ作成）
