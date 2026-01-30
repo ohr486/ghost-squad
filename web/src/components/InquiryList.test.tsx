@@ -44,6 +44,26 @@ const mockInquiries = [
   },
 ];
 
+const mockEmailInquiry = {
+  id: 3,
+  user_id: "importer:email",
+  content: "メールからインポートされた内容です",
+  source_system: "importer:email",
+  timestamp: "2024-01-02T10:00:00Z",
+  status: "received" as const,
+  created_at: "2024-01-02T10:00:00Z",
+  updated_at: "2024-01-02T10:00:00Z",
+  inquiry_metadata: {
+    importer: {
+      source_type: "email",
+      source_id: "<message-id@example.com>",
+      original_subject: "【重要】システム障害のお知らせ",
+      original_sender: "support@example.com",
+      imported_at: "2024-01-02T10:00:00Z",
+    },
+  },
+};
+
 const mockPaginatedResponse = {
   data: mockInquiries,
   meta: {
@@ -409,5 +429,77 @@ describe("InquiryList", () => {
     const filterSelect = screen.getByLabelText("ステータスフィルター");
     expect(filterSelect).toBeInTheDocument();
     expect(filterSelect).toBeEnabled();
+  });
+
+  it("メールインポートの場合、タイトルと送信者を表示する", async () => {
+    (inquiryApi.listInquiries as jest.Mock).mockResolvedValue({
+      data: [mockEmailInquiry],
+      meta: {
+        page: 1,
+        limit: 20,
+        total: 1,
+        has_next: false,
+      },
+      timestamp: "2024-01-02T12:00:00Z",
+    });
+
+    const queryClient = createQueryClient();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <InquiryList onInquiryClick={jest.fn()} />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("【重要】システム障害のお知らせ"),
+      ).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("support@example.com")).toBeInTheDocument();
+  });
+
+  it("手動作成の場合、タイトルと送信者は「-」を表示する", async () => {
+    (inquiryApi.listInquiries as jest.Mock).mockResolvedValue(
+      mockPaginatedResponse,
+    );
+
+    const queryClient = createQueryClient();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <InquiryList onInquiryClick={jest.fn()} />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("ログイン機能が欲しい")).toBeInTheDocument();
+    });
+
+    // タイトルと送信者の「-」が表示されていることを確認
+    const dashElements = screen.getAllByText("-");
+    expect(dashElements.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("テーブルヘッダーにタイトルと送信者の列が表示される", async () => {
+    (inquiryApi.listInquiries as jest.Mock).mockResolvedValue(
+      mockPaginatedResponse,
+    );
+
+    const queryClient = createQueryClient();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <InquiryList onInquiryClick={jest.fn()} />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("ログイン機能が欲しい")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("タイトル")).toBeInTheDocument();
+    expect(screen.getByText("送信者")).toBeInTheDocument();
   });
 });

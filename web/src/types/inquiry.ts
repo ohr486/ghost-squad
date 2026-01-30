@@ -67,6 +67,23 @@ export interface ClarificationRequestInfo {
 }
 
 /**
+ * インポーターメタデータ構造
+ */
+export interface ImporterMetadata {
+  source_type?: string; // "email" など
+  source_id?: string; // Message-ID
+  imported_at?: string; // ISO 8601形式
+  confidence_score?: number;
+  needs_review?: boolean;
+  original_subject?: string; // メール件名
+  original_sender?: string; // メール送信者
+  ai_provider?: string;
+  ai_model?: string;
+  ai_generated_title?: string;
+  ai_generated_priority?: string;
+}
+
+/**
  * 問い合わせメタデータ構造
  */
 export interface InquiryMetadata {
@@ -82,6 +99,9 @@ export interface InquiryMetadata {
   // その他のメタデータ
   source?: string; // 送信元詳細情報
   tags?: string[]; // タグ（将来実装）
+
+  // インポーター情報
+  importer?: ImporterMetadata;
 }
 
 /**

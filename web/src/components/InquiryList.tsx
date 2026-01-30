@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listInquiries } from "../services/inquiryApi";
-import type { InquiryStatus } from "../types/inquiry";
+import type { InquiryStatus, InquiryResponse } from "../types/inquiry";
 
 export interface InquiryListProps {
   onInquiryClick: (inquiryId: number) => void;
@@ -60,6 +60,21 @@ const InquiryList: React.FC<InquiryListProps> = ({ onInquiryClick }) => {
       return content;
     }
     return content.substring(0, maxLength) + "...";
+  };
+
+  const isEmailImport = (inquiry: InquiryResponse): boolean => {
+    return (
+      inquiry.source_system === "importer:email" ||
+      inquiry.inquiry_metadata?.importer?.source_type === "email"
+    );
+  };
+
+  const getEmailSubject = (inquiry: InquiryResponse): string | null => {
+    return inquiry.inquiry_metadata?.importer?.original_subject || null;
+  };
+
+  const getEmailSender = (inquiry: InquiryResponse): string | null => {
+    return inquiry.inquiry_metadata?.importer?.original_sender || null;
   };
 
   const formatTimestamp = (timestamp: string): string => {
@@ -156,6 +171,12 @@ const InquiryList: React.FC<InquiryListProps> = ({ onInquiryClick }) => {
                     ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    タイトル
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    送信者
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     内容
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -182,6 +203,24 @@ const InquiryList: React.FC<InquiryListProps> = ({ onInquiryClick }) => {
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       #{inquiry.id}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {isEmailImport(inquiry) ? (
+                        <span title={getEmailSubject(inquiry) || undefined}>
+                          {truncateContent(getEmailSubject(inquiry) || "-", 50)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">
+                      {isEmailImport(inquiry) ? (
+                        <span title={getEmailSender(inquiry) || undefined}>
+                          {truncateContent(getEmailSender(inquiry) || "-", 30)}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {truncateContent(inquiry.content)}
