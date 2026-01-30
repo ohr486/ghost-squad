@@ -13,7 +13,7 @@ Requirements: 2.1, 2.3, 2.5
 """
 import socket
 from datetime import timezone
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
@@ -1022,12 +1022,13 @@ Content-Type: text/plain; charset=utf-8
     # --- fetch_limit制限のテスト ---
 
     def test_fetch_respects_fetch_limit(self) -> None:
-        """fetch_limitによる件数制限が適用されることを確認."""
+        """fetch_limitによる件数制限が適用され、最新メールから取得されることを確認."""
         mock_imap = MagicMock()
         mock_imap.login.return_value = ("OK", [b"Logged in"])
         mock_imap.select.return_value = ("OK", [b"10"])
-        # 10件のメールIDを返す
+        # 10件のメールIDを昇順で返す（IMAPの仕様通り、古い順）
         mock_imap.search.return_value = ("OK", [b"1 2 3 4 5 6 7 8 9 10"])
+        # 最新5件（ID: 10, 9, 8, 7, 6）に対応するメールを返す
         mock_imap.fetch.side_effect = [
             (
                 "OK",
@@ -1040,7 +1041,7 @@ Content-Type: text/plain; charset=utf-8
                     )
                 ],
             )
-            for i in range(1, 6)  # fetch_limit=5のため5件だけ
+            for i in [10, 9, 8, 7, 6]  # 最新から古い順
         ]
 
         with patch(
@@ -1057,8 +1058,24 @@ Content-Type: text/plain; charset=utf-8
             # fetchは5回だけ呼ばれる
             assert mock_imap.fetch.call_count == 5
 
-    # --- メールパースのテスト ---
+            # 最新メールから取得されることを確認（ID: 10, 9, 8, 7, 6の順）
+            expected_calls = [
+                call("10", "(RFC822)"),
+                call("9", "(RFC822)"),
+                call("8", "(RFC822)"),
+                call("7", "(RFC822)"),
+                call("6", "(RFC822)"),
+            ]
+            mock_imap.fetch.assert_has_calls(expected_calls, any_order=False)
 
+            # 結果のメールが最新から古い順になっていることを確認
+            assert result[0].source_id == "<msg10@example.com>"
+            assert result[1].source_id == "<msg9@example.com>"
+            assert result[2].source_id == "<msg8@example.com>"
+            assert result[3].source_id == "<msg7@example.com>"
+            assert result[4].source_id == "<msg6@example.com>"
+
+    # --- メールパースのテスト ---
     def test_fetch_parses_email_date_correctly(self) -> None:
         """メールの日付が正しくパースされることを確認."""
         mock_imap = MagicMock()

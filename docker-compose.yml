@@ -29,6 +29,12 @@ services:
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - DEBUG=true
       - ENVIRONMENT=development
+      # IMAP設定
+      - IMAP_SERVER=${IMAP_SERVER}
+      - IMAP_USERNAME=${IMAP_USERNAME}
+      - IMAP_PASSWORD=${IMAP_PASSWORD}
+      # Anthropic API（オプション）
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     ports:
       - "8000:8000"
     volumes:
