@@ -1075,9 +1075,7 @@ Content-Type: text/plain; charset=utf-8
             assert result[3].source_id == "<msg7@example.com>"
             assert result[4].source_id == "<msg6@example.com>"
 
-
     # --- メールパースのテスト ---
-
     def test_fetch_parses_email_date_correctly(self) -> None:
         """メールの日付が正しくパースされることを確認."""
         mock_imap = MagicMock()
