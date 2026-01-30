@@ -1028,6 +1028,7 @@ Content-Type: text/plain; charset=utf-8
         mock_imap.select.return_value = ("OK", [b"10"])
         # 10件のメールIDを昇順で返す（IMAPの仕様通り、古い順）
         mock_imap.search.return_value = ("OK", [b"1 2 3 4 5 6 7 8 9 10"])
+        # 最新5件（ID: 10, 9, 8, 7, 6）に対応するメールを返す
         mock_imap.fetch.side_effect = [
             (
                 "OK",
@@ -1040,7 +1041,7 @@ Content-Type: text/plain; charset=utf-8
                     )
                 ],
             )
-            for i in range(1, 6)  # fetch_limit=5のため5件だけ
+            for i in [10, 9, 8, 7, 6]  # 最新から古い順
         ]
 
         with patch(
