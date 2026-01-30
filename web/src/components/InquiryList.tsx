@@ -207,7 +207,7 @@ const InquiryList: React.FC<InquiryListProps> = ({ onInquiryClick }) => {
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {isEmailImport(inquiry) ? (
                         <span title={getEmailSubject(inquiry) || undefined}>
-                          {truncateContent(getEmailSubject(inquiry) || "-", 50)}
+                          {truncateContent(getEmailSubject(inquiry) || "", 50) || "-"}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>
@@ -216,7 +216,7 @@ const InquiryList: React.FC<InquiryListProps> = ({ onInquiryClick }) => {
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {isEmailImport(inquiry) ? (
                         <span title={getEmailSender(inquiry) || undefined}>
-                          {truncateContent(getEmailSender(inquiry) || "-", 30)}
+                          {truncateContent(getEmailSender(inquiry) || "", 30) || "-"}
                         </span>
                       ) : (
                         <span className="text-gray-400">-</span>
