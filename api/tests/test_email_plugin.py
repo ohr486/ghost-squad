@@ -1057,7 +1057,7 @@ Content-Type: text/plain; charset=utf-8
             assert len(result) == 5
             # fetchは5回だけ呼ばれる
             assert mock_imap.fetch.call_count == 5
-            
+
             # 最新メールから取得されることを確認（ID: 10, 9, 8, 7, 6の順）
             expected_calls = [
                 call("10", "(RFC822)"),
@@ -1067,6 +1067,14 @@ Content-Type: text/plain; charset=utf-8
                 call("6", "(RFC822)"),
             ]
             mock_imap.fetch.assert_has_calls(expected_calls, any_order=False)
+
+            # 結果のメールが最新から古い順になっていることを確認
+            assert result[0].source_id == "<msg10@example.com>"
+            assert result[1].source_id == "<msg9@example.com>"
+            assert result[2].source_id == "<msg8@example.com>"
+            assert result[3].source_id == "<msg7@example.com>"
+            assert result[4].source_id == "<msg6@example.com>"
+
 
     # --- メールパースのテスト ---
 
