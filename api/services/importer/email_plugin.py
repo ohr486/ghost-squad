@@ -491,8 +491,8 @@ class EmailPlugin(DataSourcePlugin[EmailPluginConfig]):
         if not mail_ids:
             return []
 
-        # fetch_limitを適用
-        mail_ids = mail_ids[: self._config.fetch_limit]
+        # 最新のメールから取得するため逆順にし、fetch_limitを適用
+        mail_ids = mail_ids[::-1][: self._config.fetch_limit]
 
         results: List[RawImportData] = []
         for mail_id in mail_ids:
