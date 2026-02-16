@@ -444,14 +444,23 @@ Story機能（サービス層完了・API層実装済み）:
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
+### 最近の変更（2026-02-16）
+- ✅ `main.py` lifespan管理（インポーター設定自動ロード）
+- ✅ `docker-compose.yml` IMAP/Anthropic環境変数追加
+- ✅ InquiryList UIにメールインポート情報表示（タイトル・送信者列）
+- ✅ `ImporterMetadata`型定義（Inquiry×Importer連携）
+- ✅ EmailPluginバグ修正（newest-first取得順序）
+
 ### 未着手（5%）
 - ❌ Inquiry機能のページレイアウト・ルーティング統合
 - ❌ 高度なレスポンシブデザイン最適化
 
 ---
 
-**最終更新**: 2026年1月28日
-**更新理由**: Importer統合テスト追加を反映
-- フロントエンド統合テスト追加（ImporterIntegration.test.tsx）
-- バックエンド統合テスト追加（test_importer_integration.py - Task 14.1）
-- 完全なインポートフロー統合テスト（メール取得→AI解析→問い合わせ作成）
+**最終更新**: 2026年2月16日
+**更新理由**: 最近の変更を反映（Steering Sync）
+- `main.py`にlifespan管理追加（ImporterConfigLoader自動初期化）
+- `docker-compose.yml`にIMAP/Anthropic環境変数追加
+- InquiryList UIにメールインポート情報（タイトル・送信者）列を追加
+- `types/inquiry.ts`に`ImporterMetadata`インターフェース追加（Inquiry×Importer連携型）
+- EmailPlugin バグ修正（newest-first取得順序）

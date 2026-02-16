@@ -1,6 +1,6 @@
 ---
 inclusion: always
-updated_at: 2026-01-28
+updated_at: 2026-02-16
 ---
 
 # Importer機能 開発ガイドライン
@@ -148,6 +148,31 @@ ai_providers:
 ```
 
 **設定読み込み**: `ImporterConfigLoader`がアプリ起動時にレジストリを初期化。
+
+### アプリケーション起動時の自動初期化
+
+`main.py`のlifespanイベントで`ImporterConfigLoader`が自動実行される。
+
+```python
+# main.py - lifespan管理パターン
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    config_path = Path("config/importer_config.yaml")
+    if config_path.exists():
+        plugin_registry = PluginRegistryService()
+        ai_provider_registry = AIProviderRegistryService()
+        loader = ImporterConfigLoader(
+            plugin_registry=plugin_registry,
+            ai_provider_registry=ai_provider_registry,
+        )
+        loader.load_from_file(config_path)
+        # ルーターにレジストリを注入
+        importer.set_plugin_registry(plugin_registry)
+        importer.set_ai_provider_registry(ai_provider_registry)
+    yield
+```
+
+**設計意図**: 設定ファイルが存在する場合のみ初期化し、不在時はログ警告のみで起動を妨げない。
 
 ## エラーコード体系
 
