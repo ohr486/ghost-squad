@@ -7,13 +7,15 @@ AIエージェントによるタスク管理ツールです。自然言語での
 Ghost Squadは、AIエージェントを活用した包括的なタスク管理プラットフォームです。自然言語での問い合わせを構造化されたユーザーストーリーに変換します。
 
 ### 🎯 実装済みの機能
-- 🗣️ **自然言語問い合わせ**: 日本語での問い合わせ入力・保存・履歴管理
-- 📊 **REST API**: 問い合わせ・ストーリーの作成・取得・管理のためのAPIエンドポイント
+- 🗣️ **自然言語問い合わせ**: 日本語での問い合わせ入力・保存・履歴管理・承認/却下ワークフロー
+- 📊 **REST API**: 問い合わせ・ストーリー・インポーターの作成・取得・管理のためのAPIエンドポイント
 - 🗄️ **データ永続化**: PostgreSQL + SQLAlchemy による信頼性の高いデータ管理
 - 🔧 **開発環境**: Docker Compose + Makefileによる統合開発環境
 - 🤖 **AI駆動ストーリー生成**: OpenAI APIを使用した自動ストーリー変換
-- 📝 **ストーリー管理**: 生成されたストーリーの確認・編集・承認機能
-- 🌐 **React WebUI**: TypeScriptによるモダンなフロントエンド
+- 📝 **ストーリー管理**: 生成されたストーリーの確認・編集・承認・一括承認機能
+- 📧 **外部データインポート**: メール（IMAP）からの問い合わせ自動取り込み・AI解析
+- 🔌 **プラグインアーキテクチャ**: データソース（メール等）とAIプロバイダー（OpenAI/Anthropic）の二層拡張構造
+- 🌐 **React WebUI**: TypeScriptによるモダンなフロントエンド（問い合わせ・ストーリー・インポーター管理）
 
 ### 🚀 将来の機能拡張
 - タスクの自動優先度付け
@@ -29,7 +31,8 @@ Ghost Squadは以下の技術スタックで構築されています：
 - **バックエンド**: Python FastAPI + SQLAlchemy ORM
 - **フロントエンド**: React TypeScriptアプリケーション
 - **データベース**: PostgreSQL + Alembicマイグレーション
-- **AI統合**: OpenAI APIによるストーリー生成
+- **AI統合**: OpenAI API / Anthropic APIによるストーリー生成・データ解析
+- **インポーター**: ダブルプラグインアーキテクチャ（データソース + AIプロバイダー）
 - **コンテナ化**: Docker Composeによる開発環境
 - **開発手法**: Kiro-style Spec-Driven Development (AI-DLC)
 
@@ -94,6 +97,14 @@ JWT_SECRET_KEY=your_jwt_secret_key_here
 #### オプション設定
 
 ```bash
+# Anthropic API（Importer AIプロバイダーとして使用する場合）
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# メールインポート機能（使用する場合）
+IMAP_SERVER=your_imap_server
+IMAP_USERNAME=your_imap_username
+IMAP_PASSWORD=your_imap_password
+
 # 通知機能（使用する場合）
 SMTP_USERNAME=your_email@gmail.com
 SMTP_PASSWORD=your_app_password
@@ -138,25 +149,27 @@ ghost-squad/
 │   ├── database.py        # データベース接続管理
 │   ├── config.py          # 設定管理
 │   ├── models/            # データモデル
-│   │   ├── database/      # SQLAlchemyモデル（inquiry, story）
-│   │   ├── schemas/       # Pydanticスキーマ
+│   │   ├── database/      # SQLAlchemyモデル（inquiry, story, import_error_log）
+│   │   ├── schemas/       # Pydanticスキーマ（inquiry, story, importer）
 │   │   └── enums/         # ステータス・優先度列挙型
-│   ├── routers/           # APIルーター（inquiry, story）
+│   ├── routers/           # APIルーター（inquiry, story, importer）
 │   ├── services/          # ビジネスロジック
 │   │   ├── *_repository.py     # データアクセス層
 │   │   ├── *_validator.py      # バリデーション
 │   │   ├── *_query_service.py  # 検索サービス
 │   │   ├── *_workflow_service.py # ワークフロー管理
-│   │   └── story_generation_service.py # AI生成
+│   │   ├── story_generation_service.py # AI生成
+│   │   └── importer/      # インポーター（プラグイン基盤、AIプロバイダー、メールプラグイン）
 │   ├── alembic/           # データベースマイグレーション
 │   └── tests/             # バックエンドテスト
 ├── web/                   # React TypeScriptフロントエンド
 │   ├── src/
 │   │   ├── components/    # UIコンポーネント
 │   │   │   ├── InquiryForm.tsx, InquiryList.tsx, InquiryDetail.tsx
-│   │   │   └── StoryForm.tsx, StoryList.tsx, StoryDetail.tsx
-│   │   ├── services/      # APIクライアント
-│   │   └── types/         # TypeScript型定義
+│   │   │   ├── StoryForm.tsx, StoryList.tsx, StoryDetail.tsx
+│   │   │   └── importer/  # インポーター管理コンポーネント
+│   │   ├── services/      # APIクライアント（inquiry, story, importer）
+│   │   └── types/         # TypeScript型定義（inquiry, story, importer）
 │   ├── public/            # 静的ファイル
 │   └── package.json       # Node.js依存関係
 ├── docs/                  # プロジェクトドキュメント
@@ -165,7 +178,7 @@ ghost-squad/
 │   └── SDD.md            # Spec-Driven Development
 ├── .kiro/                 # Kiro仕様ファイル
 │   ├── steering/         # プロジェクト全体のガイドライン
-│   └── specs/            # 機能仕様（inquiry, story）
+│   └── specs/            # 機能仕様（inquiry, story, importer）
 ├── docker-compose.yml     # Docker Compose設定
 ├── Makefile              # 開発タスク自動化
 ├── .env.example          # 環境変数テンプレート
@@ -189,9 +202,11 @@ Ghost Squadは **Kiro-style Spec-Driven Development** を採用しています�
 
 **問い合わせ管理**
 - WebUIまたはAPIで問い合わせを入力
+- メールインポートによる自動取り込み
 - システムが問い合わせを受け付けて保存
 - 問い合わせ履歴の確認・検索・詳細表示
-- ステータス管理（RECEIVED → PROCESSING → COMPLETED等）
+- 承認・却下ワークフロー
+- ステータス管理（RECEIVED → TASK_WORKING → PROCESSING → COMPLETED等）
 
 **ストーリー管理**
 - 問い合わせからAIを使用してストーリーを自動生成
@@ -199,6 +214,13 @@ Ghost Squadは **Kiro-style Spec-Driven Development** を採用しています�
 - ストーリーの編集・承認・拒否
 - 優先度・カテゴリ管理
 - ステータス管理（WAITING_REVIEW → APPROVED / REJECTED）
+
+**インポーター（外部データ取り込み）**
+- メール（IMAP）からの問い合わせ自動取り込み
+- OpenAI / Anthropic によるAI解析（信頼度判定・レビューフラグ）
+- プラグイン管理（有効化/無効化、デフォルトAIプロバイダー設定）
+- エラーログ記録・統計・リトライ機能
+- 問い合わせ一覧でのメールインポート情報表示（タイトル・送信者）
 
 **データベース管理**
 - PostgreSQL + SQLAlchemy による永続化
