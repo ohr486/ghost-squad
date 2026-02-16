@@ -1,6 +1,6 @@
 ---
 inclusion: always
-updated_at: 2026-01-28
+updated_at: 2026-02-16
 ---
 
 # Inquiry機能 開発ガイドライン
@@ -89,7 +89,7 @@ APIリクエスト/レスポンス用Pydanticスキーマを提供。
 | `types/inquiry.ts` | TypeScript型定義（バックエンドと整合） | - |
 | `services/inquiryApi.ts` | APIクライアント（Axios） | 86.11% |
 | `components/InquiryForm.tsx` | 問い合わせ入力フォーム | 100% statements |
-| `components/InquiryList.tsx` | 一覧表示・フィルタ・ページネーション | 84.21% statements |
+| `components/InquiryList.tsx` | 一覧表示・フィルタ・ページネーション・メールインポート情報表示 | 84.21% statements |
 | `components/InquiryDetail.tsx` | 詳細・編集・承認/却下 | 94.64% statements |
 
 ## エラーコード体系
@@ -161,6 +161,29 @@ const { register, handleSubmit, formState: { errors } } = useForm({
   resolver: zodResolver(schema),
 });
 ```
+
+## Importer連携パターン
+
+InquiryListでは、メールインポート経由の問い合わせに対してメタデータを表示する。
+
+```typescript
+// InquiryList.tsx - メールインポート判定パターン
+const isEmailImport = (inquiry: InquiryResponse): boolean => {
+  return (
+    inquiry.source_system === "importer:email" ||
+    inquiry.inquiry_metadata?.importer?.source_type === "email"
+  );
+};
+
+// タイトル・送信者列を条件付き表示
+{isEmailImport(inquiry) ? (
+  <span>{inquiry.inquiry_metadata?.importer?.original_subject}</span>
+) : (
+  <span className="text-gray-400">-</span>
+)}
+```
+
+**型定義**: `types/inquiry.ts`の`ImporterMetadata`インターフェースで`InquiryMetadata.importer`フィールドを型安全に参照。
 
 ## テストパターン
 

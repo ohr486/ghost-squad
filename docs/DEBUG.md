@@ -90,7 +90,7 @@ kill -9 <PID>
 make stop
 
 # 完全に削除
-docker-compose down
+docker compose down
 ```
 
 3. **再起動**
@@ -114,7 +114,7 @@ ERROR: failed to solve: failed to compute cache key: ...
 
 1. **キャッシュをクリアして再ビルド**
 ```bash
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # または
 make clean
@@ -144,10 +144,10 @@ make status
 
 1. **ログで原因を確認**
 ```bash
-make logs-backend  # または logs-frontend, logs-db
+make logs-api  # または logs-web, logs-db
 
 # リアルタイムで監視
-docker-compose logs -f api
+docker compose logs -f api
 ```
 
 2. **環境変数の確認**
@@ -209,7 +209,7 @@ make db-connect
 
 4. **データベースコンテナを再起動**
 ```bash
-docker-compose restart db
+docker compose restart db
 
 # または完全リセット
 make db-reset
@@ -364,7 +364,93 @@ make restart
 # Application > Clear storage > Clear site data
 ```
 
-#### 問題10: APIレスポンスが遅い
+#### 問題10: Anthropic APIエラー
+
+**症状**:
+```
+anthropic.AuthenticationError: Invalid API Key
+anthropic.RateLimitError: Rate limit exceeded
+```
+
+**原因**:
+- APIキーが未設定または不正
+- レート制限に達した
+- 残高不足
+
+**解決方法**:
+
+1. **APIキーの確認**
+```bash
+cat .env | grep ANTHROPIC_API_KEY
+
+# 正しく設定されているか確認
+```
+
+2. **Anthropic アカウントの確認**
+- https://console.anthropic.com/account/keys でキーを確認
+- https://console.anthropic.com/settings/billing で残高を確認
+
+3. **環境変数を更新して再起動**
+```bash
+# .envファイルを編集
+vi .env
+
+# サービスを再起動
+make restart
+```
+
+**注意**: Anthropic APIはImporterのAIプロバイダーとしてオプションで使用されます。OpenAIがデフォルトです。
+
+#### 問題10b: インポーター（メール取り込み）エラー
+
+**症状**:
+```
+GS-320: IMAP接続エラー
+GS-321: IMAP認証エラー
+GS-322: フォルダ不在エラー
+```
+
+**原因**:
+- IMAP設定（サーバー、ユーザー名、パスワード）が不正
+- メールサーバーへの接続がブロックされている
+- 指定フォルダが存在しない
+
+**解決方法**:
+
+1. **IMAP設定の確認**
+```bash
+cat .env | grep IMAP
+
+# 必要な設定:
+# IMAP_SERVER=your_imap_server
+# IMAP_USERNAME=your_username
+# IMAP_PASSWORD=your_password
+```
+
+2. **インポーター設定ファイルの確認**
+```bash
+cat api/config/importer_config.yaml
+```
+
+3. **エラーログの確認**
+```bash
+# APIでエラー統計を確認
+curl http://localhost:8000/api/importer/importers/stats
+
+# データベースで直接確認
+make db-connect
+# psql内で
+SELECT * FROM import_error_logs ORDER BY occurred_at DESC LIMIT 10;
+```
+
+4. **手動リトライ**
+```bash
+curl -X POST http://localhost:8000/api/importer/importers/retry \
+  -H "Content-Type: application/json" \
+  -d '{"source_ids": ["<message-id>"]}'
+```
+
+#### 問題11: APIレスポンスが遅い
 
 **症状**:
 - APIリクエストに10秒以上かかる
@@ -380,7 +466,7 @@ make restart
 
 1. **ログでボトルネックを特定**
 ```bash
-make logs-backend | grep -i "slow\|timeout\|error"
+make logs-api | grep -i "slow\|timeout\|error"
 ```
 
 2. **データベースパフォーマンスの確認**
@@ -426,16 +512,16 @@ ERROR: No matching distribution found for package_name
 
 1. **Pythonバージョンの確認**
 ```bash
-docker-compose run --rm api python --version
+docker compose run --rm api python --version
 # Python 3.11以上が必要
 ```
 
 2. **依存関係を再インストール**
 ```bash
-docker-compose run --rm api pip install -r requirements.txt
+docker compose run --rm api pip install -r requirements.txt
 
 # キャッシュをクリアして再インストール
-docker-compose run --rm api pip install --no-cache-dir -r requirements.txt
+docker compose run --rm api pip install --no-cache-dir -r requirements.txt
 ```
 
 3. **requirements.txtの確認**
@@ -468,11 +554,11 @@ make setup
 
 2. **個別に再インストール**
 ```bash
-docker-compose run --rm web npm install
+docker compose run --rm web npm install
 
 # キャッシュをクリアして再インストール
-docker-compose run --rm web npm cache clean --force
-docker-compose run --rm web npm install
+docker compose run --rm web npm cache clean --force
+docker compose run --rm web npm install
 ```
 
 3. **package.jsonの確認**
@@ -499,7 +585,7 @@ TS2345: Argument of type 'X' is not assignable to parameter of type 'Y'
 
 1. **型定義をインストール**
 ```bash
-docker-compose run --rm web npm install --save-dev @types/package-name
+docker compose run --rm web npm install --save-dev @types/package-name
 ```
 
 2. **TypeScript設定の確認**
@@ -514,7 +600,7 @@ cat web/tsconfig.json
 make lint-frontend
 
 # または直接実行
-docker-compose run --rm web npm run type-check
+docker compose run --rm web npm run type-check
 ```
 
 ### テスト関連の問題
@@ -536,10 +622,10 @@ FAILED tests/test_something.py::test_function - AssertionError
 1. **詳細なテスト出力を確認**
 ```bash
 # バックエンド
-docker-compose run --rm api pytest tests/ -v --tb=long
+docker compose run --rm api pytest tests/ -v --tb=long
 
 # 特定のテストのみ実行
-docker-compose run --rm api pytest tests/test_specific.py::test_function -v
+docker compose run --rm api pytest tests/test_specific.py::test_function -v
 ```
 
 2. **データベースをリセット**
@@ -569,7 +655,7 @@ cat .env | grep TEST
 
 1. **pytest-covのインストール確認**
 ```bash
-docker-compose run --rm api pip list | grep pytest-cov
+docker compose run --rm api pip list | grep pytest-cov
 ```
 
 2. **カバレッジ設定の確認**
@@ -582,7 +668,7 @@ cat api/pyproject.toml
 
 3. **明示的にカバレッジを指定して実行**
 ```bash
-docker-compose run --rm api pytest tests/ --cov=. --cov-report=html
+docker compose run --rm api pytest tests/ --cov=. --cov-report=html
 ```
 
 ### パフォーマンス関連の問題
@@ -608,7 +694,7 @@ cat .env | grep CHOKIDAR
 
 2. **Dockerボリュームの最適化**（macOS）
 ```yaml
-# docker-compose.ymlで
+# docker compose.ymlで
 volumes:
   - ./web:/app:delegated  # delegatedオプションを追加
 ```
@@ -622,7 +708,7 @@ docker stats
 #### 問題17: ビルドが遅い
 
 **症状**:
-- `make setup` や `docker-compose build` に時間がかかる
+- `make setup` や `docker compose build` に時間がかかる
 
 **原因**:
 - キャッシュが効いていない
@@ -634,10 +720,10 @@ docker stats
 1. **ビルドキャッシュの確認**
 ```bash
 # キャッシュを利用してビルド
-docker-compose build
+docker compose build
 
 # キャッシュをクリアして再ビルド（遅い）
-docker-compose build --no-cache
+docker compose build --no-cache
 ```
 
 2. **.dockerignoreの確認**
@@ -687,8 +773,8 @@ make dev
 
 3. **環境変数が読み込まれているか確認**
 ```bash
-docker-compose exec api env | grep DATABASE_URL
-docker-compose exec web env | grep REACT_APP
+docker compose exec api env | grep DATABASE_URL
+docker compose exec web env | grep REACT_APP
 ```
 
 #### 問題19: コマンドが見つからない
@@ -724,22 +810,22 @@ cat Makefile | grep "^[a-zA-Z]"
 #### バックエンドログ
 ```bash
 # リアルタイムでログを表示
-make logs-backend
+make logs-api
 
 # 特定のパターンを検索
-make logs-backend | grep -i "error\|warning"
+make logs-api | grep -i "error\|warning"
 
 # エラースタックトレースを確認
-make logs-backend | grep -A 20 "Traceback"
+make logs-api | grep -A 20 "Traceback"
 ```
 
 #### フロントエンドログ
 ```bash
 # リアルタイムでログを表示
-make logs-frontend
+make logs-web
 
 # ビルドエラーを確認
-make logs-frontend | grep -i "error\|failed"
+make logs-web | grep -i "error\|failed"
 
 # ブラウザのコンソールログも確認
 # 開発者ツール (F12) > Console
@@ -769,13 +855,13 @@ import pdb; pdb.set_trace()
 
 **デバッガーを使用してコンテナを起動**:
 ```bash
-# docker-compose.ymlのcommandを変更
+# docker compose.ymlのcommandを変更
 # command: uvicorn main:app --reload
 # ↓
 # command: python -m pdb main.py
 
 # またはipdbを使用
-docker-compose run --rm api pip install ipdb
+docker compose run --rm api pip install ipdb
 # コード内で: import ipdb; ipdb.set_trace()
 ```
 
@@ -872,7 +958,7 @@ make dev
 ### レベル5: Dockerの完全クリーンアップ
 ```bash
 # すべてのコンテナ・ボリューム・イメージを削除
-docker-compose down -v --rmi all
+docker compose down -v --rmi all
 docker system prune -a --volumes -f
 
 # 再セットアップ
@@ -895,7 +981,7 @@ make logs > logs.txt
 ```bash
 make status
 docker --version
-docker-compose --version
+docker compose --version
 uname -a  # OS情報
 ```
 
@@ -924,7 +1010,7 @@ uname -a  # OS情報
 - [ ] ディスク容量は十分か（`make disk-usage`）
 
 ### Docker関連
-- [ ] コンテナが起動しているか（`docker-compose ps`）
+- [ ] コンテナが起動しているか（`docker compose ps`）
 - [ ] ポート競合はないか（`lsof -i :8000`等）
 - [ ] イメージが正しくビルドされているか
 - [ ] Dockerリソース（メモリ・CPU）は十分か
@@ -940,10 +1026,17 @@ uname -a  # OS情報
 - [ ] 環境変数が正しく設定されているか
 - [ ] CORS設定は適切か
 - [ ] OpenAI APIキーは有効か（AI機能を使用する場合）
+- [ ] Anthropic APIキーは有効か（Importer AIプロバイダーとして使用する場合）
+
+### インポーター関連
+- [ ] IMAP設定は正しいか（IMAP_SERVER, IMAP_USERNAME, IMAP_PASSWORD）
+- [ ] `config/importer_config.yaml`が存在するか
+- [ ] プラグインが有効化されているか（`curl http://localhost:8000/api/importer/plugins`）
+- [ ] エラーログに問題がないか（`curl http://localhost:8000/api/importer/importers/stats`）
 
 ### フロントエンド関連
 - [ ] フロントエンドが起動しているか（`curl http://localhost:3000`）
-- [ ] ビルドエラーはないか（`make logs-frontend`）
+- [ ] ビルドエラーはないか（`make logs-web`）
 - [ ] node_modulesが正しくインストールされているか
 - [ ] ブラウザのキャッシュをクリアしたか
 

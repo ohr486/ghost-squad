@@ -129,6 +129,12 @@ OPENAI_API_KEY=your_openai_api_key
 SECRET_KEY=your_jwt_secret
 ENVIRONMENT=development
 DEBUG=true
+
+# Importer関連（オプション）
+IMAP_SERVER=your_imap_server
+IMAP_USERNAME=your_imap_username
+IMAP_PASSWORD=your_imap_password
+ANTHROPIC_API_KEY=your_anthropic_api_key  # オプション
 ```
 
 **ホットリロード設定**

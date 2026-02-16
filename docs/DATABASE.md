@@ -114,9 +114,14 @@ make db-data
   1 | user123 | ユーザーがログインできる機能が欲しい...   | manual        | received| 2024-01-01 00:00:00
 
 📋 Stories (ストーリー):
- id |                title_preview                | category    | priority | status         | estimated_effort
-----+--------------------------------------------+-------------+----------+----------------+-----------------
-  1 | ユーザーログイン機能...                     | development | high     | pending_review | 5
+ id | inquiry_id |              title_preview              | priority | status          | estimated_effort |      created_at
+----+------------+-----------------------------------------+----------+-----------------+-----------------+---------------------
+  1 |          1 | ユーザーログイン機能...                  | high     | waiting_review  |                5 | 2024-01-01 00:00:00
+
+📋 Import Error Logs (インポートエラーログ):
+ id | error_code | plugin_type |           message_preview            | resolved |      occurred_at
+----+------------+-------------+--------------------------------------+----------+---------------------
+  1 | GS-320     | email       | IMAP接続エラー...                    | f        | 2024-01-01 00:00:00
 ```
 
 ### テーブル構造の確認
@@ -130,27 +135,27 @@ make db-tables
 ```
 📊 Database tables:
                  List of relations
- Schema |       Name        | Type  |  Owner
---------+-------------------+-------+---------
- public | inquiries         | table | gs_user
- public | stories           | table | gs_user
- public | story_templates   | table | gs_user
- public | alembic_version   | table | gs_user
+ Schema |         Name          | Type  |  Owner
+--------+-----------------------+-------+---------
+ public | inquiries             | table | gs_user
+ public | stories               | table | gs_user
+ public | import_error_logs     | table | gs_user
+ public | alembic_version       | table | gs_user
 
 📋 Table details:
 
 🔍 Table: inquiries
-                              Column                              |  Type   | Nullable
-------------------------------------------------------------------+---------+----------
- id                                                               | bigint  | not null
- user_id                                                          | varchar | not null
- content                                                          | text    | not null
- source_system                                                    | varchar | not null
- timestamp                                                        | timestamp | not null
- status                                                           | varchar | not null
- created_at                                                       | timestamp | not null
- updated_at                                                       | timestamp | not null
- inquiry_metadata                                                 | json    |
+        Column        |           Type            | Nullable
+----------------------+---------------------------+----------
+ id                   | bigint                    | not null
+ user_id              | character varying(50)     | not null
+ content              | text                      | not null
+ source_system        | character varying(50)     | not null
+ timestamp            | timestamp with time zone  | not null
+ status               | character varying         | not null
+ inquiry_metadata     | jsonb                     | not null
+ created_at           | timestamp with time zone  | not null
+ updated_at           | timestamp with time zone  | not null
 ```
 
 ### インタラクティブなデータベース接続
@@ -219,7 +224,6 @@ make db-seed
 **seed_data.pyの内容**:
 - サンプル問い合わせデータ
 - サンプルストーリーデータ
-- デフォルトテンプレートデータ
 
 ## データベーススキーマ
 
@@ -240,11 +244,12 @@ make db-seed
 | inquiry_metadata | JSON | メタデータ（却下理由、ステータス履歴等） | NULLABLE |
 
 **ステータス値**:
-- `received` - 受付済み
+- `received` - 受付済み（初期状態）
+- `task_working` - タスク作業中（承認後）
 - `processing` - AI処理中
-- `needs_clarification` - 明確化要求
-- `task_working` - タスク作業中
 - `completed` - 完了
+- `rejected` - 却下
+- `needs_clarification` - 明確化要求
 - `failed` - 失敗
 
 **インデックス**:
@@ -257,57 +262,56 @@ make db-seed
 | カラム名 | 型 | 説明 | 制約 |
 |---------|-----|------|------|
 | id | BigInteger | 一意識別子 | PRIMARY KEY, AUTO_INCREMENT |
-| inquiry_id | BigInteger | 問い合わせID | FOREIGN KEY → inquiries.id |
-| title | String(500) | タイトル | NOT NULL |
-| description | Text | 説明 | NOT NULL |
-| category | Enum(StoryCategory) | カテゴリ | NOT NULL |
-| priority | Enum(Priority) | 優先度 | NOT NULL |
-| status | Enum(StoryStatus) | ステータス | NOT NULL |
+| inquiry_id | Integer | 問い合わせID | FOREIGN KEY → inquiries.id (CASCADE) |
+| title | String(500) | タイトル | NOT NULL, CHECK(length ≤ 500, trim > 0) |
+| description | Text | 説明 | NOT NULL, CHECK(trim > 0) |
+| priority | Enum(Priority) | 優先度 | NOT NULL, DEFAULT 'medium' |
+| status | Enum(StoryStatus) | ステータス | NOT NULL, DEFAULT 'waiting_review' |
 | estimated_effort | Float | 推定工数 | NULLABLE |
-| deadline | DateTime | 期限 | NULLABLE |
-| assignee | String | 担当者 | NULLABLE |
-| tags | JSON | タグ配列 | NULLABLE |
-| dependencies | JSON | 依存関係配列 | NULLABLE |
-| created_at | DateTime | 作成日時 | NOT NULL |
-| updated_at | DateTime | 更新日時 | NOT NULL |
-| story_metadata | JSON | メタデータ | NULLABLE |
-
-**カテゴリ値**:
-- `development` - 開発
-- `testing` - テスト
-- `documentation` - ドキュメント
-- `research` - 調査
-- `maintenance` - メンテナンス
-- `custom` - カスタム
+| deadline | DateTime(tz) | 期限 | NULLABLE |
+| assignee | String(50) | 担当者 | NULLABLE |
+| story_metadata | JSON | メタデータ | NOT NULL, DEFAULT '{}' |
+| created_at | DateTime(tz) | 作成日時 | NOT NULL |
+| updated_at | DateTime(tz) | 更新日時 | NOT NULL |
 
 **優先度値**:
 - `low` - 低
-- `medium` - 中
+- `medium` - 中（デフォルト）
 - `high` - 高
 - `urgent` - 緊急
 
 **ステータス値**:
-- `waiting_review` - レビュー待ち
+- `waiting_review` - レビュー待ち（デフォルト）
 - `approved` - 承認済み
 - `rejected` - 却下
+
+**チェック制約**:
+- `chk_stories_title` - タイトルは500文字以下かつ空白のみ不可
+- `chk_stories_description` - 説明は空白のみ不可
 
 **インデックス**:
 - `ix_stories_inquiry_id` - 問い合わせID
 - `ix_stories_status` - ステータス
 - `ix_stories_priority` - 優先度
-- `ix_stories_category` - カテゴリ
 
-#### story_templates（ストーリーテンプレート）
+#### import_error_logs（インポートエラーログ）
 
 | カラム名 | 型 | 説明 | 制約 |
 |---------|-----|------|------|
 | id | BigInteger | 一意識別子 | PRIMARY KEY, AUTO_INCREMENT |
-| name | String | テンプレート名 | NOT NULL |
-| pattern | Text | パターン定義 | NOT NULL |
-| is_custom | Boolean | カスタムフラグ | NOT NULL, DEFAULT False |
-| default_estimate | Float | デフォルト見積もり | NULLABLE |
-| created_at | DateTime | 作成日時 | NOT NULL |
-| updated_at | DateTime | 更新日時 | NOT NULL |
+| error_code | String(10) | エラーコード（GS-301〜GS-399） | NOT NULL |
+| plugin_type | String(50) | データソースプラグイン種別 | NOT NULL |
+| source_id | String(255) | 外部システムID（Message-ID等） | NULLABLE |
+| error_message | String(1000) | エラーメッセージ | NOT NULL |
+| occurred_at | DateTime(tz) | エラー発生日時 | NOT NULL |
+| resolved | Boolean | 解決済みフラグ | NOT NULL, DEFAULT false |
+| created_at | DateTime(tz) | 作成日時 | NOT NULL |
+| updated_at | DateTime(tz) | 更新日時 | NOT NULL |
+
+**インデックス**:
+- `ix_import_error_logs_code_occurred` - エラーコード + 発生日時（複合）
+- `ix_import_error_logs_plugin` - プラグイン種別
+- `ix_import_error_logs_resolved` - 解決済みフラグ
 
 ## トラブルシューティング
 
@@ -434,7 +438,7 @@ make db-connect
 # psql内で
 VACUUM ANALYZE inquiries;
 VACUUM ANALYZE stories;
-VACUUM ANALYZE story_templates;
+VACUUM ANALYZE import_error_logs;
 
 # 完全VACUUM（時間がかかる）
 VACUUM FULL;
@@ -446,7 +450,7 @@ VACUUM FULL;
 -- psql内で
 REINDEX TABLE inquiries;
 REINDEX TABLE stories;
-REINDEX TABLE story_templates;
+REINDEX TABLE import_error_logs;
 ```
 
 ### クエリパフォーマンス分析
