@@ -166,8 +166,8 @@ make test
 - バックエンド: pytest + coverage
 - フロントエンド: Jest + coverage
 
-### `make test-backend`
-バックエンドテストのみを実行します。
+### `make test-api`
+バックエンド（API）テストのみを実行します。
 
 **実行内容**:
 - pytestによるテスト実行
@@ -176,7 +176,7 @@ make test
 
 **使用例**:
 ```bash
-make test-backend
+make test-api
 ```
 
 **カバレッジレポート**:
@@ -186,11 +186,11 @@ make test-backend
 **特定のテストのみ実行**:
 ```bash
 # Docker コンテナ内で直接実行
-docker-compose run --rm api pytest tests/test_specific.py -v
+docker compose run --rm api pytest tests/test_specific.py -v
 ```
 
-### `make test-frontend`
-フロントエンドテストのみを実行します。
+### `make test-web`
+フロントエンド（Web）テストのみを実行します。
 
 **実行内容**:
 - Jestによるテスト実行
@@ -198,7 +198,7 @@ docker-compose run --rm api pytest tests/test_specific.py -v
 
 **使用例**:
 ```bash
-make test-frontend
+make test-web
 ```
 
 **カバレッジレポート**:
@@ -219,43 +219,48 @@ make test-frontend
 make lint
 ```
 
-### `make lint-backend`
-バックエンドのコード品質チェックを実行します。
+### `make lint-api`
+バックエンド（API）のコード品質チェックを実行します。
 
 **実行されるチェック**:
 1. **flake8**: PEP 8スタイルガイドチェック
-2. **mypy**: 型チェック（strict mode）
+2. **mypy**: 型チェック（`--explicit-package-bases`）
 3. **bandit**: セキュリティ脆弱性チェック
+
+**対象ファイル**:
+- `models/`, `services/`, `routers/`, `tests/`
+- `config.py`, `database.py`, `manage_db.py`, `main.py`
 
 **使用例**:
 ```bash
-make lint-backend
+make lint-api
 ```
 
 **エラーの修正**:
 ```bash
 # 自動フォーマットでスタイル問題を修正
-make format-backend
+make format-api
 
 # 型エラーは手動で修正が必要
 ```
 
-### `make lint-frontend`
-フロントエンドのコード品質チェックを実行します。
+### `make lint-web`
+フロントエンド（Web）のコード品質チェックを実行します。
 
 **実行されるチェック**:
 1. **ESLint**: JavaScriptスタイルとエラーチェック
-2. **TypeScript**: 型チェック（strict mode）
+
+**注意**: TypeScript型チェックはTS 4.9.5との互換性問題のためスキップされます。
 
 **使用例**:
 ```bash
-make lint-frontend
+make lint-web
 ```
 
 **エラーの修正**:
 ```bash
 # 自動修正可能なエラーを修正
-make format-frontend
+make format-web
 ```
 
 ### `make format`
@@ -270,7 +275,7 @@ make format-frontend
 make format
 ```
 
-### `make format-backend`
+### `make format-api`
 バックエンドのコードフォーマットを実行します。
 
 **実行されるフォーマッター**:
@@ -279,7 +284,7 @@ make format
 
 **使用例**:
 ```bash
-make format-backend
+make format-api
 ```
 
 **対象ファイル**:
@@ -288,7 +293,7 @@ make format-backend
 - ルートディレクトリのPythonファイル（main.py, database.py等）
 - `tests/` ディレクトリ内の全Pythonファイル（存在する場合）
 
-### `make format-frontend`
+### `make format-web`
 フロントエンドのコードフォーマットを実行します。
 
 **実行されるフォーマッター**:
@@ -297,7 +302,7 @@ make format-backend
 
 **使用例**:
 ```bash
-make format-frontend
+make format-web
 ```
 
 **対象ファイル**:
@@ -390,7 +395,6 @@ make db-seed
 **投入されるデータ**:
 - サンプル問い合わせデータ
 - サンプルストーリーデータ
-- デフォルトテンプレートデータ
 
 ### `make db-reset`
 データベースを完全にリセットします（警告：全データ削除）。
@@ -465,7 +469,7 @@ make db-tables
 **表示内容**:
 - 問い合わせテーブルのデータ（プレビュー付き）
 - ストーリーテーブルのデータ（プレビュー付き）
-- テンプレートテーブルのデータ
+- インポートエラーログテーブルのデータ（最新20件）
 
 **使用例**:
 ```bash
@@ -484,12 +488,12 @@ make logs
 
 **終了**: `Ctrl+C`
 
-### `make logs-backend`
+### `make logs-api`
 バックエンドAPIのログのみを表示します。
 
 **使用例**:
 ```bash
-make logs-backend
+make logs-api
 ```
 
 **表示内容**:
@@ -497,12 +501,12 @@ make logs-backend
 - アプリケーションログ
 - エラーログ
 
-### `make logs-frontend`
+### `make logs-web`
 フロントエンドのログのみを表示します。
 
 **使用例**:
 ```bash
-make logs-frontend
+make logs-web
 ```
 
 **表示内容**:
@@ -640,7 +644,7 @@ make dev
 # 2. コード変更
 
 # 3. テスト実行
-make test-backend  # または make test-frontend
+make test-api  # または make test-web
 
 # 4. コード品質チェック
 make lint
@@ -649,7 +653,7 @@ make lint
 make format
 
 # 6. ログ確認
-make logs-backend  # または make logs-frontend
+make logs-api  # または make logs-web
 ```
 
 ### データベース変更時
@@ -684,7 +688,7 @@ make setup
 make dev
 
 # ログでエラー確認
-make logs-backend
+make logs-api
 make logs-db
 ```
 
@@ -694,17 +698,17 @@ make logs-db
 # tests/test_new_feature.py を作成
 
 # 2. テスト実行（失敗することを確認）
-make test-backend
+make test-api
 
 # 3. 実装
 
 # 4. テスト実行（成功することを確認）
-make test-backend
+make test-api
 
 # 5. リファクタリング
 
 # 6. テスト実行（まだ成功することを確認）
-make test-backend
+make test-api
 ```
 
 ## トラブルシューティング
@@ -719,7 +723,7 @@ make test-backend
 docker ps
 
 # Docker Composeが利用可能か確認
-docker-compose --version
+docker compose --version
 
 # ディスク容量を確認
 make disk-usage
@@ -768,7 +772,7 @@ make logs-db
 **解決**:
 ```bash
 # データベースコンテナを再起動
-docker-compose restart db
+docker compose restart db
 
 # または完全リセット
 make db-reset
@@ -781,10 +785,10 @@ make db-reset
 **確認**:
 ```bash
 # 詳細なテスト出力を確認
-docker-compose run --rm api pytest tests/ -v
+docker compose run --rm api pytest tests/ -v
 
 # 特定のテストのみ実行
-docker-compose run --rm api pytest tests/test_specific.py::test_function -v
+docker compose run --rm api pytest tests/test_specific.py::test_function -v
 ```
 
 **解決**:

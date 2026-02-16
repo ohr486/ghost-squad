@@ -21,9 +21,17 @@ Ghost Squadは **AI-DLC (AI Development Life Cycle)** におけるKiro-style Spe
 ```
 
 **Steeringドキュメントの種類**:
+
+コアファイル:
 - `product.md` - プロダクトガイドライン
 - `tech.md` - 技術スタック・開発環境
 - `structure.md` - プロジェクト構造・組織化
+
+カスタムファイル（機能別）:
+- `inquiry.md` - Inquiry機能の開発ガイドライン
+- `story.md` - Story機能の開発ガイドライン
+- `importer.md` - Importer機能の開発ガイドライン
+- `implementation-status.md` - 実装状況の追跡
 
 ### Phase 1: Specification（仕様策定）
 
@@ -241,15 +249,20 @@ Next step: /kiro:spec-impl inquiry
 
 ```
 .kiro/steering/
-├── product.md      # プロダクトガイドライン
-├── tech.md         # 技術スタック・開発環境
-└── structure.md    # プロジェクト構造・組織化
+├── product.md                # プロダクトガイドライン
+├── tech.md                   # 技術スタック・開発環境
+├── structure.md              # プロジェクト構造・組織化
+├── inquiry.md                # Inquiry機能ガイドライン
+├── story.md                  # Story機能ガイドライン
+├── importer.md               # Importer機能ガイドライン
+└── implementation-status.md  # 実装状況追跡
 ```
 
 **特徴**:
 - `inclusion: always` - 常にAIに読み込まれる
 - プロジェクト全体に適用されるルール
 - 全機能で共通の設計原則
+- カスタムファイルで機能別のパターン・ガイドラインを記録
 
 ### Specsディレクトリ (`.kiro/specs/`)
 
@@ -264,7 +277,11 @@ Next step: /kiro:spec-impl inquiry
 │   ├── design.md             # 技術設計
 │   ├── tasks.md              # 実装タスク
 │   └── research.md           # 調査ノート（オプション）
-└── story/                     # ストーリー機能
+├── story/                     # ストーリー機能
+│   ├── spec.json
+│   ├── requirements-init.md
+│   └── ...
+└── importer/                  # インポーター機能
     ├── spec.json
     ├── requirements-init.md
     └── ...
@@ -389,6 +406,32 @@ Requirements → Design → Tasks → Implementation
 
 # 7. 実装検証
 /kiro:validate-impl story
+```
+
+### 例3: インポーター機能の開発（プラグインアーキテクチャ）
+
+```bash
+# 1. 仕様初期化（inquiryに依存）
+/kiro:spec-init "外部データソースから問い合わせを自動取り込みするインポーター機能"
+# spec.jsonに "dependencies": ["inquiry"] を追加
+
+# 2. ギャップ分析（既存のinquiry実装を確認）
+/kiro:validate-gap importer
+
+# 3. 要件生成
+/kiro:spec-requirements importer
+
+# 4. 設計作成（プラグインアーキテクチャの設計）
+/kiro:spec-design importer
+
+# 5. タスク生成
+/kiro:spec-tasks importer
+
+# 6. 実装
+/kiro:spec-impl importer
+
+# 7. 実装検証
+/kiro:validate-impl importer
 ```
 
 ## よくある質問

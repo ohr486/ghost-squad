@@ -10,11 +10,33 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
 - 開発サーバー起動時: http://localhost:8000/docs (OpenAPI/Swagger UI)
 - バックエンドAPI: http://localhost:8000
 
-## 現在実装済みのエンドポイント
+## システムエンドポイント
 
-### 問い合わせ管理API
+### `GET /`
+ルートエンドポイント。API情報を取得します。
 
-#### `POST /api/inquiries`
+**レスポンス例**
+```json
+{
+  "name": "Ghost Squad API",
+  "version": "0.1.0",
+  "description": "AI-Driven Task Management Platform"
+}
+```
+
+### `GET /health`
+ヘルスチェックエンドポイント。
+
+**レスポンス例**
+```json
+{
+  "status": "healthy"
+}
+```
+
+## 問い合わせ管理API
+
+### `POST /api/inquiries`
 問い合わせを作成します。
 
 **リクエスト例**
@@ -26,7 +48,7 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
 }
 ```
 
-**レスポンス例**
+**レスポンス例** (201 Created)
 ```json
 {
   "id": 1,
@@ -34,23 +56,27 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
   "content": "ユーザーがログインできる機能が欲しい",
   "source_system": "manual",
   "status": "received",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:00:00Z",
+  "timestamp": "2026-01-01T00:00:00Z",
+  "created_at": "2026-01-01T00:00:00Z",
+  "updated_at": "2026-01-01T00:00:00Z",
   "inquiry_metadata": {}
 }
 ```
 
-#### `GET /api/inquiries`
-問い合わせ一覧を取得します（ページネーション・フィルタリング対応）。
+### `GET /api/inquiries`
+問い合わせ一覧を取得します（ページネーション・フィルタリング・ソート対応）。
 
 **クエリパラメータ**
-- `page`: ページ番号（デフォルト: 1）
-- `limit`: 1ページあたりの件数（デフォルト: 20）
-- `status`: ステータスフィルタ（オプション）
-- `user_id`: ユーザーIDフィルタ（オプション）
+| パラメータ | 型 | デフォルト | 説明 |
+|-----------|-----|-----------|------|
+| `page` | int | 1 | ページ番号（1以上） |
+| `limit` | int | 20 | 1ページあたりの件数（1〜100） |
+| `status` | string | - | ステータスフィルタ（カンマ区切りで複数指定可） |
+| `user_id` | string | - | ユーザーIDフィルタ |
+| `sort_by` | string | created_at | ソートフィールド（created_at, updated_at） |
+| `sort_order` | string | desc | ソート順（asc, desc） |
 
-**レスポンス例**
+**レスポンス例** (200 OK)
 ```json
 {
   "data": [
@@ -60,9 +86,9 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
       "content": "ユーザーがログインできる機能が欲しい",
       "source_system": "manual",
       "status": "received",
-      "timestamp": "2024-01-01T00:00:00Z",
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z",
+      "timestamp": "2026-01-01T00:00:00Z",
+      "created_at": "2026-01-01T00:00:00Z",
+      "updated_at": "2026-01-01T00:00:00Z",
       "inquiry_metadata": {}
     }
   ],
@@ -72,38 +98,25 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
     "total": 100,
     "has_next": true
   },
-  "timestamp": "2024-01-01T00:00:00Z"
+  "timestamp": "2026-01-01T00:00:00Z"
 }
 ```
 
-#### `GET /api/inquiries/{id}`
+### `GET /api/inquiries/{inquiry_id}`
 特定の問い合わせを取得します。
 
 **パスパラメータ**
-- `id`: 問い合わせID
+- `inquiry_id`: 問い合わせID
 
-**レスポンス例**
-```json
-{
-  "id": 1,
-  "user_id": "user123",
-  "content": "ユーザーがログインできる機能が欲しい",
-  "source_system": "manual",
-  "status": "received",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:00:00Z",
-  "inquiry_metadata": {}
-}
-```
+**レスポンス**: `InquiryResponse`（200 OK）または `ErrorResponse`（404）
 
-#### `PUT /api/inquiries/{id}`
+### `PUT /api/inquiries/{inquiry_id}`
 問い合わせを更新します。
 
 **パスパラメータ**
-- `id`: 問い合わせID
+- `inquiry_id`: 問い合わせID
 
-**リクエスト例**
+**リクエスト例**（全フィールドオプション）
 ```json
 {
   "content": "更新された問い合わせ内容",
@@ -111,52 +124,42 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
 }
 ```
 
-**レスポンス例**
-```json
-{
-  "id": 1,
-  "user_id": "user123",
-  "content": "更新された問い合わせ内容",
-  "source_system": "email",
-  "status": "received",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:10:00Z",
-  "inquiry_metadata": {}
-}
-```
+**レスポンス**: `InquiryResponse`（200 OK）または `ErrorResponse`（400, 404）
 
-#### `POST /api/inquiries/{id}/approve`
-問い合わせを承認します（ステータスを`processing`に変更）。
+### `POST /api/inquiries/{inquiry_id}/approve`
+問い合わせを承認します（ステータスを `received` → `task_working` に変更）。
 
 **パスパラメータ**
-- `id`: 問い合わせID
+- `inquiry_id`: 問い合わせID
 
-**リクエストボディ**
-なし
+**リクエストボディ**: なし
 
-**レスポンス例**
+**レスポンス例** (200 OK)
 ```json
 {
   "id": 1,
   "user_id": "user123",
   "content": "ユーザーがログインできる機能が欲しい",
   "source_system": "manual",
-  "status": "processing",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:05:00Z",
+  "status": "task_working",
+  "timestamp": "2026-01-01T00:00:00Z",
+  "created_at": "2026-01-01T00:00:00Z",
+  "updated_at": "2026-01-01T00:05:00Z",
   "inquiry_metadata": {
-    "approved_at": "2024-01-01T00:05:00Z"
+    "status_history": [
+      {"from": "received", "to": "task_working", "at": "2026-01-01T00:05:00Z"}
+    ]
   }
 }
 ```
 
-#### `POST /api/inquiries/{id}/reject`
-問い合わせを却下します（ステータスを`failed`に変更）。
+**エラー**: 409 Conflict（ステータスが `received` 以外の場合）
+
+### `POST /api/inquiries/{inquiry_id}/reject`
+問い合わせを却下します（ステータスを `received` → `rejected` に変更）。
 
 **パスパラメータ**
-- `id`: 問い合わせID
+- `inquiry_id`: 問い合わせID
 
 **リクエスト例**
 ```json
@@ -165,29 +168,24 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
 }
 ```
 
-**レスポンス例**
+**レスポンス例** (200 OK)
 ```json
 {
   "id": 1,
-  "user_id": "user123",
-  "content": "ユーザーがログインできる機能が欲しい",
-  "source_system": "manual",
-  "status": "failed",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:05:00Z",
+  "status": "rejected",
   "inquiry_metadata": {
-    "rejected_at": "2024-01-01T00:05:00Z",
-    "rejection_reason": "要件が不明確です"
+    "rejection": {
+      "rejected_at": "2026-01-01T00:05:00Z",
+      "reason": "要件が不明確です"
+    }
   }
 }
 ```
 
-#### `POST /api/inquiries/{id}/request-clarification`
-問い合わせに明確化を要求します（ステータスを`needs_clarification`に変更）。
+**エラー**: 409 Conflict（ステータスが `received` 以外の場合）
 
-**パスパラメータ**
-- `id`: 問い合わせID
+### `POST /api/inquiries/{inquiry_id}/request-clarification`
+問い合わせに明確化を要求します（ステータスを `received` → `needs_clarification` に変更）。
 
 **リクエスト例**
 ```json
@@ -196,304 +194,301 @@ Ghost Squad APIは、自然言語での問い合わせを構造化されたユ�
 }
 ```
 
-**レスポンス例**
-```json
-{
-  "id": 1,
-  "user_id": "user123",
-  "content": "ユーザーがログインできる機能が欲しい",
-  "source_system": "manual",
-  "status": "needs_clarification",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:05:00Z",
-  "inquiry_metadata": {
-    "clarification_requested_at": "2024-01-01T00:05:00Z",
-    "clarification_reason": "具体的なユースケースを教えてください"
-  }
-}
-```
+### `POST /api/inquiries/{inquiry_id}/complete-clarification`
+明確化を完了して `received` ステータスに戻します。
 
-#### `POST /api/inquiries/{id}/complete-clarification`
-明確化を完了してreceivedステータスに戻します。
+**リクエストボディ**: なし
+
+## ストーリー管理API
+
+### `POST /api/inquiries/{inquiry_id}/stories`
+ストーリーを作成します。リクエストボディが空の場合はAI自動生成、ボディがある場合は手動作成となります。
 
 **パスパラメータ**
-- `id`: 問い合わせID
+- `inquiry_id`: 問い合わせID
 
-**リクエストボディ**
-なし
-
-**レスポンス例**
+**リクエスト例（手動作成）**
 ```json
 {
-  "id": 1,
-  "user_id": "user123",
-  "content": "ユーザーがログインできる機能が欲しい",
-  "source_system": "manual",
-  "status": "received",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:10:00Z",
-  "inquiry_metadata": {
-    "clarification_requested_at": "2024-01-01T00:05:00Z",
-    "clarification_reason": "具体的なユースケースを教えてください",
-    "clarification_completed_at": "2024-01-01T00:10:00Z"
-  }
+  "title": "ユーザーログイン機能",
+  "description": "As a user, I want to login so that I can access my account",
+  "priority": "high",
+  "estimated_effort": 5.0,
+  "deadline": "2026-03-01T00:00:00Z",
+  "assignee": "dev01"
 }
 ```
 
-### システム情報API
-
-#### `GET /api/info`
-API情報を取得します。
-
-**レスポンス例**
+**リクエスト例（AI自動生成）**
 ```json
-{
-  "name": "Ghost Squad API",
-  "version": "1.0.0",
-  "status": "running"
-}
+{}
 ```
 
-#### `GET /api/db-test`
-データベース接続をテストします。
-
-**レスポンス例**
-```json
-{
-  "status": "ok",
-  "database": "connected"
-}
-```
-
-#### `GET /health`
-ヘルスチェックエンドポイント。
-
-**レスポンス例**
-```json
-{
-  "status": "healthy"
-}
-```
-
-### ストーリー管理API
-
-#### `POST /api/inquiries/{id}/generate-stories`
-問い合わせからAIを使用してストーリーを生成します。
-
-**パスパラメータ**
-- `id`: 問い合わせID
-
-**リクエスト例**
-```json
-{
-  "template_id": 1,
-  "options": {
-    "detailed": true
-  }
-}
-```
-
-**レスポンス例**
+**レスポンス例** (201 Created)
 ```json
 {
   "id": 1,
   "inquiry_id": 1,
   "title": "ユーザーログイン機能",
   "description": "As a user, I want to login so that I can access my account",
-  "category": "development",
   "priority": "high",
   "status": "waiting_review",
   "estimated_effort": 5.0,
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:00:00Z"
+  "deadline": "2026-03-01T00:00:00Z",
+  "assignee": "dev01",
+  "story_metadata": {},
+  "created_at": "2026-01-01T00:00:00Z",
+  "updated_at": "2026-01-01T00:00:00Z"
 }
 ```
 
-#### `GET /api/stories`
+**エラー**: 400（バリデーション）, 404（問い合わせ不在）, 422（AI生成時のInquiryステータス不正）
+
+### `GET /api/stories`
 ストーリー一覧を取得します。
 
 **クエリパラメータ**
-- `page`: ページ番号（デフォルト: 1）
-- `limit`: 1ページあたりの件数（デフォルト: 20）
-- `status`: ステータスフィルタ（オプション）
-- `priority`: 優先度フィルタ（オプション）
-- `category`: カテゴリフィルタ（オプション）
+| パラメータ | 型 | デフォルト | 説明 |
+|-----------|-----|-----------|------|
+| `page` | int | 1 | ページ番号 |
+| `limit` | int | 20 | 1ページあたりの件数（1〜100） |
+| `status` | StoryStatus | - | ステータスフィルタ（waiting_review, approved, rejected） |
+| `priority` | Priority | - | 優先度フィルタ（low, medium, high, urgent） |
+| `inquiry_id` | int | - | 問い合わせIDフィルタ |
+| `sort_by` | string | created_at | ソートフィールド（created_at, updated_at, priority, estimated_effort, assignee, deadline） |
+| `sort_order` | string | desc | ソート順（asc, desc） |
 
-**レスポンス例**
+**レスポンス**: `PaginatedStoriesResponse`
+
+### `GET /api/inquiries/{inquiry_id}/stories`
+特定の問い合わせに紐づくストーリー一覧を取得します。
+
+**パスパラメータ**
+- `inquiry_id`: 問い合わせID
+
+**クエリパラメータ**: `GET /api/stories` と同様（inquiry_idは自動設定）
+
+### `GET /api/stories/{id}`
+特定のストーリーを取得します。
+
+**レスポンス**: `StoryResponse`（200 OK）または `ErrorResponse`（404）
+
+### `PUT /api/stories/{id}`
+ストーリーを更新します（全フィールドオプション）。
+
+**リクエスト例**
+```json
+{
+  "title": "ユーザーログイン機能（改訂版）",
+  "priority": "urgent",
+  "estimated_effort": 8.0,
+  "assignee": "dev02"
+}
+```
+
+### `DELETE /api/stories/{id}`
+ストーリーを削除します。
+
+**レスポンス例** (200 OK)
+```json
+{
+  "success": true
+}
+```
+
+### `POST /api/stories/{id}/approve`
+ストーリーを承認します（ステータスを `waiting_review` → `approved` に変更）。
+
+**リクエスト例**
+```json
+{
+  "approver": "pm01"
+}
+```
+
+**レスポンス**: `StoryResponse`（200 OK）
+
+**エラー**: 422（ステータスが `waiting_review` 以外の場合）
+
+### `POST /api/stories/{id}/reject`
+ストーリーを却下します（ステータスを `waiting_review` → `rejected` に変更）。
+
+**リクエスト例**
+```json
+{
+  "rejector": "pm01",
+  "reason": "要件が不明確です"
+}
+```
+
+**レスポンス**: `StoryResponse`（200 OK）
+
+**エラー**: 422（ステータスが `waiting_review` 以外、または理由未指定の場合）
+
+### `POST /api/stories/batch-approve`
+複数のストーリーを一括承認します。
+
+**リクエスト例**
+```json
+{
+  "story_ids": [1, 2, 3],
+  "approver": "pm01"
+}
+```
+
+**レスポンス例** (200 OK)
+```json
+{
+  "results": [
+    {"id": 1, "success": true, "error": null},
+    {"id": 2, "success": true, "error": null},
+    {"id": 3, "success": false, "error": "ストーリーが見つかりません"}
+  ]
+}
+```
+
+## インポーターAPI
+
+外部データソースから問い合わせを自動取り込みするためのAPIです。
+
+### `GET /api/plugins`
+登録済みのデータソースプラグイン一覧を取得します。
+
+**レスポンス例** (200 OK)
 ```json
 {
   "data": [
     {
-      "id": 1,
-      "inquiry_id": 1,
-      "title": "ユーザーログイン機能",
-      "description": "As a user, I want to login so that I can access my account",
-      "category": "development",
-      "priority": "high",
-      "status": "waiting_review",
-      "estimated_effort": 5.0,
-      "created_at": "2024-01-01T00:00:00Z",
-      "updated_at": "2024-01-01T00:00:00Z"
+      "plugin_type": "email",
+      "enabled": true,
+      "initialized": true,
+      "error_message": null
     }
   ],
+  "timestamp": "2026-01-01T00:00:00Z"
+}
+```
+
+### `POST /api/plugins/{plugin_type}/enable`
+プラグインを有効化します。
+
+**パスパラメータ**
+- `plugin_type`: プラグイン種別（例: `email`）
+
+**レスポンス**: `PluginStatusResponse`
+
+### `POST /api/plugins/{plugin_type}/disable`
+プラグインを無効化します。
+
+### `GET /api/ai-providers`
+登録済みのAIプロバイダー一覧を取得します。
+
+**レスポンス例** (200 OK)
+```json
+{
+  "data": [
+    {
+      "provider_type": "openai",
+      "enabled": true,
+      "initialized": true,
+      "is_default": true,
+      "model": "gpt-4",
+      "error_message": null
+    },
+    {
+      "provider_type": "anthropic",
+      "enabled": false,
+      "initialized": false,
+      "is_default": false,
+      "model": "claude-3-sonnet-20240229",
+      "error_message": null
+    }
+  ],
+  "timestamp": "2026-01-01T00:00:00Z"
+}
+```
+
+### `POST /api/ai-providers/{provider_type}/set-default`
+デフォルトのAIプロバイダーを設定します。
+
+**パスパラメータ**
+- `provider_type`: プロバイダー種別（`openai`, `anthropic`）
+
+### `POST /api/importers/execute`
+インポートを実行します。
+
+**リクエスト例**
+```json
+{
+  "plugin_type": "email",
+  "ai_provider_type": "openai"
+}
+```
+
+**レスポンス例** (200 OK)
+```json
+{
+  "total_fetched": 5,
+  "total_imported": 3,
+  "total_skipped": 1,
+  "total_failed": 1,
+  "imported_inquiry_ids": [10, 11, 12],
+  "errors": [
+    {
+      "source_id": "msg-123",
+      "error_code": "GS-304",
+      "error_message": "AI解析に失敗しました"
+    }
+  ],
+  "timestamp": "2026-01-01T00:00:00Z"
+}
+```
+
+### `POST /api/importers/retry`
+失敗したインポートをリトライします。
+
+**リクエスト例**
+```json
+{
+  "plugin_type": "email",
+  "source_ids": ["msg-123", "msg-456"],
+  "ai_provider_type": "openai"
+}
+```
+
+### `GET /api/importers/stats`
+エラー統計を取得します。
+
+**クエリパラメータ**
+- `plugin_type`（オプション）: プラグイン種別でフィルタ
+
+**レスポンス例** (200 OK)
+```json
+{
+  "data": [
+    {
+      "error_code": "GS-304",
+      "count": 3,
+      "last_occurred": "2026-01-01T10:00:00Z"
+    }
+  ],
+  "timestamp": "2026-01-01T00:00:00Z"
+}
+```
+
+## レスポンス標準化
+
+### 成功レスポンス（一覧取得時）
+```json
+{
+  "data": [],
   "meta": {
     "page": 1,
     "limit": 20,
     "total": 100,
     "has_next": true
   },
-  "timestamp": "2024-01-01T00:00:00Z"
-}
-```
-
-#### `GET /api/stories/{id}`
-特定のストーリーを取得します。
-
-**パスパラメータ**
-- `id`: ストーリーID
-
-**レスポンス例**
-```json
-{
-  "id": 1,
-  "inquiry_id": 1,
-  "title": "ユーザーログイン機能",
-  "description": "As a user, I want to login so that I can access my account",
-  "category": "development",
-  "priority": "high",
-  "status": "waiting_review",
-  "estimated_effort": 5.0,
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:00:00Z"
-}
-```
-
-#### `PUT /api/stories/{id}`
-ストーリーを更新します。
-
-**パスパラメータ**
-- `id`: ストーリーID
-
-**リクエスト例**
-```json
-{
-  "title": "ユーザーログイン機能",
-  "description": "As a user, I want to login so that I can access my account",
-  "priority": "high",
-  "estimated_effort": 5
-}
-```
-
-**レスポンス例**
-```json
-{
-  "id": 1,
-  "inquiry_id": 1,
-  "title": "ユーザーログイン機能",
-  "description": "As a user, I want to login so that I can access my account",
-  "category": "development",
-  "priority": "high",
-  "status": "waiting_review",
-  "estimated_effort": 5.0,
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:05:00Z"
-}
-```
-
-#### `POST /api/stories/{id}/approve`
-ストーリーを承認します（ステータスを`approved`に変更）。
-
-**パスパラメータ**
-- `id`: ストーリーID
-
-**リクエストボディ**
-なし
-
-**レスポンス例**
-```json
-{
-  "id": 1,
-  "inquiry_id": 1,
-  "title": "ユーザーログイン機能",
-  "description": "As a user, I want to login so that I can access my account",
-  "category": "development",
-  "priority": "high",
-  "status": "approved",
-  "estimated_effort": 5.0,
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:10:00Z"
-}
-```
-
-#### `POST /api/stories/{id}/reject`
-ストーリーを却下します（ステータスを`rejected`に変更）。
-
-**パスパラメータ**
-- `id`: ストーリーID
-
-**リクエスト例**
-```json
-{
-  "reason": "要件が不明確です"
-}
-```
-
-**レスポンス例**
-```json
-{
-  "id": 1,
-  "inquiry_id": 1,
-  "title": "ユーザーログイン機能",
-  "description": "As a user, I want to login so that I can access my account",
-  "category": "development",
-  "priority": "high",
-  "status": "rejected",
-  "estimated_effort": 5.0,
-  "created_at": "2024-01-01T00:00:00Z",
-  "updated_at": "2024-01-01T00:10:00Z",
-  "story_metadata": {
-    "rejected_at": "2024-01-01T00:10:00Z",
-    "rejection_reason": "要件が不明確です"
-  }
-}
-```
-
-## 将来のAPI拡張
-
-Ghost Squadの機能拡張に伴い、以下のAPIエンドポイントが追加予定です：
-
-### テンプレート管理API
-- `GET /api/templates` - テンプレート一覧
-- `POST /api/templates` - カスタムテンプレート作成
-- `GET /api/templates/{id}` - テンプレート詳細
-- `PUT /api/templates/{id}` - テンプレート更新
-
-### 分析API
-- `GET /api/analytics/stories` - ストーリー分析
-- `GET /api/analytics/predictions` - プロジェクト進捗予測
-- `GET /api/analytics/productivity` - チーム生産性分析
-
-### 一括操作API
-- `POST /api/stories/batch` - ストーリー一括操作（承認・拒否）
-- `POST /api/inquiries/batch` - 問い合わせ一括操作
-
-## レスポンス標準化
-
-すべてのAPIレスポンスは以下の標準形式に従います：
-
-### 成功レスポンス
-```json
-{
-  "data": {},           // 実際のデータ
-  "meta": {             // メタデータ（ページネーション時）
-    "page": 1,
-    "limit": 20,
-    "total": 100,
-    "has_next": true
-  },
-  "timestamp": "2024-01-01T00:00:00Z"
+  "timestamp": "2026-01-01T00:00:00Z"
 }
 ```
 
@@ -504,38 +499,36 @@ Ghost Squadの機能拡張に伴い、以下のAPIエンドポイントが追加
     {
       "code": "GS-001",
       "message": "問い合わせが見つかりません",
-      "field": "id",
-      "details": "ID 123 の問い合わせは存在しません"
+      "field": "id"
     }
   ],
-  "timestamp": "2024-01-01T00:00:00Z"
+  "timestamp": "2026-01-01T00:00:00Z"
 }
 ```
 
 ## HTTPステータスコード
 
-Ghost Squad APIは以下のHTTPステータスコードを使用します：
-
 - **200 OK** - リクエスト成功
 - **201 Created** - リソース作成成功
 - **400 Bad Request** - リクエストパラメータエラー
-- **401 Unauthorized** - 認証エラー
-- **403 Forbidden** - 権限エラー
 - **404 Not Found** - リソースが見つからない
+- **409 Conflict** - ステータス遷移の競合
 - **422 Unprocessable Entity** - バリデーションエラー
 - **500 Internal Server Error** - サーバーエラー
-- **503 Service Unavailable** - サービス利用不可（メンテナンス等）
 
 ## エラーコード体系
 
 エラーコードは `GS-XXX` 形式で定義されています：
 
-- **GS-001 ~ GS-099**: 問い合わせ関連エラー
-- **GS-100 ~ GS-199**: ストーリー関連エラー
-- **GS-200 ~ GS-299**: テンプレート関連エラー
-- **GS-400 ~ GS-499**: 認証・認可エラー
-- **GS-500 ~ GS-599**: AI統合エラー
-- **GS-900 ~ GS-999**: システムエラー
+| 範囲 | カテゴリ | 説明 |
+|------|----------|------|
+| GS-001〜GS-011 | 問い合わせ | 入力検証、状態遷移、データアクセス |
+| GS-101〜GS-129 | 問い合わせ詳細 | 必須フィールド、文字数、フォーマット、ステータス遷移 |
+| GS-201〜GS-219 | ストーリー | 入力検証、状態遷移、AI生成、ワークフロー |
+| GS-301〜GS-309 | インポーター管理 | プラグイン未検出、初期化失敗 |
+| GS-310〜GS-319 | メール設定 | 必須フィールド、ポート範囲 |
+| GS-320〜GS-329 | メール接続 | IMAP接続、認証 |
+| GS-999 | システム | 汎用サーバーエラー |
 
 ## API使用例
 
@@ -546,123 +539,35 @@ curl -X POST http://localhost:8000/api/inquiries \
   -d '{
     "user_id": "user123",
     "content": "ユーザーがログインできる機能が欲しい",
-    "language": "ja"
+    "source_system": "manual"
   }'
 ```
 
-### Pythonでの問い合わせ一覧取得
-```python
-import requests
-
-response = requests.get(
-    "http://localhost:8000/api/inquiries",
-    params={"page": 1, "limit": 20}
-)
-data = response.json()
-print(data)
-```
-
-### TypeScript/Axiosでの問い合わせ取得
-```typescript
-import axios from 'axios';
-
-const response = await axios.get(
-  `http://localhost:8000/api/inquiries/${inquiryId}`
-);
-console.log(response.data);
-```
-
-## トラブルシューティング
-
-### OpenAI APIエラー
-
-**問題**: AI機能使用時にエラーが発生する
-
-**解決方法**:
-1. `.env`ファイルの`OPENAI_API_KEY`が正しく設定されているか確認
-2. APIキーの使用制限・残高を確認
-3. OpenAIのステータスページを確認: https://status.openai.com/
-
+### cURLでのストーリーAI自動生成
 ```bash
-# 環境変数の確認
-cat .env | grep OPENAI_API_KEY
-
-# サーバーログでエラー詳細を確認
-make logs-backend
+curl -X POST http://localhost:8000/api/inquiries/1/stories \
+  -H "Content-Type: application/json" \
+  -d '{}'
 ```
 
-### CORS エラー
-
-**問題**: フロントエンドからAPIへのアクセス時にCORSエラーが発生
-
-**解決方法**:
-1. `.env`ファイルの`CORS_ORIGINS`設定を確認
-2. フロントエンドのURLが含まれているか確認
-
+### cURLでのインポート実行
 ```bash
-# .envファイルに以下を追加
-CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
-
-# サーバー再起動
-make restart
+curl -X POST http://localhost:8000/api/importers/execute \
+  -H "Content-Type: application/json" \
+  -d '{"plugin_type": "email"}'
 ```
 
-### APIレスポンスが遅い
+## 将来のAPI拡張
 
-**問題**: APIのレスポンスが遅い
-
-**解決方法**:
-1. データベース接続を確認
-2. ログでクエリパフォーマンスを確認
-3. AI API呼び出しのタイムアウト設定を確認
-
-```bash
-# データベースの状態確認
-make db-status
-
-# ログでボトルネックを特定
-make logs-backend | grep -i "slow\|timeout"
-```
-
-## セキュリティ
-
-### API認証（将来実装予定）
-
-JWT（JSON Web Token）を使用した認証を実装予定です：
-
-```bash
-# ログイン
-POST /api/auth/login
-{
-  "username": "user123",
-  "password": "password"
-}
-
-# レスポンス
-{
-  "access_token": "eyJhbGc...",
-  "token_type": "bearer",
-  "expires_in": 3600
-}
-
-# 認証が必要なエンドポイント
-GET /api/inquiries
-Authorization: Bearer eyJhbGc...
-```
-
-### レート制限（将来実装予定）
-
-API使用量を制限するレート制限を実装予定です：
-
-- **制限**: 100リクエスト/分/ユーザー
-- **AI API**: 10リクエスト/分/ユーザー
-- **レスポンスヘッダー**:
-  - `X-RateLimit-Limit`: 制限値
-  - `X-RateLimit-Remaining`: 残りリクエスト数
-  - `X-RateLimit-Reset`: リセット時刻
+- `GET /api/templates` - テンプレート一覧
+- `POST /api/templates` - カスタムテンプレート作成
+- `POST /api/auth/login` - JWT認証
+- `GET /api/analytics/stories` - ストーリー分析
 
 ## 関連ドキュメント
 
 - [データベース管理ガイド](DATABASE.md)
+- [開発コマンドリファレンス](COMMAND.md)
+- [トラブルシューティング](DEBUG.md)
 - [Spec-Driven Development](SDD.md)
 - [README](../README.md)
