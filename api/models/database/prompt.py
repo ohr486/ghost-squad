@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Boolean, DateTime, Enum, JSON, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.database.base import BaseModel
@@ -52,9 +52,7 @@ class PromptModel(BaseModel):
     )
 
     # 編集ロック情報
-    editing_by: Mapped[Optional[str]] = mapped_column(
-        String(100), nullable=True
-    )
+    editing_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     editing_since: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
