@@ -105,7 +105,8 @@ sequenceDiagram
     participant Svc as PromptService
     participant Cache as PromptCache
     participant DB as Database
-    participant AI as OpenAI API
+    participant AIReg as AIProviderRegistry
+    participant AI as AI Provider
 
     Admin->>UI: プロンプト選択
     UI->>API: GET /api/prompts/:key
@@ -128,10 +129,12 @@ sequenceDiagram
     Svc-->>API: LockResponse
     API-->>UI: 200 OK
 
-    Admin->>UI: テスト実行
+    Admin->>UI: テスト実行（プロバイダー選択可能）
     UI->>API: POST /api/prompts/test
-    API->>Svc: test_prompt(content, variables)
-    Svc->>AI: chat.completions.create
+    API->>Svc: test_prompt(content, variables, provider)
+    Svc->>AIReg: get_provider(provider)
+    AIReg-->>Svc: AI Provider instance
+    Svc->>AI: analyze / chat.completions.create
     AI-->>Svc: AI Response
     Svc-->>API: TestResult
     API-->>UI: 200 TestResult
@@ -332,8 +335,13 @@ class PromptValidator:
 
 **Responsibilities & Constraints**
 - キーベースのインメモリキャッシュ（Python辞書）
+- TTL（Time To Live）: 60秒。TTL超過エントリは自動的に無効化される
 - Write-through: 更新時にキャッシュを無効化
-- DB障害時にキャッシュからフォールバック提供
+- DB障害時にキャッシュからフォールバック提供（TTL超過でもDB障害時は返却）
+
+**Known Limitations**
+- インメモリキャッシュはプロセス内スコープのため、uvicornマルチワーカー環境ではプロセス間でキャッシュが共有されない。TTL（60秒）により最大60秒のstale読み取りが発生しうる
+- 外部キャッシュ（Redis等）の導入はNon-Goalsのため、現段階ではTTLによる整合性の緩和で対応する
 
 **Dependencies**
 - Inbound: PromptService — キャッシュ読み取り/無効化 (P1)
@@ -343,12 +351,20 @@ class PromptValidator:
 ##### Service Interface
 ```python
 class PromptCache:
+    def __init__(self, ttl_seconds: int = 60):
+        """TTL付きインメモリキャッシュを初期化する."""
+        ...
+
     def get(self, key: str) -> Optional[PromptCacheEntry]:
-        """キャッシュからプロンプトを取得する."""
+        """キャッシュからプロンプトを取得する（TTL超過時はNone）."""
+        ...
+
+    def get_fallback(self, key: str) -> Optional[PromptCacheEntry]:
+        """DB障害時フォールバック用。TTL超過エントリも返却する."""
         ...
 
     def set(self, key: str, entry: PromptCacheEntry) -> None:
-        """キャッシュにプロンプトを設定する."""
+        """キャッシュにプロンプトを設定する（タイムスタンプ記録）."""
         ...
 
     def invalidate(self, key: str) -> None:
@@ -370,7 +386,7 @@ class PromptCache:
 **Responsibilities & Constraints**
 - プロンプト取得（キャッシュ → DB → デフォルトフォールバック）
 - プロンプト更新（バリデーション → DB更新 → キャッシュ無効化）
-- テスト実行（プレースホルダー置換 → OpenAI API呼び出し）
+- テスト実行（プレースホルダー置換 → AIプロバイダー呼び出し（OpenAI/Anthropic選択可能））
 - 編集ロック管理（取得 → 解放 → タイムアウト判定）
 - デフォルトリセット
 
@@ -381,7 +397,7 @@ class PromptCache:
 - Outbound: PromptRepository — データアクセス (P0)
 - Outbound: PromptValidator — 入力検証 (P0)
 - Outbound: PromptCache — キャッシュ操作 (P1)
-- External: OpenAI API — テスト実行 (P1)
+- External: AIProviderRegistry — テスト実行（OpenAI/Anthropic選択可能） (P1)
 
 **Contracts**: Service [x]
 
@@ -405,7 +421,7 @@ class PromptService:
         ...
 
     def test_prompt(self, request: TestPromptRequest) -> TestPromptResult:
-        """プロンプトをテスト実行する."""
+        """プロンプトをテスト実行する（provider指定でAIプロバイダー選択可能）."""
         ...
 
     def acquire_edit_lock(self, key: str, user_id: str) -> EditLockResult:
@@ -587,10 +603,12 @@ class UpdatePromptRequest(BaseModel):
 class TestPromptRequest(BaseModel):
     content: str  # テスト対象のプロンプト本文
     variables: Dict[str, str]  # プレースホルダー変数の値
+    provider: Optional[str] = None  # AIプロバイダー（"openai" | "anthropic"、未指定時はデフォルト）
 
 # テスト実行結果
 class TestPromptResult(BaseModel):
     output: str  # AI出力結果
+    provider: str  # 使用プロバイダー
     model: str  # 使用モデル
     elapsed_ms: int  # 実行時間（ミリ秒）
 
@@ -633,10 +651,12 @@ interface UpdatePromptRequest {
 interface TestPromptRequest {
   content: string;
   variables: Record<string, string>;
+  provider?: string;  // "openai" | "anthropic"、未指定時はデフォルト
 }
 
 interface TestPromptResult {
   output: string;
+  provider: string;
   model: string;
   elapsed_ms: number;
 }
@@ -670,13 +690,13 @@ interface TestPromptResult {
 - **PromptValidator**: 空文字検証、プレースホルダー構文検証（正常系・異常系）、エラーコード検証
 - **PromptRepository**: CRUD操作、カテゴリフィルタリング、リセット、編集ロック
 - **PromptService**: プロンプト取得（キャッシュヒット/ミス/フォールバック）、更新、テスト実行、ロック管理
-- **PromptCache**: get/set/invalidate、全クリア
+- **PromptCache**: get/set/invalidate、全クリア、TTL超過判定、get_fallback（DB障害時）
 - **PromptSeeder**: 初回投入、冪等性（既存データを上書きしない）
 
 ### Integration Tests
 - API層テスト: 全エンドポイントのHTTPリクエスト/レスポンス検証
 - 既存サービス統合: StoryGenerationServiceがPromptServiceからプロンプトを取得して動作
-- テスト実行フロー: プロンプト → プレースホルダー置換 → OpenAI API（モック）→ 結果返却
+- テスト実行フロー: プロンプト → プレースホルダー置換 → AIプロバイダー（OpenAI/Anthropicモック）→ 結果返却（プロバイダー選択検証含む）
 
 ### E2E/UI Tests
 - プロンプト一覧表示・カテゴリフィルタリング
