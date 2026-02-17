@@ -7,8 +7,11 @@ from typing import List
 api_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(api_dir))
 
-from services.importer.plugin_base import (DataSourcePlugin, RawImportData,  # noqa: E402
-                                           ValidationResult)
+from services.importer.plugin_base import (  # noqa: E402
+    DataSourcePlugin,
+    RawImportData,
+    ValidationResult,
+)
 
 # ==============================================================================
 # Shared Test Utilities
