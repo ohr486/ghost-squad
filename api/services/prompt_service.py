@@ -9,6 +9,8 @@ Requirements: 1.1, 1.2, 1.3, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.4,
 """
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FuturesTimeoutError
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
@@ -17,6 +19,8 @@ from sqlalchemy.orm import Session
 
 from models.database.prompt import PromptModel
 from models.enums.prompt_category import PromptCategory
+from services.importer.ai_provider_base import (AIAnalysisRequest,
+                                                AIProviderType)
 from services.prompt_cache import PromptCache, PromptCacheEntry
 from services.prompt_repository import PromptRepository, UpdatePromptData
 from services.prompt_validator import PromptValidator
@@ -349,10 +353,8 @@ class PromptService:
         if request.provider:
             # AIProviderType enumに変換を試行
             try:
-                from services.importer.ai_provider_base import AIProviderType
-
                 provider_type = AIProviderType(request.provider)
-            except (ValueError, ImportError):
+            except ValueError:
                 pass
 
         provider = self._ai_provider_registry.get_provider(provider_type)
@@ -364,18 +366,26 @@ class PromptService:
         for var_name, var_value in request.variables.items():
             substituted = substituted.replace(f"{{{var_name}}}", var_value)
 
-        # AI呼び出し
+        # AI呼び出し（タイムアウト付き）
         start_time = time.monotonic()
         try:
-            from services.importer.ai_provider_base import AIAnalysisRequest
-
             ai_request = AIAnalysisRequest(
                 content=substituted,
                 subject="プロンプトテスト",
                 sender="system",
                 source_type="prompt_test",
             )
-            response = provider.analyze(ai_request)
+
+            # ThreadPoolExecutorを使用してタイムアウトを実装
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(provider.analyze, ai_request)
+                try:
+                    response = future.result(timeout=TEST_EXECUTION_TIMEOUT_SECONDS)
+                except FuturesTimeoutError as e:
+                    raise PromptTestTimeoutError(
+                        f"GS-406: テスト実行がタイムアウトしました（{TEST_EXECUTION_TIMEOUT_SECONDS}秒）"
+                    ) from e
+
             elapsed_ms = int((time.monotonic() - start_time) * 1000)
 
             return TestPromptResult(
@@ -384,10 +394,6 @@ class PromptService:
                 model=response.model,
                 elapsed_ms=elapsed_ms,
             )
-        except TimeoutError as e:
-            raise PromptTestTimeoutError(
-                f"GS-406: テスト実行がタイムアウトしました（{TEST_EXECUTION_TIMEOUT_SECONDS}秒）"
-            ) from e
         except PromptTestTimeoutError:
             raise
         except Exception as e:
@@ -457,9 +463,13 @@ class PromptService:
     def release_edit_lock(self, key: str, user_id: str) -> None:
         """編集ロックを解放する.
 
+        Note: user_id パラメータは受け取るが、実装では使用しません。
+        これは管理者が他のユーザーのロックを解放できるようにするためです。
+        将来的にユーザー検証を追加する場合に備えてシグネチャを維持しています。
+
         Args:
             key: プロンプトキー
-            user_id: 編集者ID
+            user_id: 編集者ID（現在は未使用、将来の拡張用）
 
         Raises:
             PromptNotFoundError: プロンプトが見つからない場合
