@@ -43,6 +43,7 @@ TEST_EXECUTION_TIMEOUT_SECONDS = 30
 class PromptData:
     """プロンプトデータ（サービス層の返却型）."""
 
+    id: int
     key: str
     name: str
     description: Optional[str]
@@ -184,6 +185,7 @@ class PromptService:
         if cached is not None:
             logger.debug(f"キャッシュヒット: {key}")
             return PromptData(
+                id=cached.id,
                 key=cached.key,
                 name="",
                 description=None,
@@ -202,6 +204,7 @@ class PromptService:
                 self._cache.set(
                     key,
                     PromptCacheEntry(
+                        id=prompt.id,
                         key=prompt.key,
                         content=prompt.content,
                         default_content=prompt.default_content,
@@ -216,6 +219,7 @@ class PromptService:
             if fallback is not None:
                 logger.warning(f"キャッシュフォールバック使用: {key}")
                 return PromptData(
+                    id=fallback.id,
                     key=fallback.key,
                     name="",
                     description=None,
@@ -485,6 +489,7 @@ class PromptService:
     def _to_prompt_data(self, prompt: PromptModel) -> PromptData:
         """PromptModelをPromptDataに変換する."""
         return PromptData(
+            id=prompt.id,
             key=prompt.key,
             name=prompt.name,
             description=prompt.description,
