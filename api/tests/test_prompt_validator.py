@@ -7,7 +7,8 @@
 - 各バリデーションルールのユニットテスト（正常系・異常系、エラーコード検証）
 """
 
-from services.prompt_validator import PromptValidator, ValidationError, ValidationResult
+from services.prompt_validator import (PromptValidator, ValidationError,
+                                       ValidationResult)
 
 
 class TestPromptValidatorValidateContent:
@@ -57,9 +58,7 @@ class TestPromptValidatorValidateContent:
         """プレースホルダーを含む本文のバリデーション成功."""
         validator = PromptValidator()
 
-        result = validator.validate_content(
-            "以下の内容を処理してください: {inquiry_content}"
-        )
+        result = validator.validate_content("以下の内容を処理してください: {inquiry_content}")
 
         assert result.valid is True
         assert len(result.errors) == 0
@@ -386,18 +385,12 @@ class TestPromptValidatorErrorCodes:
 
         # GS-401
         r1 = validator.validate_content("")
-        assert any(
-            ord(c) > 127 for c in r1.errors[0].message
-        ), "GS-401メッセージは日本語であるべき"
+        assert any(ord(c) > 127 for c in r1.errors[0].message), "GS-401メッセージは日本語であるべき"
 
         # GS-402
         r2 = validator.validate_placeholders("{bad}", [])
-        assert any(
-            ord(c) > 127 for c in r2.errors[0].message
-        ), "GS-402メッセージは日本語であるべき"
+        assert any(ord(c) > 127 for c in r2.errors[0].message), "GS-402メッセージは日本語であるべき"
 
         # GS-403
         r3 = validator.validate_category("invalid")
-        assert any(
-            ord(c) > 127 for c in r3.errors[0].message
-        ), "GS-403メッセージは日本語であるべき"
+        assert any(ord(c) > 127 for c in r3.errors[0].message), "GS-403メッセージは日本語であるべき"
