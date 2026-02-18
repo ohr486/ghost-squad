@@ -7,10 +7,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
+from database import SessionLocal
 from routers import importer, inquiry, story
 from services.importer.ai_provider_registry import AIProviderRegistryService
 from services.importer.importer_config_loader import ImporterConfigLoader
 from services.importer.plugin_registry import PluginRegistryService
+from services.prompt_repository import PromptRepository
+from services.prompt_seeder import PromptSeeder
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +21,23 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """アプリケーションのライフサイクル管理."""
+    # 起動時: デフォルトプロンプトをシード
+    try:
+        session = SessionLocal()
+        try:
+            repository = PromptRepository(session)
+            seeder = PromptSeeder(repository)
+            result = seeder.seed()
+            logger.info(
+                "プロンプトシード完了: 作成=%d, スキップ=%d",
+                result.created,
+                result.skipped,
+            )
+        finally:
+            session.close()
+    except Exception as e:
+        logger.error(f"プロンプトシードに失敗しました: {e}")
+
     # 起動時: インポーター設定をロード
     config_path = Path("config/importer_config.yaml")
     if config_path.exists():
