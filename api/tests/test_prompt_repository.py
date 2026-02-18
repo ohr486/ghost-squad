@@ -4,14 +4,14 @@ TDD implementation for prompt data access layer.
 Tests cover CRUD operations, category filtering, default protection,
 edit lock, and reset functionality.
 """
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Generator
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from models.database.base import Base
+from models.database.base import BaseModel
 from models.database.prompt import PromptModel
 from models.enums.prompt_category import PromptCategory
 from services.prompt_repository import (
@@ -25,7 +25,7 @@ from services.prompt_repository import (
 def db_session() -> Generator[Session, None, None]:
     """Create in-memory SQLite database for testing."""
     engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
+    BaseModel.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
     session = SessionLocal()
     try:
@@ -613,7 +613,7 @@ class TestPromptRepositoryUpdateEditLock:
         """編集ロックを取得できる."""
         # Arrange
         _create_sample_prompt(db_session, key="lock_test")
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
 
         # Act
         locked = repository.update_edit_lock("lock_test", "admin_user", now)
@@ -628,7 +628,7 @@ class TestPromptRepositoryUpdateEditLock:
     ) -> None:
         """編集ロックを解放できる."""
         # Arrange
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         _create_sample_prompt(
             db_session,
             key="release_lock_test",
@@ -650,7 +650,7 @@ class TestPromptRepositoryUpdateEditLock:
         """存在しないキーのロック操作はNoneを返す."""
         # Act
         result = repository.update_edit_lock(
-            "nonexistent_key", "user", datetime.now(UTC)
+            "nonexistent_key", "user", datetime.now(timezone.utc)
         )
 
         # Assert
@@ -661,14 +661,14 @@ class TestPromptRepositoryUpdateEditLock:
     ) -> None:
         """既存のロックを上書きできる."""
         # Arrange
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         _create_sample_prompt(
             db_session,
             key="overwrite_lock_test",
             editing_by="user_1",
             editing_since=now,
         )
-        new_time = datetime.now(UTC)
+        new_time = datetime.now(timezone.utc)
 
         # Act
         updated = repository.update_edit_lock(
