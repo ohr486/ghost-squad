@@ -14,11 +14,8 @@ from sqlalchemy.orm import Session, sessionmaker
 from models.database.base import BaseModel
 from models.database.prompt import PromptModel
 from models.enums.prompt_category import PromptCategory
-from services.prompt_repository import (
-    CreatePromptData,
-    PromptRepository,
-    UpdatePromptData,
-)
+from services.prompt_repository import (CreatePromptData, PromptRepository,
+                                        UpdatePromptData)
 
 
 @pytest.fixture
@@ -276,9 +273,7 @@ class TestPromptRepositoryFindAll:
         )
 
         # Act
-        story_prompts = repository.find_all(
-            category=PromptCategory.STORY_GENERATION
-        )
+        story_prompts = repository.find_all(category=PromptCategory.STORY_GENERATION)
 
         # Assert
         assert len(story_prompts) == 1
@@ -301,9 +296,7 @@ class TestPromptRepositoryFindAll:
         )
 
         # Act
-        ia_prompts = repository.find_all(
-            category=PromptCategory.IMPORT_ANALYSIS
-        )
+        ia_prompts = repository.find_all(category=PromptCategory.IMPORT_ANALYSIS)
 
         # Assert
         assert len(ia_prompts) == 1
@@ -671,9 +664,7 @@ class TestPromptRepositoryUpdateEditLock:
         new_time = datetime.now(timezone.utc)
 
         # Act
-        updated = repository.update_edit_lock(
-            "overwrite_lock_test", "user_2", new_time
-        )
+        updated = repository.update_edit_lock("overwrite_lock_test", "user_2", new_time)
 
         # Assert
         assert updated is not None

@@ -109,15 +109,9 @@ class PromptRepository:
         Returns:
             PromptModel | None: プロンプトエンティティ、存在しない場合はNone
         """
-        return (
-            self.session.query(PromptModel)
-            .filter(PromptModel.key == key)
-            .first()
-        )
+        return self.session.query(PromptModel).filter(PromptModel.key == key).first()
 
-    def find_all(
-        self, category: Optional[PromptCategory] = None
-    ) -> List[PromptModel]:
+    def find_all(self, category: Optional[PromptCategory] = None) -> List[PromptModel]:
         """全プロンプトを取得する（カテゴリフィルタリング対応）.
 
         Args:
@@ -133,9 +127,7 @@ class PromptRepository:
 
         return query.all()
 
-    def update(
-        self, key: str, data: UpdatePromptData
-    ) -> Optional[PromptModel]:
+    def update(self, key: str, data: UpdatePromptData) -> Optional[PromptModel]:
         """プロンプトを更新する（default_contentは更新不可）.
 
         Args:
