@@ -16,12 +16,14 @@ class PromptCacheEntry:
     """キャッシュエントリ.
 
     Attributes:
+        id: プロンプトID
         key: プロンプトキー
         content: プロンプト本文
         default_content: デフォルトプロンプト本文
         variables: プレースホルダー変数リスト
     """
 
+    id: int
     key: str
     content: str
     default_content: str

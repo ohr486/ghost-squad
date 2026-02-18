@@ -101,6 +101,7 @@ class TestPromptServiceGetPrompt:
         cache.set(
             "cached_key",
             PromptCacheEntry(
+                id=1,
                 key="cached_key",
                 content="キャッシュ内容",
                 default_content="デフォルト内容",
@@ -143,6 +144,7 @@ class TestPromptServiceGetPrompt:
         cache.set(
             "fallback_key",
             PromptCacheEntry(
+                id=1,
                 key="fallback_key",
                 content="フォールバック内容",
                 default_content="デフォルト",
@@ -286,6 +288,7 @@ class TestPromptServiceUpdatePrompt:
         cache.set(
             "cache_invalidate",
             PromptCacheEntry(
+                id=1,
                 key="cache_invalidate",
                 content="古い内容",
                 default_content="デフォルト",
@@ -406,6 +409,7 @@ class TestPromptServiceResetToDefault:
         cache.set(
             "reset_cache",
             PromptCacheEntry(
+                id=1,
                 key="reset_cache",
                 content="カスタム",
                 default_content="デフォルト",

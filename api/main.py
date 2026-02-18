@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from database import SessionLocal
-from routers import importer, inquiry, story
+from routers import importer, inquiry, prompt, story
 from services.importer.ai_provider_registry import AIProviderRegistryService
 from services.importer.importer_config_loader import ImporterConfigLoader
 from services.importer.plugin_registry import PluginRegistryService
@@ -84,6 +84,7 @@ app.add_middleware(
 # ルーター登録
 app.include_router(inquiry.router)
 app.include_router(story.router)
+app.include_router(prompt.router)
 app.include_router(importer.router)
 
 
