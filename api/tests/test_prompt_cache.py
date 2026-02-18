@@ -18,6 +18,7 @@ class TestPromptCacheEntry:
     def test_cache_entry_structure(self):
         """PromptCacheEntryが正しい構造を持つ."""
         entry = PromptCacheEntry(
+            id=1,
             key="story_generation_system",
             content="プロンプト本文",
             default_content="デフォルト本文",
@@ -32,6 +33,7 @@ class TestPromptCacheEntry:
     def test_cache_entry_optional_fields(self):
         """PromptCacheEntryのオプショナルフィールド."""
         entry = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文",
             default_content="デフォルト",
@@ -64,6 +66,7 @@ class TestPromptCacheSetAndGet:
         """キャッシュに設定したエントリを取得できる."""
         cache = PromptCache(ttl_seconds=60)
         entry = PromptCacheEntry(
+            id=1,
             key="story_generation_system",
             content="プロンプト本文",
             default_content="デフォルト本文",
@@ -89,12 +92,14 @@ class TestPromptCacheSetAndGet:
         """同じキーに再設定すると上書きされる."""
         cache = PromptCache(ttl_seconds=60)
         entry1 = PromptCacheEntry(
+            id=1,
             key="test_key",
             content="本文1",
             default_content="デフォルト",
             variables=[],
         )
         entry2 = PromptCacheEntry(
+            id=1,
             key="test_key",
             content="本文2",
             default_content="デフォルト",
@@ -112,12 +117,14 @@ class TestPromptCacheSetAndGet:
         """複数のキーを設定・取得できる."""
         cache = PromptCache(ttl_seconds=60)
         entry1 = PromptCacheEntry(
+            id=1,
             key="key1",
             content="本文1",
             default_content="デフォルト1",
             variables=[],
         )
         entry2 = PromptCacheEntry(
+            id=1,
             key="key2",
             content="本文2",
             default_content="デフォルト2",
@@ -140,6 +147,7 @@ class TestPromptCacheTTL:
         """TTL内のエントリは取得できる."""
         cache = PromptCache(ttl_seconds=60)
         entry = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文",
             default_content="デフォルト",
@@ -155,6 +163,7 @@ class TestPromptCacheTTL:
         """TTL超過のエントリはNoneを返す."""
         cache = PromptCache(ttl_seconds=0)  # 即座に期限切れ
         entry = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文",
             default_content="デフォルト",
@@ -171,6 +180,7 @@ class TestPromptCacheTTL:
         """短いTTL（1秒）が正しく動作する."""
         cache = PromptCache(ttl_seconds=1)
         entry = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文",
             default_content="デフォルト",
@@ -196,6 +206,7 @@ class TestPromptCacheGetFallback:
         """TTL内のエントリをフォールバックで取得できる."""
         cache = PromptCache(ttl_seconds=60)
         entry = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文",
             default_content="デフォルト",
@@ -212,6 +223,7 @@ class TestPromptCacheGetFallback:
         """TTL超過のエントリもフォールバックで取得できる."""
         cache = PromptCache(ttl_seconds=0)  # 即座に期限切れ
         entry = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文",
             default_content="デフォルト",
@@ -245,6 +257,7 @@ class TestPromptCacheInvalidate:
         """既存のキーを無効化できる."""
         cache = PromptCache(ttl_seconds=60)
         entry = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文",
             default_content="デフォルト",
@@ -268,12 +281,14 @@ class TestPromptCacheInvalidate:
         """特定キーの無効化は他のキーに影響しない."""
         cache = PromptCache(ttl_seconds=60)
         entry1 = PromptCacheEntry(
+            id=1,
             key="key1",
             content="本文1",
             default_content="デフォルト1",
             variables=[],
         )
         entry2 = PromptCacheEntry(
+            id=1,
             key="key2",
             content="本文2",
             default_content="デフォルト2",
@@ -293,6 +308,7 @@ class TestPromptCacheInvalidate:
         """無効化したキーはフォールバックでも取得できない."""
         cache = PromptCache(ttl_seconds=60)
         entry = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文",
             default_content="デフォルト",
@@ -312,12 +328,14 @@ class TestPromptCacheInvalidateAll:
         """全エントリを無効化できる."""
         cache = PromptCache(ttl_seconds=60)
         entry1 = PromptCacheEntry(
+            id=1,
             key="key1",
             content="本文1",
             default_content="デフォルト1",
             variables=[],
         )
         entry2 = PromptCacheEntry(
+            id=1,
             key="key2",
             content="本文2",
             default_content="デフォルト2",
@@ -343,6 +361,7 @@ class TestPromptCacheInvalidateAll:
         """全無効化後はフォールバックでも取得できない."""
         cache = PromptCache(ttl_seconds=60)
         entry = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文",
             default_content="デフォルト",
@@ -362,12 +381,14 @@ class TestPromptCacheSetAfterInvalidate:
         """無効化後に再設定できる."""
         cache = PromptCache(ttl_seconds=60)
         entry1 = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文1",
             default_content="デフォルト",
             variables=[],
         )
         entry2 = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文2",
             default_content="デフォルト",
@@ -386,6 +407,7 @@ class TestPromptCacheSetAfterInvalidate:
         """全無効化後に再設定できる."""
         cache = PromptCache(ttl_seconds=60)
         entry = PromptCacheEntry(
+            id=1,
             key="test",
             content="本文",
             default_content="デフォルト",

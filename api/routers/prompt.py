@@ -452,7 +452,7 @@ async def test_prompt(
 def _prompt_data_to_response(prompt_data) -> PromptResponse:
     """PromptDataをPromptResponseに変換する."""
     return PromptResponse(
-        id=getattr(prompt_data, "id", 0),
+        id=prompt_data.id,
         key=prompt_data.key,
         name=prompt_data.name,
         description=prompt_data.description,
