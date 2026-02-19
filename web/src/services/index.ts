@@ -41,3 +41,15 @@ export {
 } from "./importerApi";
 
 export { default as importerApi } from "./importerApi";
+
+export {
+  listPrompts,
+  getPrompt,
+  updatePrompt,
+  testPrompt,
+  resetPrompt,
+  acquireLock,
+  releaseLock,
+} from "./promptApi";
+
+export { default as promptApi } from "./promptApi";
