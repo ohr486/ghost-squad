@@ -138,7 +138,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 400,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -146,7 +146,9 @@ describe("PromptAPI", () => {
           applyErrorInterceptor(axiosError),
         );
 
-        await expect(listPrompts("invalid")).rejects.toEqual(errorResponse);
+        await expect(listPrompts("invalid" as any)).rejects.toEqual(
+          errorResponse,
+        );
       });
 
       it("サーバーエラー時にエラーを返す", async () => {
@@ -163,7 +165,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 500,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -244,7 +246,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 404,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -325,7 +327,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 400,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -352,7 +354,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 404,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -379,7 +381,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 409,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -469,7 +471,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 504,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -499,7 +501,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 500,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -556,7 +558,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 404,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -610,7 +612,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 409,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -637,7 +639,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 404,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 
@@ -676,7 +678,7 @@ describe("PromptAPI", () => {
         const axiosError = {
           response: {
             status: 404,
-            data: errorResponse,
+            data: { detail: errorResponse },
           },
         };
 

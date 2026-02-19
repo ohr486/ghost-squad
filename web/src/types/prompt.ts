@@ -1,7 +1,7 @@
 /**
  * プロンプト管理機能 - TypeScript型定義
  *
- * バックエンドPydanticスキーマ（models/schemas/prompt.py）との整合性を保証
+ * バックエンドPydanticスキーマ（api/models/schemas/prompt.py）との整合性を保証
  * 要件: 1.1, 1.2, 2.2, 2.5, 3.1, 3.2, 3.4, 4.4, 4.5
  */
 
@@ -87,7 +87,7 @@ export interface TestPromptRequest {
   /** プレースホルダー変数の値 */
   variables: Record<string, string>;
   /** AIプロバイダー（"openai" | "anthropic"、未指定時はデフォルト） */
-  provider?: string;
+  provider?: "openai" | "anthropic";
 }
 
 /**
@@ -125,27 +125,23 @@ export interface LockResponse {
 }
 
 // =============================================================================
-// 共通エラー型（既存ErrorResponseを再利用）
+// エラー型（既存ErrorResponseを再利用）
 // =============================================================================
 
 /**
- * プロンプト管理用バリデーションエラー
- */
-export interface PromptValidationError {
-  /** エラーコード（GS-4xx形式） */
-  code: string;
-  /** エラーメッセージ（日本語） */
-  message: string;
-  /** エラーが発生したフィールド名 */
-  field?: string | null;
-}
-
-/**
  * プロンプト管理エラーレスポンス
+ * inquiry.tsのErrorResponseと同じ構造
  */
 export interface PromptErrorResponse {
   /** エラー詳細リスト */
-  errors: PromptValidationError[];
+  errors: Array<{
+    /** エラーコード（GS-xxx形式） */
+    code: string;
+    /** エラーメッセージ（日本語） */
+    message: string;
+    /** エラーが発生したフィールド名 */
+    field?: string;
+  }>;
   /** エラー発生タイムスタンプ */
   timestamp: string;
 }
