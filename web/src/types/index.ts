@@ -60,6 +60,5 @@ export type {
   TestPromptResult,
   AcquireLockRequest,
   LockResponse,
-  PromptValidationError,
   PromptErrorResponse,
 } from "./prompt";

@@ -9,6 +9,7 @@ import axios, { AxiosInstance, AxiosError, AxiosResponse } from "axios";
 import type {
   PromptResponse,
   PromptListResponse,
+  PromptCategory,
   UpdatePromptRequest,
   TestPromptRequest,
   TestPromptResult,
@@ -42,11 +43,11 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
     return response;
   },
-  (error: AxiosError<PromptErrorResponse>) => {
+  (error: AxiosError<{ detail: PromptErrorResponse }>) => {
     // エラーレスポンスの標準化
-    if (error.response?.data) {
-      // バックエンドから返されたエラーレスポンスをそのまま返す
-      return Promise.reject(error.response.data);
+    if (error.response?.data?.detail) {
+      // FastAPIのHTTPExceptionは { detail: {...} } 形式で返す
+      return Promise.reject(error.response.data.detail);
     }
 
     // ネットワークエラーなど、バックエンドから返されないエラー
@@ -75,7 +76,7 @@ apiClient.interceptors.response.use(
  * @throws PromptErrorResponse 無効なカテゴリ（GS-403）またはサーバーエラー
  */
 export async function listPrompts(
-  category?: string,
+  category?: PromptCategory,
 ): Promise<PromptListResponse> {
   const params: Record<string, string> = {};
   if (category) {
