@@ -22,7 +22,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from anthropic import Anthropic
 
@@ -136,15 +136,21 @@ class AnthropicProvider(AIProvider[AnthropicProviderConfig]):
         "claude-3-5-sonnet-20241022",
     ]
 
-    def __init__(self, config: AnthropicProviderConfig) -> None:
+    def __init__(
+        self,
+        config: AnthropicProviderConfig,
+        system_prompt_getter: Optional[Callable[[], str]] = None,
+    ) -> None:
         """AnthropicProviderを初期化.
 
         Args:
             config: Anthropicプロバイダー設定
+            system_prompt_getter: システムプロンプト取得関数（オプション）
         """
         self._config = config
         self._client: Optional[Anthropic] = None
         self._initialized = False
+        self._system_prompt_getter = system_prompt_getter
 
     @property
     def provider_type(self) -> AIProviderType:
@@ -230,6 +236,26 @@ class AnthropicProvider(AIProvider[AnthropicProviderConfig]):
             logger.error(f"Anthropicプロバイダーの初期化に失敗しました: {e}")
             raise RuntimeError(f"Anthropicプロバイダーの初期化に失敗しました: {e}")
 
+    def _get_system_prompt(self) -> str:
+        """システムプロンプトを取得する.
+
+        system_prompt_getterが設定されている場合はそれを使用し、
+        失敗時はデフォルト定数にフォールバックする。
+
+        Returns:
+            str: システムプロンプト
+        """
+        if self._system_prompt_getter is not None:
+            try:
+                return self._system_prompt_getter()
+            except Exception as e:
+                logger.warning(
+                    "プロンプト取得に失敗、"
+                    "デフォルトにフォールバック: %s",
+                    e,
+                )
+        return ANALYSIS_SYSTEM_PROMPT
+
     def analyze(self, request: AIAnalysisRequest) -> AIAnalysisResponse:
         """コンテンツを解析する.
 
@@ -249,13 +275,14 @@ class AnthropicProvider(AIProvider[AnthropicProviderConfig]):
             raise RuntimeError("プロバイダーが初期化されていません")
 
         user_prompt = _build_user_prompt(request)
+        system_prompt = self._get_system_prompt()
 
         last_error: Optional[Exception] = None
         for attempt in range(self._config.retry_max):
             try:
                 response = self._client.messages.create(
                     model=self._config.model,
-                    system=ANALYSIS_SYSTEM_PROMPT,
+                    system=system_prompt,
                     messages=[
                         {"role": "user", "content": user_prompt},
                     ],
