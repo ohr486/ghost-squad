@@ -19,3 +19,9 @@ export type { StoryFormProps } from "./StoryForm";
 
 export { default as StoryDetail } from "./StoryDetail";
 export type { StoryDetailProps } from "./StoryDetail";
+
+export { default as PromptList } from "./PromptList";
+export type { PromptListProps } from "./PromptList";
+
+export { default as PromptDetail } from "./PromptDetail";
+export type { PromptDetailProps } from "./PromptDetail";

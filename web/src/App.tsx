@@ -13,6 +13,8 @@ import { StoryForm } from "./components/StoryForm";
 import StoryList from "./components/StoryList";
 import StoryDetail from "./components/StoryDetail";
 import { ImporterPage } from "./components/importer";
+import PromptList from "./components/PromptList";
+import PromptDetail from "./components/PromptDetail";
 import { createInquiry, listInquiries } from "./services/inquiryApi";
 import { createStory } from "./services/storyApi";
 import type { CreateStoryRequest } from "./types";
@@ -26,7 +28,7 @@ const queryClient = new QueryClient({
   },
 });
 
-type Tab = "inquiries" | "stories" | "importer";
+type Tab = "inquiries" | "stories" | "importer" | "prompts";
 
 /**
  * アプリケーションのメインコンテンツ
@@ -38,6 +40,9 @@ function AppContent(): JSX.Element {
     null,
   );
   const [selectedStoryId, setSelectedStoryId] = useState<number | null>(null);
+  const [selectedPromptKey, setSelectedPromptKey] = useState<string | null>(
+    null,
+  );
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showStoryForm, setShowStoryForm] = useState(false);
 
@@ -105,10 +110,19 @@ function AppContent(): JSX.Element {
     }
   };
 
+  const handlePromptClick = (promptKey: string) => {
+    setSelectedPromptKey(promptKey);
+  };
+
+  const handleBackToPromptList = () => {
+    setSelectedPromptKey(null);
+  };
+
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
     setSelectedInquiryId(null);
     setSelectedStoryId(null);
+    setSelectedPromptKey(null);
     setShowCreateForm(false);
     setShowStoryForm(false);
   };
@@ -158,6 +172,16 @@ function AppContent(): JSX.Element {
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
             >
               インポーター
+            </button>
+            <button
+              onClick={() => handleTabChange("prompts")}
+              className={`${
+                activeTab === "prompts"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              プロンプト管理
             </button>
           </nav>
         </div>
@@ -250,6 +274,32 @@ function AppContent(): JSX.Element {
           <div className="px-4 py-6 sm:px-0">
             <ImporterPage />
           </div>
+        )}
+
+        {activeTab === "prompts" && (
+          // プロンプト管理タブのコンテンツ
+          <>
+            {selectedPromptKey ? (
+              <div className="px-4 py-6 sm:px-0">
+                <div className="mb-4">
+                  <button
+                    onClick={handleBackToPromptList}
+                    className="text-blue-600 hover:text-blue-800"
+                  >
+                    ← 一覧に戻る
+                  </button>
+                </div>
+                <PromptDetail promptKey={selectedPromptKey} />
+              </div>
+            ) : (
+              <div className="px-4 py-6 sm:px-0">
+                <div className="bg-white shadow rounded-lg p-6">
+                  <h2 className="text-2xl font-bold mb-4">プロンプト管理</h2>
+                  <PromptList onPromptClick={handlePromptClick} />
+                </div>
+              </div>
+            )}
+          </>
         )}
       </main>
 
