@@ -22,10 +22,8 @@ from sqlalchemy.orm import Session
 from models.database.inquiry import InquiryModel
 from models.database.story import StoryModel
 from models.enums.inquiry_status import InquiryStatus
-from services.prompt_defaults import (
-    _STORY_GENERATION_SYSTEM_CONTENT,
-    _STORY_GENERATION_USER_CONTENT,
-)
+from services.prompt_defaults import (_STORY_GENERATION_SYSTEM_CONTENT,
+                                      _STORY_GENERATION_USER_CONTENT)
 from services.story_repository import CreateStoryData, StoryRepository
 from services.story_validator import StoryValidator
 
@@ -190,9 +188,7 @@ class StoryGenerationService:
 
         return sanitized.strip()
 
-    def _get_prompts(
-        self, inquiry_content: str
-    ) -> Tuple[str, str]:
+    def _get_prompts(self, inquiry_content: str) -> Tuple[str, str]:
         """ストーリー生成用プロンプトを取得する.
 
         PromptServiceから取得を試み、失敗時はフォールバック。
@@ -205,20 +201,15 @@ class StoryGenerationService:
         """
         if self._prompt_service is not None:
             try:
-                sys_data = self._prompt_service.get_prompt(
-                    "story_generation_system"
-                )
-                user_data = self._prompt_service.get_prompt(
-                    "story_generation_user"
-                )
+                sys_data = self._prompt_service.get_prompt("story_generation_system")
+                user_data = self._prompt_service.get_prompt("story_generation_user")
                 user_prompt = user_data.content.replace(
                     "{inquiry_content}", inquiry_content
                 )
                 return sys_data.content, user_prompt
             except Exception as e:
                 logger.warning(
-                    "プロンプト管理サービスからの取得に失敗、"
-                    "フォールバック使用: %s",
+                    "プロンプト管理サービスからの取得に失敗、" "フォールバック使用: %s",
                     e,
                 )
 
@@ -244,9 +235,7 @@ class StoryGenerationService:
         Raises:
             AIGenerationError: リトライ後も失敗
         """
-        system_prompt, user_prompt = self._get_prompts(
-            inquiry_content
-        )
+        system_prompt, user_prompt = self._get_prompts(inquiry_content)
 
         # Retry logic with exponential backoff
         for attempt in range(retry_count):

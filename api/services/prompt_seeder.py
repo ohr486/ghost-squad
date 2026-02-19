@@ -65,9 +65,7 @@ class PromptSeeder:
             # 既存チェック（冪等性）
             existing = self.repository.find_by_key(key)
             if existing is not None:
-                logger.debug(
-                    "プロンプト '%s' は既に存在します。スキップします。", key
-                )
+                logger.debug("プロンプト '%s' は既に存在します。スキップします。", key)
                 skipped += 1
                 continue
 

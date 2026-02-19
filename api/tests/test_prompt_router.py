@@ -22,16 +22,13 @@ from models.enums.prompt_category import PromptCategory
 
 # テスト用データベースの設定（shared in-memory SQLiteを使用）
 SQLALCHEMY_DATABASE_URL = (
-    "sqlite:///file:test_prompt_db"
-    "?mode=memory&cache=shared&uri=true"
+    "sqlite:///file:test_prompt_db" "?mode=memory&cache=shared&uri=true"
 )
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False, "uri": True},
 )
-TestingSessionLocal = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine
-)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 def override_get_db():
@@ -208,9 +205,7 @@ class TestListPrompts:
         assert data["data"] == []
         assert data["total"] == 0
 
-    def test_list_prompts_returns_all(
-        self, client, multiple_prompts
-    ):
+    def test_list_prompts_returns_all(self, client, multiple_prompts):
         """全プロンプトを返す."""
         response = client.get("/api/prompts")
         assert response.status_code == status.HTTP_200_OK
@@ -218,26 +213,18 @@ class TestListPrompts:
         assert data["total"] == 3
         assert len(data["data"]) == 3
 
-    def test_list_prompts_filter_by_category(
-        self, client, multiple_prompts
-    ):
+    def test_list_prompts_filter_by_category(self, client, multiple_prompts):
         """カテゴリフィルターで絞り込める."""
-        response = client.get(
-            "/api/prompts?category=story_generation"
-        )
+        response = client.get("/api/prompts?category=story_generation")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["total"] == 2
         for item in data["data"]:
             assert item["category"] == "story_generation"
 
-    def test_list_prompts_filter_import_analysis(
-        self, client, multiple_prompts
-    ):
+    def test_list_prompts_filter_import_analysis(self, client, multiple_prompts):
         """import_analysisカテゴリでフィルターできる."""
-        response = client.get(
-            "/api/prompts?category=import_analysis"
-        )
+        response = client.get("/api/prompts?category=import_analysis")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["total"] == 1
@@ -245,14 +232,10 @@ class TestListPrompts:
 
     def test_list_prompts_invalid_category(self, client):
         """無効なカテゴリでは400エラーを返す."""
-        response = client.get(
-            "/api/prompts?category=invalid_category"
-        )
+        response = client.get("/api/prompts?category=invalid_category")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_list_prompts_response_fields(
-        self, client, sample_prompt
-    ):
+    def test_list_prompts_response_fields(self, client, sample_prompt):
         """レスポンスに必要なフィールドが含まれる."""
         response = client.get("/api/prompts")
         data = response.json()
@@ -298,9 +281,7 @@ class TestGetPrompt:
         data = response.json()
         assert "detail" in data
 
-    def test_get_prompt_shows_modified_flag(
-        self, client, modified_prompt
-    ):
+    def test_get_prompt_shows_modified_flag(self, client, modified_prompt):
         """変更されたプロンプトのis_modifiedがTrueになる."""
         response = client.get("/api/prompts/modified_prompt")
         assert response.status_code == status.HTTP_200_OK
@@ -308,9 +289,7 @@ class TestGetPrompt:
         assert data["is_modified"] is True
         assert data["content"] != data["default_content"]
 
-    def test_get_prompt_with_variables(
-        self, client, sample_prompt_with_vars
-    ):
+    def test_get_prompt_with_variables(self, client, sample_prompt_with_vars):
         """変数付きプロンプトの変数リストが正しく返る."""
         response = client.get("/api/prompts/test_prompt_vars")
         assert response.status_code == status.HTTP_200_OK
@@ -337,9 +316,7 @@ class TestUpdatePrompt:
         assert data["content"] == "更新後の内容"
         assert data["is_modified"] is True
 
-    def test_update_prompt_with_description(
-        self, client, sample_prompt
-    ):
+    def test_update_prompt_with_description(self, client, sample_prompt):
         """説明付きで更新できる."""
         response = client.put(
             "/api/prompts/test_prompt",
@@ -360,22 +337,15 @@ class TestUpdatePrompt:
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_update_prompt_empty_content(
-        self, client, sample_prompt
-    ):
+    def test_update_prompt_empty_content(self, client, sample_prompt):
         """空の本文では422エラーを返す（Pydanticバリデーション）."""
         response = client.put(
             "/api/prompts/test_prompt",
             json={"content": ""},
         )
-        assert (
-            response.status_code
-            == status.HTTP_422_UNPROCESSABLE_ENTITY
-        )
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
-    def test_update_prompt_preserves_default(
-        self, client, sample_prompt
-    ):
+    def test_update_prompt_preserves_default(self, client, sample_prompt):
         """更新してもデフォルト値は保持される."""
         client.put(
             "/api/prompts/test_prompt",
@@ -395,13 +365,9 @@ class TestUpdatePrompt:
 class TestResetPrompt:
     """プロンプトリセットエンドポイントのテスト."""
 
-    def test_reset_prompt_success(
-        self, client, modified_prompt
-    ):
+    def test_reset_prompt_success(self, client, modified_prompt):
         """変更されたプロンプトをデフォルトにリセットできる."""
-        response = client.post(
-            "/api/prompts/modified_prompt/reset"
-        )
+        response = client.post("/api/prompts/modified_prompt/reset")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["content"] == data["default_content"]
@@ -409,9 +375,7 @@ class TestResetPrompt:
 
     def test_reset_prompt_not_found(self, client):
         """存在しないプロンプトのリセットは404を返す."""
-        response = client.post(
-            "/api/prompts/nonexistent/reset"
-        )
+        response = client.post("/api/prompts/nonexistent/reset")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -423,9 +387,7 @@ class TestResetPrompt:
 class TestAcquireLock:
     """編集ロック取得エンドポイントのテスト."""
 
-    def test_acquire_lock_success(
-        self, client, sample_prompt
-    ):
+    def test_acquire_lock_success(self, client, sample_prompt):
         """編集ロックを取得できる."""
         response = client.post(
             "/api/prompts/test_prompt/lock",
@@ -437,9 +399,7 @@ class TestAcquireLock:
         assert data["locked_by"] == "admin_user"
         assert data["locked_since"] is not None
 
-    def test_acquire_lock_conflict(
-        self, client, sample_prompt
-    ):
+    def test_acquire_lock_conflict(self, client, sample_prompt):
         """他のユーザーが編集中は409を返す."""
         # まずロックを取得
         client.post(
@@ -461,9 +421,7 @@ class TestAcquireLock:
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_acquire_lock_same_user(
-        self, client, sample_prompt
-    ):
+    def test_acquire_lock_same_user(self, client, sample_prompt):
         """同一ユーザーはロックを再取得できる."""
         client.post(
             "/api/prompts/test_prompt/lock",
@@ -486,24 +444,18 @@ class TestAcquireLock:
 class TestReleaseLock:
     """編集ロック解放エンドポイントのテスト."""
 
-    def test_release_lock_success(
-        self, client, sample_prompt
-    ):
+    def test_release_lock_success(self, client, sample_prompt):
         """編集ロックを解放できる."""
         client.post(
             "/api/prompts/test_prompt/lock",
             json={"user_id": "admin_user"},
         )
-        response = client.delete(
-            "/api/prompts/test_prompt/lock"
-        )
+        response = client.delete("/api/prompts/test_prompt/lock")
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
     def test_release_lock_not_found(self, client):
         """存在しないプロンプトのロック解放は404を返す."""
-        response = client.delete(
-            "/api/prompts/nonexistent/lock"
-        )
+        response = client.delete("/api/prompts/nonexistent/lock")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
@@ -523,9 +475,7 @@ class TestTestPrompt:
         mock_result.model = "gpt-4"
         mock_result.elapsed_ms = 1500
 
-        with patch(
-            "routers.prompt.PromptService"
-        ) as mock_svc_cls:
+        with patch("routers.prompt.PromptService") as mock_svc_cls:
             mock_svc = MagicMock()
             mock_svc.test_prompt.return_value = mock_result
             mock_svc_cls.return_value = mock_svc
@@ -554,17 +504,11 @@ class TestTestPrompt:
 
     def test_test_prompt_timeout(self, client):
         """タイムアウト時は504を返す."""
-        from services.prompt_service import (
-            PromptTestTimeoutError,
-        )
+        from services.prompt_service import PromptTestTimeoutError
 
-        with patch(
-            "routers.prompt.PromptService"
-        ) as mock_svc_cls:
+        with patch("routers.prompt.PromptService") as mock_svc_cls:
             mock_svc = MagicMock()
-            mock_svc.test_prompt.side_effect = (
-                PromptTestTimeoutError("GS-406: タイムアウト")
-            )
+            mock_svc.test_prompt.side_effect = PromptTestTimeoutError("GS-406: タイムアウト")
             mock_svc_cls.return_value = mock_svc
 
             response = client.post(
@@ -574,22 +518,15 @@ class TestTestPrompt:
                     "variables": {},
                 },
             )
-            assert (
-                response.status_code
-                == status.HTTP_504_GATEWAY_TIMEOUT
-            )
+            assert response.status_code == status.HTTP_504_GATEWAY_TIMEOUT
 
     def test_test_prompt_ai_error(self, client):
         """AI APIエラー時は500を返す."""
         from services.prompt_service import PromptTestError
 
-        with patch(
-            "routers.prompt.PromptService"
-        ) as mock_svc_cls:
+        with patch("routers.prompt.PromptService") as mock_svc_cls:
             mock_svc = MagicMock()
-            mock_svc.test_prompt.side_effect = (
-                PromptTestError("GS-407: AI APIエラー")
-            )
+            mock_svc.test_prompt.side_effect = PromptTestError("GS-407: AI APIエラー")
             mock_svc_cls.return_value = mock_svc
 
             response = client.post(
@@ -599,10 +536,7 @@ class TestTestPrompt:
                     "variables": {},
                 },
             )
-            assert (
-                response.status_code
-                == status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     def test_test_prompt_with_variables(self, client):
         """変数付きテスト実行が動作する."""
@@ -612,9 +546,7 @@ class TestTestPrompt:
         mock_result.model = "claude-3"
         mock_result.elapsed_ms = 2000
 
-        with patch(
-            "routers.prompt.PromptService"
-        ) as mock_svc_cls:
+        with patch("routers.prompt.PromptService") as mock_svc_cls:
             mock_svc = MagicMock()
             mock_svc.test_prompt.return_value = mock_result
             mock_svc_cls.return_value = mock_svc

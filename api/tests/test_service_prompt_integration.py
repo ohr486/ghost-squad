@@ -11,29 +11,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 from sqlalchemy.orm import Session
 
-from services.importer.ai_provider_base import (
-    AIAnalysisRequest,
-)
-from services.importer.anthropic_provider import (
-    ANALYSIS_SYSTEM_PROMPT as ANTHROPIC_DEFAULT_PROMPT,
-)
-from services.importer.anthropic_provider import (
-    AnthropicProvider,
-    AnthropicProviderConfig,
-)
-from services.importer.openai_provider import (
-    ANALYSIS_SYSTEM_PROMPT as OPENAI_DEFAULT_PROMPT,
-)
-from services.importer.openai_provider import (
-    OpenAIProvider,
-    OpenAIProviderConfig,
-)
-from services.prompt_defaults import (
-    _IMPORT_ANALYSIS_SYSTEM_CONTENT,
-    _STORY_GENERATION_SYSTEM_CONTENT,
-    _STORY_GENERATION_USER_CONTENT,
-)
-
+from services.importer.ai_provider_base import AIAnalysisRequest
+from services.importer.anthropic_provider import \
+    ANALYSIS_SYSTEM_PROMPT as ANTHROPIC_DEFAULT_PROMPT
+from services.importer.anthropic_provider import (AnthropicProvider,
+                                                  AnthropicProviderConfig)
+from services.importer.openai_provider import \
+    ANALYSIS_SYSTEM_PROMPT as OPENAI_DEFAULT_PROMPT
+from services.importer.openai_provider import (OpenAIProvider,
+                                               OpenAIProviderConfig)
+from services.prompt_defaults import (_IMPORT_ANALYSIS_SYSTEM_CONTENT,
+                                      _STORY_GENERATION_SYSTEM_CONTENT,
+                                      _STORY_GENERATION_USER_CONTENT)
 
 # =========================================================================
 # Task 7.1: StoryGenerationService プロンプト統合
@@ -89,13 +78,9 @@ class TestStoryGenerationPromptIntegration:
         return svc
 
     @pytest.fixture
-    def service_with_prompts(
-        self, mock_session, mock_prompt_service
-    ):
+    def service_with_prompts(self, mock_session, mock_prompt_service):
         """PromptService付きのStoryGenerationServiceを作成."""
-        from services.story_generation_service import (
-            StoryGenerationService,
-        )
+        from services.story_generation_service import StoryGenerationService
 
         with patch(
             "services.story_generation_service.OpenAI"
@@ -115,9 +100,7 @@ class TestStoryGenerationPromptIntegration:
     @pytest.fixture
     def service_without_prompts(self, mock_session):
         """PromptServiceなしのStoryGenerationServiceを作成."""
-        from services.story_generation_service import (
-            StoryGenerationService,
-        )
+        from services.story_generation_service import StoryGenerationService
 
         with patch(
             "services.story_generation_service.OpenAI"
@@ -131,15 +114,11 @@ class TestStoryGenerationPromptIntegration:
             svc._test_mock_client = mock_client
             return svc
 
-    def test_accepts_prompt_service_parameter(
-        self, service_with_prompts
-    ):
+    def test_accepts_prompt_service_parameter(self, service_with_prompts):
         """prompt_serviceパラメータを受け取れる."""
         assert service_with_prompts._prompt_service is not None
 
-    def test_prompt_service_defaults_to_none(
-        self, service_without_prompts
-    ):
+    def test_prompt_service_defaults_to_none(self, service_without_prompts):
         """prompt_serviceはデフォルトでNone."""
         assert service_without_prompts._prompt_service is None
 
@@ -147,34 +126,22 @@ class TestStoryGenerationPromptIntegration:
         self, service_with_prompts, mock_prompt_service
     ):
         """PromptServiceからシステムプロンプトを取得する."""
-        system_prompt, user_prompt = (
-            service_with_prompts._get_prompts("テスト内容")
-        )
+        system_prompt, user_prompt = service_with_prompts._get_prompts("テスト内容")
         assert system_prompt == "カスタムシステムプロンプト"
-        mock_prompt_service.get_prompt.assert_any_call(
-            "story_generation_system"
-        )
+        mock_prompt_service.get_prompt.assert_any_call("story_generation_system")
 
     def test_uses_prompt_service_for_user_prompt(
         self, service_with_prompts, mock_prompt_service
     ):
         """PromptServiceからユーザープロンプトを取得する."""
-        system_prompt, user_prompt = (
-            service_with_prompts._get_prompts("テスト内容")
-        )
+        system_prompt, user_prompt = service_with_prompts._get_prompts("テスト内容")
         assert "カスタムユーザープロンプト" in user_prompt
         assert "テスト内容" in user_prompt
-        mock_prompt_service.get_prompt.assert_any_call(
-            "story_generation_user"
-        )
+        mock_prompt_service.get_prompt.assert_any_call("story_generation_user")
 
-    def test_fallback_when_prompt_service_is_none(
-        self, service_without_prompts
-    ):
+    def test_fallback_when_prompt_service_is_none(self, service_without_prompts):
         """PromptServiceがNoneの場合、ハードコードにフォールバック."""
-        system_prompt, user_prompt = (
-            service_without_prompts._get_prompts("テスト内容")
-        )
+        system_prompt, user_prompt = service_without_prompts._get_prompts("テスト内容")
         assert "アジャイル開発の専門家" in system_prompt
         assert "テスト内容" in user_prompt
 
@@ -182,12 +149,8 @@ class TestStoryGenerationPromptIntegration:
         self, service_with_prompts, mock_prompt_service
     ):
         """PromptServiceが例外を投げた場合、フォールバック."""
-        mock_prompt_service.get_prompt.side_effect = (
-            Exception("DB接続エラー")
-        )
-        system_prompt, user_prompt = (
-            service_with_prompts._get_prompts("テスト内容")
-        )
+        mock_prompt_service.get_prompt.side_effect = Exception("DB接続エラー")
+        system_prompt, user_prompt = service_with_prompts._get_prompts("テスト内容")
         assert "アジャイル開発の専門家" in system_prompt
         assert "テスト内容" in user_prompt
 
@@ -196,11 +159,7 @@ class TestStoryGenerationPromptIntegration:
     ):
         """PromptServiceなしでも既存機能が動作する."""
         # _get_prompts はフォールバックで動作するはず
-        system_prompt, user_prompt = (
-            service_without_prompts._get_prompts(
-                "ログイン機能が欲しい"
-            )
-        )
+        system_prompt, user_prompt = service_without_prompts._get_prompts("ログイン機能が欲しい")
         assert len(system_prompt) > 0
         assert len(user_prompt) > 0
         assert "ログイン機能が欲しい" in user_prompt
@@ -252,55 +211,35 @@ class TestOpenAIProviderPromptIntegration:
         """ゲッターなしプロバイダーを作成する."""
         return OpenAIProvider(config)
 
-    def test_accepts_system_prompt_getter(
-        self, provider_with_getter
-    ):
+    def test_accepts_system_prompt_getter(self, provider_with_getter):
         """system_prompt_getterパラメータを受け取れる."""
-        assert (
-            provider_with_getter._system_prompt_getter
-            is not None
-        )
+        assert provider_with_getter._system_prompt_getter is not None
 
-    def test_system_prompt_getter_defaults_to_none(
-        self, provider_without_getter
-    ):
+    def test_system_prompt_getter_defaults_to_none(self, provider_without_getter):
         """system_prompt_getterはデフォルトでNone."""
-        assert (
-            provider_without_getter._system_prompt_getter
-            is None
-        )
+        assert provider_without_getter._system_prompt_getter is None
 
-    def test_get_system_prompt_uses_getter(
-        self, provider_with_getter
-    ):
+    def test_get_system_prompt_uses_getter(self, provider_with_getter):
         """ゲッターが設定されている場合、それを使用する."""
         prompt = provider_with_getter._get_system_prompt()
         assert prompt == "カスタム解析プロンプト"
 
-    def test_get_system_prompt_fallback_without_getter(
-        self, provider_without_getter
-    ):
+    def test_get_system_prompt_fallback_without_getter(self, provider_without_getter):
         """ゲッターがない場合、デフォルト定数にフォールバック."""
         prompt = provider_without_getter._get_system_prompt()
         assert prompt == OPENAI_DEFAULT_PROMPT
 
-    def test_get_system_prompt_fallback_on_error(
-        self, config
-    ):
+    def test_get_system_prompt_fallback_on_error(self, config):
         """ゲッターが例外を投げた場合、デフォルトにフォールバック."""
 
         def error_getter():
             raise Exception("DB接続エラー")
 
-        provider = OpenAIProvider(
-            config, system_prompt_getter=error_getter
-        )
+        provider = OpenAIProvider(config, system_prompt_getter=error_getter)
         prompt = provider._get_system_prompt()
         assert prompt == OPENAI_DEFAULT_PROMPT
 
-    def test_analyze_uses_custom_prompt(
-        self, provider_with_getter
-    ):
+    def test_analyze_uses_custom_prompt(self, provider_with_getter):
         """analyze()がカスタムプロンプトを使用する."""
         provider_with_getter._client = MagicMock()
         provider_with_getter._initialized = True
@@ -313,10 +252,7 @@ class TestOpenAIProviderPromptIntegration:
             ' "priority": "medium",'
             ' "confidence_score": 0.8}'
         )
-        create_fn = (
-            provider_with_getter._client
-            .chat.completions.create
-        )
+        create_fn = provider_with_getter._client.chat.completions.create
         create_fn.return_value = mock_response
 
         request = AIAnalysisRequest(
@@ -328,15 +264,11 @@ class TestOpenAIProviderPromptIntegration:
         provider_with_getter.analyze(request)
 
         call_args = create_fn.call_args
-        messages = call_args.kwargs.get(
-            "messages", call_args[1].get("messages", [])
-        )
+        messages = call_args.kwargs.get("messages", call_args[1].get("messages", []))
         system_msg = messages[0]["content"]
         assert system_msg == "カスタム解析プロンプト"
 
-    def test_analyze_uses_default_without_getter(
-        self, provider_without_getter
-    ):
+    def test_analyze_uses_default_without_getter(self, provider_without_getter):
         """ゲッターなしではデフォルトプロンプトを使用する."""
         provider_without_getter._client = MagicMock()
         provider_without_getter._initialized = True
@@ -349,10 +281,7 @@ class TestOpenAIProviderPromptIntegration:
             ' "priority": "medium",'
             ' "confidence_score": 0.8}'
         )
-        create_fn = (
-            provider_without_getter._client
-            .chat.completions.create
-        )
+        create_fn = provider_without_getter._client.chat.completions.create
         create_fn.return_value = mock_response
 
         request = AIAnalysisRequest(
@@ -364,9 +293,7 @@ class TestOpenAIProviderPromptIntegration:
         provider_without_getter.analyze(request)
 
         call_args = create_fn.call_args
-        messages = call_args.kwargs.get(
-            "messages", call_args[1].get("messages", [])
-        )
+        messages = call_args.kwargs.get("messages", call_args[1].get("messages", []))
         system_msg = messages[0]["content"]
         assert system_msg == OPENAI_DEFAULT_PROMPT
 
@@ -405,55 +332,35 @@ class TestAnthropicProviderPromptIntegration:
         """ゲッターなしプロバイダーを作成する."""
         return AnthropicProvider(config)
 
-    def test_accepts_system_prompt_getter(
-        self, provider_with_getter
-    ):
+    def test_accepts_system_prompt_getter(self, provider_with_getter):
         """system_prompt_getterパラメータを受け取れる."""
-        assert (
-            provider_with_getter._system_prompt_getter
-            is not None
-        )
+        assert provider_with_getter._system_prompt_getter is not None
 
-    def test_system_prompt_getter_defaults_to_none(
-        self, provider_without_getter
-    ):
+    def test_system_prompt_getter_defaults_to_none(self, provider_without_getter):
         """system_prompt_getterはデフォルトでNone."""
-        assert (
-            provider_without_getter._system_prompt_getter
-            is None
-        )
+        assert provider_without_getter._system_prompt_getter is None
 
-    def test_get_system_prompt_uses_getter(
-        self, provider_with_getter
-    ):
+    def test_get_system_prompt_uses_getter(self, provider_with_getter):
         """ゲッターが設定されている場合、それを使用する."""
         prompt = provider_with_getter._get_system_prompt()
         assert prompt == "カスタムAnthropic解析プロンプト"
 
-    def test_get_system_prompt_fallback_without_getter(
-        self, provider_without_getter
-    ):
+    def test_get_system_prompt_fallback_without_getter(self, provider_without_getter):
         """ゲッターがない場合、デフォルト定数にフォールバック."""
         prompt = provider_without_getter._get_system_prompt()
         assert prompt == ANTHROPIC_DEFAULT_PROMPT
 
-    def test_get_system_prompt_fallback_on_error(
-        self, config
-    ):
+    def test_get_system_prompt_fallback_on_error(self, config):
         """ゲッターが例外を投げた場合、デフォルトにフォールバック."""
 
         def error_getter():
             raise Exception("DB接続エラー")
 
-        provider = AnthropicProvider(
-            config, system_prompt_getter=error_getter
-        )
+        provider = AnthropicProvider(config, system_prompt_getter=error_getter)
         prompt = provider._get_system_prompt()
         assert prompt == ANTHROPIC_DEFAULT_PROMPT
 
-    def test_analyze_uses_custom_prompt(
-        self, provider_with_getter
-    ):
+    def test_analyze_uses_custom_prompt(self, provider_with_getter):
         """analyze()がカスタムプロンプトを使用する."""
         provider_with_getter._client = MagicMock()
         provider_with_getter._initialized = True
@@ -466,9 +373,7 @@ class TestAnthropicProviderPromptIntegration:
             ' "confidence_score": 0.8}'
         )
         mock_response.content = [mock_content]
-        create_fn = (
-            provider_with_getter._client.messages.create
-        )
+        create_fn = provider_with_getter._client.messages.create
         create_fn.return_value = mock_response
 
         request = AIAnalysisRequest(
@@ -480,14 +385,10 @@ class TestAnthropicProviderPromptIntegration:
         provider_with_getter.analyze(request)
 
         call_args = create_fn.call_args
-        system_arg = call_args.kwargs.get(
-            "system", call_args[1].get("system", "")
-        )
+        system_arg = call_args.kwargs.get("system", call_args[1].get("system", ""))
         assert system_arg == "カスタムAnthropic解析プロンプト"
 
-    def test_analyze_uses_default_without_getter(
-        self, provider_without_getter
-    ):
+    def test_analyze_uses_default_without_getter(self, provider_without_getter):
         """ゲッターなしではデフォルトプロンプトを使用する."""
         provider_without_getter._client = MagicMock()
         provider_without_getter._initialized = True
@@ -500,9 +401,7 @@ class TestAnthropicProviderPromptIntegration:
             ' "confidence_score": 0.8}'
         )
         mock_response.content = [mock_content]
-        create_fn = (
-            provider_without_getter._client.messages.create
-        )
+        create_fn = provider_without_getter._client.messages.create
         create_fn.return_value = mock_response
 
         request = AIAnalysisRequest(
@@ -514,9 +413,7 @@ class TestAnthropicProviderPromptIntegration:
         provider_without_getter.analyze(request)
 
         call_args = create_fn.call_args
-        system_arg = call_args.kwargs.get(
-            "system", call_args[1].get("system", "")
-        )
+        system_arg = call_args.kwargs.get("system", call_args[1].get("system", ""))
         assert system_arg == ANTHROPIC_DEFAULT_PROMPT
 
 

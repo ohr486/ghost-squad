@@ -15,29 +15,16 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models.enums.prompt_category import PromptCategory
-from models.schemas.inquiry import (
-    ErrorResponse,
-    ValidationErrorDetail,
-)
-from models.schemas.prompt import (
-    AcquireLockApiRequest,
-    LockResponse,
-    PromptListResponse,
-    PromptResponse,
-    TestPromptApiRequest,
-    TestPromptApiResult,
-    UpdatePromptApiRequest,
-)
-from services.prompt_service import (
-    PromptEditLockError,
-    PromptNotFoundError,
-    PromptService,
-    PromptTestError,
-    PromptTestTimeoutError,
-    PromptValidationError,
-    TestPromptRequest,
-    UpdatePromptRequest,
-)
+from models.schemas.inquiry import ErrorResponse, ValidationErrorDetail
+from models.schemas.prompt import (AcquireLockApiRequest, LockResponse,
+                                   PromptListResponse, PromptResponse,
+                                   TestPromptApiRequest, TestPromptApiResult,
+                                   UpdatePromptApiRequest)
+from services.prompt_service import (PromptEditLockError, PromptNotFoundError,
+                                     PromptService, PromptTestError,
+                                     PromptTestTimeoutError,
+                                     PromptValidationError, TestPromptRequest,
+                                     UpdatePromptRequest)
 
 router = APIRouter(prefix="/api/prompts", tags=["prompts"])
 
@@ -47,11 +34,7 @@ def _create_error_response(
 ) -> ErrorResponse:
     """エラーレスポンスを作成する."""
     return ErrorResponse(
-        errors=[
-            ValidationErrorDetail(
-                code=code, message=message, field=field
-            )
-        ],
+        errors=[ValidationErrorDetail(code=code, message=message, field=field)],
         timestamp=datetime.now(timezone.utc),
     )
 
@@ -104,10 +87,7 @@ async def list_prompts(
         prompts = service.list_prompts(category=cat_filter)
 
         return PromptListResponse(
-            data=[
-                _prompt_data_to_response(p)
-                for p in prompts
-            ],
+            data=[_prompt_data_to_response(p) for p in prompts],
             total=len(prompts),
         )
     except HTTPException:
@@ -211,9 +191,7 @@ async def update_prompt(
             detail=error.model_dump(),
         )
     except PromptValidationError as e:
-        error = _create_error_response(
-            "GS-401", str(e), "content"
-        )
+        error = _create_error_response("GS-401", str(e), "content")
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=error.model_dump(),
@@ -306,15 +284,12 @@ async def acquire_lock(
     """
     try:
         service = _get_prompt_service(db)
-        result = service.acquire_edit_lock(
-            key, request.user_id
-        )
+        result = service.acquire_edit_lock(key, request.user_id)
 
         if not result.acquired:
             error = _create_error_response(
                 result.error_code or "GS-405",
-                result.error_message
-                or "他のユーザーが編集中です",
+                result.error_message or "他のユーザーが編集中です",
             )
             raise HTTPException(
                 status_code=http_status.HTTP_409_CONFLICT,
