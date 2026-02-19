@@ -27,9 +27,7 @@ from services.prompt_repository import PromptRepository
 from services.prompt_seeder import PromptSeeder
 
 # テスト用データベースの設定（shared in-memory SQLiteを使用）
-SQLALCHEMY_DATABASE_URL = (
-    "sqlite:///file:test_e2e_prompt_db" "?mode=memory&cache=shared&uri=true"
-)
+SQLALCHEMY_DATABASE_URL = "sqlite:///file:test_e2e_prompt_db?mode=memory&cache=shared&uri=true"
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False, "uri": True},
