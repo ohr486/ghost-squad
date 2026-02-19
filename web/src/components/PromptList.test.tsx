@@ -1,10 +1,10 @@
 import {
   render,
   screen,
-  fireEvent,
   waitFor,
   within,
 } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import PromptList from "./PromptList";
 import * as promptApi from "../services/promptApi";
@@ -205,9 +205,7 @@ describe("PromptList", () => {
     });
 
     const filterSelect = screen.getByLabelText("カテゴリフィルター");
-    fireEvent.change(filterSelect, {
-      target: { value: "story_generation" },
-    });
+    await userEvent.selectOptions(filterSelect, "story_generation");
 
     await waitFor(() => {
       expect(promptApi.listPrompts).toHaveBeenCalledWith("story_generation");
@@ -235,7 +233,7 @@ describe("PromptList", () => {
     const table = screen.getByRole("table");
     const rows = within(table).getAllByRole("row");
     // Skip header row (index 0), click first data row (index 1)
-    fireEvent.click(rows[1]);
+    await userEvent.click(rows[1]);
 
     expect(handlePromptClick).toHaveBeenCalledWith("story_generation_system");
   });
@@ -260,7 +258,32 @@ describe("PromptList", () => {
 
     const table = screen.getByRole("table");
     const rows = within(table).getAllByRole("row");
-    fireEvent.keyDown(rows[1], { key: "Enter" });
+    await userEvent.type(rows[1], "{Enter}");
+
+    expect(handlePromptClick).toHaveBeenCalledWith("story_generation_system");
+  });
+
+  it("キーボードナビゲーション（Space）で詳細画面に遷移する", async () => {
+    (promptApi.listPrompts as jest.Mock).mockResolvedValue(mockListResponse);
+
+    const handlePromptClick = jest.fn();
+    const queryClient = createQueryClient();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <PromptList onPromptClick={handlePromptClick} />
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("ストーリー生成システムプロンプト"),
+      ).toBeInTheDocument();
+    });
+
+    const table = screen.getByRole("table");
+    const rows = within(table).getAllByRole("row");
+    await userEvent.type(rows[1], " ");
 
     expect(handlePromptClick).toHaveBeenCalledWith("story_generation_system");
   });

@@ -1,3 +1,10 @@
+/**
+ * PromptList コンポーネント
+ *
+ * プロンプト一覧表示、カテゴリフィルタリング機能を提供
+ * 要件: 1.1, 1.3, 1.4
+ */
+
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listPrompts } from "../services/promptApi";
@@ -20,8 +27,7 @@ const PromptList: React.FC<PromptListProps> = ({ onPromptClick }) => {
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["prompts", selectedCategory],
-    queryFn: () =>
-      listPrompts(selectedCategory ? selectedCategory : undefined),
+    queryFn: () => listPrompts(selectedCategory || undefined),
   });
 
   const handleRowClick = (prompt: PromptResponse) => {

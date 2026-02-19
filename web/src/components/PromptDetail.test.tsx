@@ -1,10 +1,10 @@
 import {
   render,
   screen,
-  fireEvent,
   waitFor,
   within,
 } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import PromptDetail from "./PromptDetail";
 import * as promptApi from "../services/promptApi";
@@ -172,7 +172,7 @@ describe("PromptDetail", () => {
       expect(screen.getByText("編集")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("編集"));
+    await userEvent.click(screen.getByText("編集"));
 
     await waitFor(() => {
       expect(
@@ -201,7 +201,7 @@ describe("PromptDetail", () => {
       expect(screen.getByText("編集")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("編集"));
+    await userEvent.click(screen.getByText("編集"));
 
     await waitFor(() => {
       expect(screen.getByText("保存")).toBeInTheDocument();
@@ -234,7 +234,7 @@ describe("PromptDetail", () => {
       expect(screen.getByText("編集")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("編集"));
+    await userEvent.click(screen.getByText("編集"));
 
     await waitFor(() => {
       expect(
@@ -243,8 +243,9 @@ describe("PromptDetail", () => {
     });
 
     const textarea = screen.getByLabelText("プロンプト本文を編集");
-    fireEvent.change(textarea, { target: { value: "更新されたプロンプト" } });
-    fireEvent.click(screen.getByText("保存"));
+    await userEvent.clear(textarea);
+    await userEvent.type(textarea, "更新されたプロンプト");
+    await userEvent.click(screen.getByText("保存"));
 
     await waitFor(() => {
       expect(promptApi.updatePrompt).toHaveBeenCalledWith(
@@ -275,13 +276,13 @@ describe("PromptDetail", () => {
       expect(screen.getByText("編集")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("編集"));
+    await userEvent.click(screen.getByText("編集"));
 
     await waitFor(() => {
       expect(screen.getByText("キャンセル")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("キャンセル"));
+    await userEvent.click(screen.getByText("キャンセル"));
 
     await waitFor(() => {
       expect(screen.getByText("編集")).toBeInTheDocument();
@@ -430,10 +431,10 @@ describe("PromptDetail", () => {
 
     // 変数を入力
     const inquiryInput = screen.getByLabelText("inquiry_content");
-    fireEvent.change(inquiryInput, { target: { value: "テスト問い合わせ" } });
+    await userEvent.type(inquiryInput, "テスト問い合わせ");
 
     // 実行ボタンをクリック
-    fireEvent.click(screen.getByText("実行"));
+    await userEvent.click(screen.getByText("実行"));
 
     await waitFor(() => {
       expect(promptApi.testPrompt).toHaveBeenCalled();
@@ -461,7 +462,7 @@ describe("PromptDetail", () => {
       expect(screen.getByText("テスト実行")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("実行"));
+    await userEvent.click(screen.getByText("実行"));
 
     await waitFor(() => {
       expect(screen.getByText("テスト結果の出力")).toBeInTheDocument();
@@ -490,7 +491,7 @@ describe("PromptDetail", () => {
       expect(screen.getByText("テスト実行")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("実行"));
+    await userEvent.click(screen.getByText("実行"));
 
     await waitFor(() => {
       expect(screen.getByText("実行中...")).toBeInTheDocument();
@@ -552,7 +553,7 @@ describe("PromptDetail", () => {
       expect(screen.getByText("デフォルトにリセット")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("デフォルトにリセット"));
+    await userEvent.click(screen.getByText("デフォルトにリセット"));
 
     await waitFor(() => {
       expect(
@@ -576,7 +577,7 @@ describe("PromptDetail", () => {
       expect(screen.getByText("デフォルトにリセット")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("デフォルトにリセット"));
+    await userEvent.click(screen.getByText("デフォルトにリセット"));
 
     await waitFor(() => {
       expect(screen.getByText("現在の内容:")).toBeInTheDocument();
@@ -603,7 +604,7 @@ describe("PromptDetail", () => {
       expect(screen.getByText("デフォルトにリセット")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("デフォルトにリセット"));
+    await userEvent.click(screen.getByText("デフォルトにリセット"));
 
     await waitFor(() => {
       expect(
@@ -611,7 +612,7 @@ describe("PromptDetail", () => {
       ).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("リセット実行"));
+    await userEvent.click(screen.getByText("リセット実行"));
 
     await waitFor(() => {
       expect(promptApi.resetPrompt).toHaveBeenCalledWith(
@@ -635,7 +636,7 @@ describe("PromptDetail", () => {
       expect(screen.getByText("デフォルトにリセット")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText("デフォルトにリセット"));
+    await userEvent.click(screen.getByText("デフォルトにリセット"));
 
     await waitFor(() => {
       expect(
@@ -646,7 +647,7 @@ describe("PromptDetail", () => {
     // ダイアログ内のキャンセルボタン
     const dialog = screen.getByRole("dialog");
     const cancelButton = within(dialog).getByText("キャンセル");
-    fireEvent.click(cancelButton);
+    await userEvent.click(cancelButton);
 
     await waitFor(() => {
       expect(
