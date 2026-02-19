@@ -1,3 +1,10 @@
+/**
+ * PromptDetail コンポーネント
+ *
+ * プロンプト詳細表示・編集・テスト実行・デフォルトリセット機能を提供
+ * 要件: 1.2, 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.2, 3.3, 3.4, 4.4, 4.5, 4.6
+ */
+
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -111,9 +118,12 @@ const PromptDetail: React.FC<PromptDetailProps> = ({ promptKey }) => {
   };
 
   const handleSave = () => {
-    if (editedContent.trim()) {
-      updateMutation.mutate(editedContent);
+    if (!editedContent.trim()) {
+      toast.error("プロンプト本文は空にできません");
+      return;
     }
+
+    updateMutation.mutate(editedContent);
   };
 
   const handleTestExecute = () => {
