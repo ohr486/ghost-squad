@@ -50,3 +50,16 @@ export type {
   ImporterValidationError,
   ImporterErrorResponse,
 } from "./importer";
+
+export type {
+  PromptCategory,
+  PromptResponse,
+  PromptListResponse,
+  UpdatePromptRequest,
+  TestPromptRequest,
+  TestPromptResult,
+  AcquireLockRequest,
+  LockResponse,
+  PromptValidationError,
+  PromptErrorResponse,
+} from "./prompt";
