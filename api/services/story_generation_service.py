@@ -22,6 +22,10 @@ from sqlalchemy.orm import Session
 from models.database.inquiry import InquiryModel
 from models.database.story import StoryModel
 from models.enums.inquiry_status import InquiryStatus
+from services.prompt_defaults import (
+    _STORY_GENERATION_SYSTEM_CONTENT,
+    _STORY_GENERATION_USER_CONTENT,
+)
 from services.story_repository import CreateStoryData, StoryRepository
 from services.story_validator import StoryValidator
 
@@ -186,29 +190,6 @@ class StoryGenerationService:
 
         return sanitized.strip()
 
-    # ハードコードのフォールバック用プロンプト
-    _FALLBACK_SYSTEM_PROMPT = (
-        "あなたはアジャイル開発の専門家です。"
-        "問い合わせから適切なユーザーストーリーを"
-        "生成してください。"
-    )
-
-    _FALLBACK_USER_PROMPT = """\
-以下の問い合わせから、アジャイル開発で使用するユーザーストーリーを生成してください。
-
-問い合わせ内容：
-{inquiry_content}
-
-出力形式（JSON）：
-{{
-    "title": "簡潔なタイトル（500文字以内）",
-    "description": "詳細な説明",
-    "priority": "low/medium/high/urgent のいずれか",
-    "estimated_effort": 推定工数（数値、オプショナル）
-}}
-
-JSON形式のみで応答してください（説明文は不要）。"""
-
     def _get_prompts(
         self, inquiry_content: str
     ) -> Tuple[str, str]:
@@ -241,9 +222,9 @@ JSON形式のみで応答してください（説明文は不要）。"""
                     e,
                 )
 
-        # フォールバック: ハードコードプロンプト
-        system_prompt = self._FALLBACK_SYSTEM_PROMPT
-        user_prompt = self._FALLBACK_USER_PROMPT.replace(
+        # フォールバック: prompt_defaultsからインポートした定数を使用
+        system_prompt = _STORY_GENERATION_SYSTEM_CONTENT
+        user_prompt = _STORY_GENERATION_USER_CONTENT.replace(
             "{inquiry_content}", inquiry_content
         )
         return system_prompt, user_prompt
