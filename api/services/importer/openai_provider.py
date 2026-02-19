@@ -22,7 +22,7 @@ import json
 import logging
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from openai import OpenAI
 
@@ -137,15 +137,21 @@ class OpenAIProvider(AIProvider[OpenAIProviderConfig]):
         "gpt-3.5-turbo",
     ]
 
-    def __init__(self, config: OpenAIProviderConfig) -> None:
+    def __init__(
+        self,
+        config: OpenAIProviderConfig,
+        system_prompt_getter: Optional[Callable[[], str]] = None,
+    ) -> None:
         """OpenAIProviderを初期化.
 
         Args:
             config: OpenAIプロバイダー設定
+            system_prompt_getter: システムプロンプト取得関数（オプション）
         """
         self._config = config
         self._client: Optional[OpenAI] = None
         self._initialized = False
+        self._system_prompt_getter = system_prompt_getter
 
     @property
     def provider_type(self) -> AIProviderType:
@@ -232,6 +238,26 @@ class OpenAIProvider(AIProvider[OpenAIProviderConfig]):
             logger.error(f"OpenAIプロバイダーの初期化に失敗しました: {e}")
             raise RuntimeError(f"OpenAIプロバイダーの初期化に失敗しました: {e}")
 
+    def _get_system_prompt(self) -> str:
+        """システムプロンプトを取得する.
+
+        system_prompt_getterが設定されている場合はそれを使用し、
+        失敗時はデフォルト定数にフォールバックする。
+
+        Returns:
+            str: システムプロンプト
+        """
+        if self._system_prompt_getter is not None:
+            try:
+                return self._system_prompt_getter()
+            except Exception as e:
+                logger.warning(
+                    "プロンプト取得に失敗、"
+                    "デフォルトにフォールバック: %s",
+                    e,
+                )
+        return ANALYSIS_SYSTEM_PROMPT
+
     def analyze(self, request: AIAnalysisRequest) -> AIAnalysisResponse:
         """コンテンツを解析する.
 
@@ -251,6 +277,7 @@ class OpenAIProvider(AIProvider[OpenAIProviderConfig]):
             raise RuntimeError("プロバイダーが初期化されていません")
 
         user_prompt = _build_user_prompt(request)
+        system_prompt = self._get_system_prompt()
 
         last_error: Optional[Exception] = None
         for attempt in range(self._config.retry_max):
@@ -258,7 +285,7 @@ class OpenAIProvider(AIProvider[OpenAIProviderConfig]):
                 response = self._client.chat.completions.create(
                     model=self._config.model,
                     messages=[
-                        {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
+                        {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt},
                     ],
                     temperature=self._config.temperature,

@@ -11,9 +11,10 @@
 - トランザクション境界管理（Inquiry + Story）を実装する
 """
 import json
+import logging
 import os
 import time
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple
 
 from openai import OpenAI
 from sqlalchemy.orm import Session
@@ -21,8 +22,14 @@ from sqlalchemy.orm import Session
 from models.database.inquiry import InquiryModel
 from models.database.story import StoryModel
 from models.enums.inquiry_status import InquiryStatus
+from services.prompt_defaults import (
+    _STORY_GENERATION_SYSTEM_CONTENT,
+    _STORY_GENERATION_USER_CONTENT,
+)
 from services.story_repository import CreateStoryData, StoryRepository
 from services.story_validator import StoryValidator
+
+logger = logging.getLogger(__name__)
 
 
 class InquiryNotFoundError(Exception):
@@ -43,15 +50,21 @@ class StoryGenerationService:
     OpenAI APIを使用して問い合わせからストーリーを生成する。
     """
 
-    def __init__(self, session: Session):
+    def __init__(
+        self,
+        session: Session,
+        prompt_service: Optional[Any] = None,
+    ):
         """Initialize StoryGenerationService.
 
         Args:
             session: SQLAlchemyセッション
+            prompt_service: プロンプト管理サービス（オプション）
         """
         self.session = session
         self.validator = StoryValidator()
         self.repository = StoryRepository(session)
+        self._prompt_service = prompt_service
 
         # Initialize OpenAI client once for better performance
         api_key = os.getenv("OPENAI_API_KEY")
@@ -177,6 +190,45 @@ class StoryGenerationService:
 
         return sanitized.strip()
 
+    def _get_prompts(
+        self, inquiry_content: str
+    ) -> Tuple[str, str]:
+        """ストーリー生成用プロンプトを取得する.
+
+        PromptServiceから取得を試み、失敗時はフォールバック。
+
+        Args:
+            inquiry_content: 問い合わせ内容
+
+        Returns:
+            Tuple[str, str]: (システムプロンプト, ユーザープロンプト)
+        """
+        if self._prompt_service is not None:
+            try:
+                sys_data = self._prompt_service.get_prompt(
+                    "story_generation_system"
+                )
+                user_data = self._prompt_service.get_prompt(
+                    "story_generation_user"
+                )
+                user_prompt = user_data.content.replace(
+                    "{inquiry_content}", inquiry_content
+                )
+                return sys_data.content, user_prompt
+            except Exception as e:
+                logger.warning(
+                    "プロンプト管理サービスからの取得に失敗、"
+                    "フォールバック使用: %s",
+                    e,
+                )
+
+        # フォールバック: prompt_defaultsからインポートした定数を使用
+        system_prompt = _STORY_GENERATION_SYSTEM_CONTENT
+        user_prompt = _STORY_GENERATION_USER_CONTENT.replace(
+            "{inquiry_content}", inquiry_content
+        )
+        return system_prompt, user_prompt
+
     def _call_openai_api(
         self, inquiry_content: str, retry_count: int = 3
     ) -> Dict[str, Any]:
@@ -192,21 +244,9 @@ class StoryGenerationService:
         Raises:
             AIGenerationError: リトライ後も失敗
         """
-        # Prompt for story generation
-        prompt = f"""以下の問い合わせから、アジャイル開発で使用するユーザーストーリーを生成してください。
-
-問い合わせ内容：
-{inquiry_content}
-
-出力形式（JSON）：
-{{
-    "title": "簡潔なタイトル（500文字以内）",
-    "description": "詳細な説明",
-    "priority": "low/medium/high/urgent のいずれか",
-    "estimated_effort": 推定工数（数値、オプショナル）
-}}
-
-JSON形式のみで応答してください（説明文は不要）。"""
+        system_prompt, user_prompt = self._get_prompts(
+            inquiry_content
+        )
 
         # Retry logic with exponential backoff
         for attempt in range(retry_count):
@@ -216,11 +256,9 @@ JSON形式のみで応答してください（説明文は不要）。"""
                     messages=[
                         {
                             "role": "system",
-                            "content": (
-                                "あなたはアジャイル開発の専門家です。" "問い合わせから適切なユーザーストーリーを" "生成してください。"
-                            ),
+                            "content": system_prompt,
                         },
-                        {"role": "user", "content": prompt},
+                        {"role": "user", "content": user_prompt},
                     ],
                     temperature=0.7,
                     max_tokens=1000,

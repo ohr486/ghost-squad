@@ -29,12 +29,12 @@ _STORY_GENERATION_USER_CONTENT = """\
 {inquiry_content}
 
 出力形式（JSON）：
-{{
+{
     "title": "簡潔なタイトル（500文字以内）",
     "description": "詳細な説明",
     "priority": "low/medium/high/urgent のいずれか",
     "estimated_effort": 推定工数（数値、オプショナル）
-}}
+}
 
 JSON形式のみで応答してください（説明文は不要）。"""
 
@@ -45,13 +45,13 @@ _IMPORT_ANALYSIS_SYSTEM_CONTENT = """\
 与えられたメールやメッセージを分析し、以下の情報をJSON形式で出力してください。
 
 出力形式（必ずこの形式で出力してください）:
-{{
+{
     "title": "問い合わせタイトル（簡潔に30文字以内）",
     "content": "構造化された問い合わせ内容（箇条書きで整理）",
     "priority": "優先度（low/medium/high/urgentのいずれか）",
     "category": "カテゴリ（development/testing/documentation/research/maintenance/custom）",
     "confidence_score": 0.0〜1.0の数値（解析の確信度）
-}}
+}
 
 優先度の判断基準:
 - urgent: 緊急、至急、障害、エラー、ダウン等の緊急性を示す語がある
