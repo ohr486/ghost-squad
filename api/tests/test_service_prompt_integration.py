@@ -205,6 +205,18 @@ class TestStoryGenerationPromptIntegration:
         assert len(user_prompt) > 0
         assert "ログイン機能が欲しい" in user_prompt
 
+    def test_story_generation_prompts_no_double_braces(self):
+        """ストーリー生成プロンプトに無効な二重波括弧がないこと."""
+        # JSON例は有効なJSONとなるように単一波括弧のみを使用する。
+        assert "{{" not in _STORY_GENERATION_SYSTEM_CONTENT
+        assert "}}" not in _STORY_GENERATION_SYSTEM_CONTENT
+        assert "{{" not in _STORY_GENERATION_USER_CONTENT
+        assert "}}" not in _STORY_GENERATION_USER_CONTENT
+
+        # 重要な日本語フレーズが含まれていることを確認する。
+        assert "アジャイル開発の専門家" in _STORY_GENERATION_SYSTEM_CONTENT
+        assert "出力形式（JSON）" in _STORY_GENERATION_USER_CONTENT
+
 
 # =========================================================================
 # Task 7.2: OpenAIProvider プロンプト統合
@@ -524,10 +536,21 @@ class TestPromptUnification:
 
     def test_default_prompts_match_prompt_defaults(self):
         """デフォルトプロンプトがprompt_defaultsの定義と一致."""
-        # import_analysis_systemのcontentと一致するはず
-        # prompt_defaultsでは{{}}にエスケープされているため直接比較
-        # 代わりにキーの内容を確認
-        assert len(_IMPORT_ANALYSIS_SYSTEM_CONTENT) > 0
-        assert "問い合わせ解析の専門家" in (
-            _IMPORT_ANALYSIS_SYSTEM_CONTENT
-        )
+        # _IMPORT_ANALYSIS_SYSTEM_CONTENT を単一のソース・オブ・トゥルースとし、
+        # 各プロバイダのデフォルトプロンプトが完全一致することを検証する。
+        assert (
+            OPENAI_DEFAULT_PROMPT == ANTHROPIC_DEFAULT_PROMPT
+        ), "OpenAI/Anthropic のデフォルトプロンプトは完全に一致する必要があります"
+
+        # プロバイダが使用するデフォルトプロンプトは prompt_defaults の定義と
+        # 完全に一致している必要がある。
+        assert (
+            OPENAI_DEFAULT_PROMPT == _IMPORT_ANALYSIS_SYSTEM_CONTENT
+        ), "プロバイダのデフォルトプロンプトは prompt_defaults の内容と一致していません"
+
+        # プロンプト内の JSON 例は有効な JSON となるように単一波括弧のみを使用する。
+        assert "{{" not in _IMPORT_ANALYSIS_SYSTEM_CONTENT
+        assert "}}" not in _IMPORT_ANALYSIS_SYSTEM_CONTENT
+
+        # 重要な日本語フレーズが含まれていることを確認する。
+        assert "問い合わせ解析の専門家" in _IMPORT_ANALYSIS_SYSTEM_CONTENT
