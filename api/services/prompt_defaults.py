@@ -15,10 +15,7 @@ from models.enums.prompt_category import PromptCategory
 
 # ストーリー生成システムプロンプト
 # 元: StoryGenerationService._call_openai_api() の system メッセージ
-_STORY_GENERATION_SYSTEM_CONTENT = (
-    "あなたはアジャイル開発の専門家です。"
-    "問い合わせから適切なユーザーストーリーを生成してください。"
-)
+_STORY_GENERATION_SYSTEM_CONTENT = "あなたはアジャイル開発の専門家です。" "問い合わせから適切なユーザーストーリーを生成してください。"
 
 # ストーリー生成ユーザープロンプト
 # 元: StoryGenerationService._call_openai_api() の user メッセージ
@@ -81,10 +78,7 @@ DEFAULT_PROMPTS: List[Dict[str, Any]] = [
     {
         "key": "story_generation_system",
         "name": "ストーリー生成システムプロンプト",
-        "description": (
-            "ストーリー生成時にAIに送信するシステムプロンプト。"
-            "AIの役割と応答方針を定義する。"
-        ),
+        "description": ("ストーリー生成時にAIに送信するシステムプロンプト。" "AIの役割と応答方針を定義する。"),
         "category": PromptCategory.STORY_GENERATION,
         "content": _STORY_GENERATION_SYSTEM_CONTENT,
         "variables": [],
@@ -92,10 +86,7 @@ DEFAULT_PROMPTS: List[Dict[str, Any]] = [
     {
         "key": "story_generation_user",
         "name": "ストーリー生成ユーザープロンプト",
-        "description": (
-            "ストーリー生成時にAIに送信するユーザープロンプトテンプレート。"
-            "問い合わせ内容をプレースホルダーで埋め込む。"
-        ),
+        "description": ("ストーリー生成時にAIに送信するユーザープロンプトテンプレート。" "問い合わせ内容をプレースホルダーで埋め込む。"),
         "category": PromptCategory.STORY_GENERATION,
         "content": _STORY_GENERATION_USER_CONTENT,
         "variables": ["inquiry_content"],
@@ -103,10 +94,7 @@ DEFAULT_PROMPTS: List[Dict[str, Any]] = [
     {
         "key": "import_analysis_system",
         "name": "インポート解析システムプロンプト",
-        "description": (
-            "インポートされたメールやメッセージの解析時にAIに送信する"
-            "システムプロンプト。解析形式と判断基準を定義する。"
-        ),
+        "description": ("インポートされたメールやメッセージの解析時にAIに送信する" "システムプロンプト。解析形式と判断基準を定義する。"),
         "category": PromptCategory.IMPORT_ANALYSIS,
         "content": _IMPORT_ANALYSIS_SYSTEM_CONTENT,
         "variables": [],

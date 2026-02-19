@@ -252,8 +252,7 @@ class OpenAIProvider(AIProvider[OpenAIProviderConfig]):
                 return self._system_prompt_getter()
             except Exception as e:
                 logger.warning(
-                    "プロンプト取得に失敗、"
-                    "デフォルトにフォールバック: %s",
+                    "プロンプト取得に失敗、" "デフォルトにフォールバック: %s",
                     e,
                 )
         return ANALYSIS_SYSTEM_PROMPT

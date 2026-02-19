@@ -26,26 +26,14 @@ class PromptResponse(BaseModel):
     id: int = Field(..., description="プロンプトID")
     key: str = Field(..., description="プロンプトキー")
     name: str = Field(..., description="表示名")
-    description: Optional[str] = Field(
-        None, description="説明"
-    )
+    description: Optional[str] = Field(None, description="説明")
     category: str = Field(..., description="カテゴリ")
     content: str = Field(..., description="現在のプロンプト本文")
-    default_content: str = Field(
-        ..., description="デフォルトプロンプト本文"
-    )
-    variables: List[str] = Field(
-        default_factory=list, description="プレースホルダー変数リスト"
-    )
-    is_modified: bool = Field(
-        ..., description="デフォルトから変更されているか"
-    )
-    editing_by: Optional[str] = Field(
-        None, description="編集中ユーザーID"
-    )
-    editing_since: Optional[IsoDatetime] = Field(
-        None, description="編集開始日時"
-    )
+    default_content: str = Field(..., description="デフォルトプロンプト本文")
+    variables: List[str] = Field(default_factory=list, description="プレースホルダー変数リスト")
+    is_modified: bool = Field(..., description="デフォルトから変更されているか")
+    editing_by: Optional[str] = Field(None, description="編集中ユーザーID")
+    editing_since: Optional[IsoDatetime] = Field(None, description="編集開始日時")
     created_at: IsoDatetime = Field(..., description="作成日時")
     updated_at: IsoDatetime = Field(..., description="更新日時")
 
@@ -55,29 +43,21 @@ class PromptResponse(BaseModel):
 class PromptListResponse(BaseModel):
     """プロンプト一覧レスポンス."""
 
-    data: List[PromptResponse] = Field(
-        ..., description="プロンプトリスト"
-    )
+    data: List[PromptResponse] = Field(..., description="プロンプトリスト")
     total: int = Field(..., description="総件数")
 
 
 class UpdatePromptApiRequest(BaseModel):
     """プロンプト更新リクエスト."""
 
-    content: str = Field(
-        ..., min_length=1, description="プロンプト本文（必須）"
-    )
-    description: Optional[str] = Field(
-        None, description="説明（オプション）"
-    )
+    content: str = Field(..., min_length=1, description="プロンプト本文（必須）")
+    description: Optional[str] = Field(None, description="説明（オプション）")
 
 
 class TestPromptApiRequest(BaseModel):
     """プロンプトテスト実行リクエスト."""
 
-    content: str = Field(
-        ..., min_length=1, description="テスト対象のプロンプト本文"
-    )
+    content: str = Field(..., min_length=1, description="テスト対象のプロンプト本文")
     variables: Dict[str, str] = Field(
         default_factory=dict,
         description="プレースホルダー変数の値",
@@ -100,18 +80,12 @@ class TestPromptApiResult(BaseModel):
 class AcquireLockApiRequest(BaseModel):
     """編集ロック取得リクエスト."""
 
-    user_id: str = Field(
-        ..., min_length=1, description="編集者ID"
-    )
+    user_id: str = Field(..., min_length=1, description="編集者ID")
 
 
 class LockResponse(BaseModel):
     """編集ロックレスポンス."""
 
     acquired: bool = Field(..., description="ロック取得成功フラグ")
-    locked_by: Optional[str] = Field(
-        None, description="ロック保持者"
-    )
-    locked_since: Optional[IsoDatetime] = Field(
-        None, description="ロック開始日時"
-    )
+    locked_by: Optional[str] = Field(None, description="ロック保持者")
+    locked_since: Optional[IsoDatetime] = Field(None, description="ロック開始日時")

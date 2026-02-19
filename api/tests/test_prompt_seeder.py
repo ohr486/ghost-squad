@@ -72,8 +72,7 @@ class TestDefaultPromptDefinitions:
             for field in required_fields:
                 key = prompt_def.get("key", "unknown")
                 assert field in prompt_def, (
-                    f"Missing field '{field}' in "
-                    f"prompt definition '{key}'"
+                    f"Missing field '{field}' in " f"prompt definition '{key}'"
                 )
 
     def test_default_prompts_have_unique_keys(self) -> None:
@@ -109,8 +108,7 @@ class TestDefaultPromptDefinitions:
         from services.prompt_defaults import DEFAULT_PROMPTS
 
         prompt = next(
-            p for p in DEFAULT_PROMPTS
-            if p["key"] == "story_generation_system"
+            p for p in DEFAULT_PROMPTS if p["key"] == "story_generation_system"
         )
         assert prompt["category"] == PromptCategory.STORY_GENERATION
 
@@ -118,10 +116,7 @@ class TestDefaultPromptDefinitions:
         """ストーリー生成ユーザープロンプトのカテゴリがstory_generationである."""
         from services.prompt_defaults import DEFAULT_PROMPTS
 
-        prompt = next(
-            p for p in DEFAULT_PROMPTS
-            if p["key"] == "story_generation_user"
-        )
+        prompt = next(p for p in DEFAULT_PROMPTS if p["key"] == "story_generation_user")
         assert prompt["category"] == PromptCategory.STORY_GENERATION
 
     def test_import_analysis_system_prompt_category(self) -> None:
@@ -129,8 +124,7 @@ class TestDefaultPromptDefinitions:
         from services.prompt_defaults import DEFAULT_PROMPTS
 
         prompt = next(
-            p for p in DEFAULT_PROMPTS
-            if p["key"] == "import_analysis_system"
+            p for p in DEFAULT_PROMPTS if p["key"] == "import_analysis_system"
         )
         assert prompt["category"] == PromptCategory.IMPORT_ANALYSIS
 
@@ -138,10 +132,7 @@ class TestDefaultPromptDefinitions:
         """ストーリー生成ユーザープロンプトにinquiry_content変数が定義されている."""
         from services.prompt_defaults import DEFAULT_PROMPTS
 
-        prompt = next(
-            p for p in DEFAULT_PROMPTS
-            if p["key"] == "story_generation_user"
-        )
+        prompt = next(p for p in DEFAULT_PROMPTS if p["key"] == "story_generation_user")
         assert "inquiry_content" in prompt["variables"]
 
     def test_story_generation_system_prompt_content_not_empty(
@@ -151,8 +142,7 @@ class TestDefaultPromptDefinitions:
         from services.prompt_defaults import DEFAULT_PROMPTS
 
         prompt = next(
-            p for p in DEFAULT_PROMPTS
-            if p["key"] == "story_generation_system"
+            p for p in DEFAULT_PROMPTS if p["key"] == "story_generation_system"
         )
         assert prompt["content"].strip() != ""
 
@@ -163,8 +153,7 @@ class TestDefaultPromptDefinitions:
         from services.prompt_defaults import DEFAULT_PROMPTS
 
         prompt = next(
-            p for p in DEFAULT_PROMPTS
-            if p["key"] == "import_analysis_system"
+            p for p in DEFAULT_PROMPTS if p["key"] == "import_analysis_system"
         )
         assert prompt["content"].strip() != ""
 
@@ -180,22 +169,22 @@ class TestDefaultPromptDefinitions:
         from services.prompt_defaults import DEFAULT_PROMPTS
 
         for prompt_def in DEFAULT_PROMPTS:
-            assert isinstance(prompt_def["category"], PromptCategory), (
-                f"Invalid category for prompt '{prompt_def['key']}'"
-            )
+            assert isinstance(
+                prompt_def["category"], PromptCategory
+            ), f"Invalid category for prompt '{prompt_def['key']}'"
 
     def test_all_variables_are_string_lists(self) -> None:
         """全デフォルトプロンプトのvariablesがstring型リストである."""
         from services.prompt_defaults import DEFAULT_PROMPTS
 
         for prompt_def in DEFAULT_PROMPTS:
-            assert isinstance(prompt_def["variables"], list), (
-                f"Variables should be a list for prompt '{prompt_def['key']}'"
-            )
+            assert isinstance(
+                prompt_def["variables"], list
+            ), f"Variables should be a list for prompt '{prompt_def['key']}'"
             for var in prompt_def["variables"]:
-                assert isinstance(var, str), (
-                    f"Variable should be a string for prompt '{prompt_def['key']}'"
-                )
+                assert isinstance(
+                    var, str
+                ), f"Variable should be a string for prompt '{prompt_def['key']}'"
 
 
 # =============================================================================
@@ -276,9 +265,9 @@ class TestPromptSeederInitialSeed:
         # Assert
         all_prompts = repository.find_all()
         for prompt in all_prompts:
-            assert prompt.content == prompt.default_content, (
-                f"content and default_content should be equal for '{prompt.key}'"
-            )
+            assert (
+                prompt.content == prompt.default_content
+            ), f"content and default_content should be equal for '{prompt.key}'"
 
     def test_seed_sets_is_modified_false(
         self, db_session: Session, repository: PromptRepository
@@ -292,9 +281,9 @@ class TestPromptSeederInitialSeed:
         # Assert
         all_prompts = repository.find_all()
         for prompt in all_prompts:
-            assert prompt.is_modified is False, (
-                f"is_modified should be False for '{prompt.key}'"
-            )
+            assert (
+                prompt.is_modified is False
+            ), f"is_modified should be False for '{prompt.key}'"
 
     def test_seed_returns_count_of_created_prompts(
         self, db_session: Session, repository: PromptRepository
@@ -326,9 +315,9 @@ class TestPromptSeederInitialSeed:
         for prompt_def in DEFAULT_PROMPTS:
             prompt = repository.find_by_key(prompt_def["key"])
             assert prompt is not None
-            assert prompt.variables == prompt_def["variables"], (
-                f"Variables mismatch for '{prompt_def['key']}'"
-            )
+            assert (
+                prompt.variables == prompt_def["variables"]
+            ), f"Variables mismatch for '{prompt_def['key']}'"
 
 
 # =============================================================================
@@ -445,9 +434,9 @@ class TestPromptSeederDefaultProtection:
         for prompt_def in DEFAULT_PROMPTS:
             prompt = repository.find_by_key(prompt_def["key"])
             assert prompt is not None
-            assert prompt.default_content == prompt_def["content"], (
-                f"default_content mismatch for '{prompt_def['key']}'"
-            )
+            assert (
+                prompt.default_content == prompt_def["content"]
+            ), f"default_content mismatch for '{prompt_def['key']}'"
 
     def test_default_content_matches_hardcoded_story_generation_system(
         self, db_session: Session, repository: PromptRepository
