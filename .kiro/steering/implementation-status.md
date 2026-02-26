@@ -6,7 +6,7 @@ inclusion: always
 
 このファイルは、Ghost Squadプロジェクトの現在の実装状況と開発優先度を明確にします。新しい機能を実装する際は、この状況を考慮してください。
 
-## 🎯 現在の実装状況（2026年1月24日時点）
+## 🎯 現在の実装状況（2026年2月26日時点）
 
 ### ✅ 実装済み機能
 
@@ -105,12 +105,36 @@ inclusion: always
   - Tasks（生成済み・承認済み）
   - Dependencies: inquiry
   - 実装進捗: Tasks 1.1-1.2, 2.1-2.2, 3.1-3.3完了（プラグイン基盤、AIプロバイダー基盤、メールプラグイン）
+- `.kiro/specs/prompt-management/` - プロンプト管理機能仕様
+  - Phase: tasks-generated
+  - Requirements（生成済み・承認済み）
+  - Design（生成済み・承認済み）
+  - Tasks（生成済み・承認済み）
+  - Dependencies: なし
+  - 実装進捗: 全タスク完了（フルスタック実装済み）
 
-**5. ステアリングドキュメント（`.kiro/steering/`）**
+**5. Prompt管理実装（`api/` + `web/`）** - 🎉 **フルスタック実装完了**
+- **データモデル**: PromptModel（key/name/category/content/default_content/variables/is_modified/editing_by）
+- **列挙型**: PromptCategory（STORY_GENERATION/IMPORT_ANALYSIS/GENERAL）
+- **Alembicマイグレーション**: promptsテーブル作成（`20260217_create_prompts_table.py`）
+- **サービス層**:
+  - PromptValidator（内容・プレースホルダー構文・カテゴリ検証、GS-4xxエラーコード）
+  - PromptRepository（CRUD操作、編集ロック管理）
+  - PromptCache（TTLキャッシュ60秒、DBフォールバック）
+  - PromptService（統括サービス: CRUD、テスト実行、編集ロック）
+  - PromptSeeder（デフォルトプロンプト自動投入、冪等性保証）
+  - PromptDefaults（3種のシステムデフォルト定義）
+- **API層**: `routers/prompt.py` - 7エンドポイント（CRUD + テスト実行 + 編集ロック + リセット）
+- **フロントエンド**: 型定義、APIクライアント、PromptList、PromptDetail コンポーネント
+- **テスト**: 225バックエンドテスト + フロントエンドテスト
+- **App.tsx統合**: 「プロンプト管理」タブ追加
+
+**6. ステアリングドキュメント（`.kiro/steering/`）**
 - `product.md` - プロダクト開発ガイドライン
 - `tech.md` - 技術スタック・開発環境ガイドライン
 - `structure.md` - プロジェクト構造・組織化ガイドライン
 - `implementation-status.md` - このファイル
+- `prompt.md` - プロンプト管理機能ガイドライン
 
 ### 🚧 部分実装・未実装機能
 
@@ -379,7 +403,7 @@ Story機能（サービス層完了・API層実装済み）:
 
 ## 📈 開発進捗追跡
 
-### 完了済み - 🎉 Inquiry完全実装 + Story API完全実装 + Story フロントエンド基盤完了
+### 完了済み - 🎉 Inquiry + Story + Importer + Prompt 全機能フルスタック実装完了
 - ✅ プロジェクト基盤（Docker、Makefile、ドキュメント）
 - ✅ 仕様定義（Inquiry: implementation phase、Story: tasks-generated）
 - ✅ ステアリングドキュメント
@@ -439,28 +463,44 @@ Story機能（サービス層完了・API層実装済み）:
   - ImporterService + InquiryRepository統合テスト
   - 完全なインポートフロー（メール取得→解析→問い合わせ作成）
 - ✅ **App.tsx インポータータブ統合**
+- ✅ **Promptデータモデル**（PromptModel、PromptCategory列挙型、Alembicマイグレーション）
+- ✅ **PromptValidator**（内容・プレースホルダー構文・カテゴリ検証、GS-4xxエラーコード）
+- ✅ **PromptRepository**（CRUD操作、編集ロック管理）
+- ✅ **PromptCache**（60秒TTLインメモリキャッシュ、DB障害フォールバック）
+- ✅ **PromptService**（統括サービス: CRUD、テスト実行、編集ロック）
+- ✅ **PromptSeeder + PromptDefaults**（起動時デフォルト投入、冪等性保証）
+- ✅ **Prompt API層**（routers/prompt.py - 7エンドポイント完全実装）
+- ✅ **Prompt Pydanticスキーマ**（models/schemas/prompt.py）
+- ✅ **Prompt型定義**（src/types/prompt.ts）
+- ✅ **Prompt APIクライアント**（src/services/promptApi.ts）
+- ✅ **PromptListコンポーネント**（カテゴリフィルタ、修正状態表示）
+- ✅ **PromptDetailコンポーネント**（編集、テスト実行、リセット、編集ロック）
+- ✅ **Prompt E2E統合テスト**（PromptIntegration.test.tsx）
+- ✅ **App.tsx プロンプト管理タブ統合**
 
-### 進行中（5%）
+### 進行中（3%）
 - 🔄 フロントエンド統合（ページレイアウト、ルーティング）
 - 🔄 フロントエンド高度機能（Tailwind CSS完全適用、React Router）
 
-### 最近の変更（2026-02-16）
-- ✅ `main.py` lifespan管理（インポーター設定自動ロード）
-- ✅ `docker-compose.yml` IMAP/Anthropic環境変数追加
-- ✅ InquiryList UIにメールインポート情報表示（タイトル・送信者列）
-- ✅ `ImporterMetadata`型定義（Inquiry×Importer連携）
-- ✅ EmailPluginバグ修正（newest-first取得順序）
+### 最近の変更（2026-02-26）
+- ✅ **Prompt管理機能 フルスタック実装完了**
+  - PromptModel + PromptCategory列挙型 + Alembicマイグレーション
+  - 6つのサービスファイル（validator、repository、cache、service、seeder、defaults）
+  - 7つのAPIエンドポイント（routers/prompt.py）
+  - フロントエンド（型定義、APIクライアント、PromptList、PromptDetail）
+  - 225バックエンドテスト + フロントエンドテスト
+  - App.tsx「プロンプト管理」タブ統合
+- ✅ `.kiro/specs/prompt-management/` 仕様完成（全フェーズ承認済み）
 
-### 未着手（5%）
+### 未着手（2%）
 - ❌ Inquiry機能のページレイアウト・ルーティング統合
 - ❌ 高度なレスポンシブデザイン最適化
 
 ---
 
-**最終更新**: 2026年2月16日
-**更新理由**: 最近の変更を反映（Steering Sync）
-- `main.py`にlifespan管理追加（ImporterConfigLoader自動初期化）
-- `docker-compose.yml`にIMAP/Anthropic環境変数追加
-- InquiryList UIにメールインポート情報（タイトル・送信者）列を追加
-- `types/inquiry.ts`に`ImporterMetadata`インターフェース追加（Inquiry×Importer連携型）
-- EmailPlugin バグ修正（newest-first取得順序）
+**最終更新**: 2026年2月26日
+**更新理由**: Prompt管理機能のフルスタック実装を反映（Steering Sync）
+- Prompt管理機能の全コンポーネント追加（バックエンド6サービス + API + フロントエンド4ファイル）
+- 新パターン追加: TTLキャッシュ+DBフォールバック、編集ロック、シーダー
+- GS-4xxエラーコード体系追加
+- 仕様ステータス更新（prompt-management: tasks-generated、全承認済み）
