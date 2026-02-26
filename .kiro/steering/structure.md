@@ -37,15 +37,18 @@ models/
 │   ├── base.py       # ベースモデルクラス（実装済み）
 │   ├── inquiry.py    # 問い合わせモデル（実装済み）
 │   ├── story.py      # ストーリーモデル（実装済み）
+│   ├── prompt.py     # プロンプトモデル（実装済み）
 │   ├── import_error_log.py  # インポートエラーログモデル（実装済み）
 │   └── story_template.py  # テンプレートモデル（未実装）
 ├── schemas/          # Pydanticスキーマ（APIシリアライゼーション）
 │   ├── inquiry.py    # 問い合わせスキーマ（実装済み）
-│   └── story.py      # ストーリースキーマ（実装済み）
+│   ├── story.py      # ストーリースキーマ（実装済み）
+│   └── prompt.py     # プロンプトスキーマ（実装済み）
 ├── enums/           # 列挙型定義
 │   ├── inquiry_status.py  # InquiryStatus列挙型（実装済み）
 │   ├── story_status.py    # StoryStatus列挙型（実装済み）
-│   └── priority.py        # Priority列挙型（実装済み）
+│   ├── priority.py        # Priority列挙型（実装済み）
+│   └── prompt_category.py # PromptCategory列挙型（実装済み）
 ├── api/             # APIリクエスト・レスポンスモデル
 └── protocols/       # サービス用プロトコル定義
 ```
@@ -63,6 +66,13 @@ models/
   - バリデーション（`story_validator.py` - ストーリーデータ検証、95%カバレッジ）
   - ワークフローサービス（`story_workflow_service.py` - 承認・却下処理、ステータス遷移管理、一括承認、100%カバレッジ）
   - AI統合（`story_generation_service.py` - OpenAI API統合、ストーリー自動生成、リトライ戦略、88%カバレッジ）
+- **Prompt関連（フルスタック実装済み）**:
+  - バリデーション（`prompt_validator.py` - プロンプト内容・プレースホルダー構文検証）
+  - データアクセス（`prompt_repository.py` - CRUD操作、編集ロック管理）
+  - キャッシュ（`prompt_cache.py` - TTLキャッシュ、DBフォールバック）
+  - 統括サービス（`prompt_service.py` - CRUD、テスト実行、編集ロック）
+  - シーダー（`prompt_seeder.py` - デフォルトプロンプト自動投入）
+  - デフォルト定義（`prompt_defaults.py` - 3種のシステムデフォルト）
 - **Importer関連（バックエンド実装完了、`services/importer/`）**:
   - **共通基盤**:
     - 共通Result型（`result.py` - Rust風Result型、BaseError基底クラス）
@@ -89,6 +99,7 @@ models/
 - **Inquiry API（実装済み）**: `inquiry.py` - CRUD + ワークフロー全エンドポイント
 - **Story API（実装済み）**: `story.py` - CRUD + ワークフロー + AI変換 + 一括承認エンドポイント
 - **Importer API（実装済み）**: `importer.py` - プラグイン管理 + AIプロバイダー管理 + インポート実行 + エラー統計
+- **Prompt API（実装済み）**: `prompt.py` - CRUD + テスト実行 + 編集ロック + リセット
 
 **テスト** (`tests/`)
 - `conftest.py` - pytest設定・フィクスチャ
@@ -155,6 +166,10 @@ src/
     - StoryResponse, CreateStoryRequest, UpdateStoryRequest（API型）
     - ApproveStoryRequest, RejectStoryRequest（ワークフロー型）
   - `importer.ts` - Importer関連型定義（バックエンドPydanticスキーマと整合）
+  - `prompt.ts` - Prompt関連型定義（バックエンドPydanticスキーマと整合）
+    - PromptCategory（STORY_GENERATION/IMPORT_ANALYSIS/GENERAL）
+    - PromptResponse, UpdatePromptRequest, TestPromptRequest（API型）
+    - AcquireLockRequest, LockResponse（編集ロック型）
     - PluginStatus, PluginListResponse（プラグイン管理型）
     - AIProviderStatus, AIProviderListResponse（AIプロバイダー管理型）
     - ExecuteImportRequest, RetryImportRequest, ImportResult（インポート実行型）
@@ -177,6 +192,11 @@ src/
     - ワークフロー操作（approveStory、rejectStory、batchApproveStories）
     - AI生成（generateStory）
   - `importerApi.ts` - インポーターAPIクライアント（実装済み）
+  - `promptApi.ts` - プロンプトAPIクライアント（実装済み）
+    - CRUD操作（listPrompts、getPrompt、updatePrompt）
+    - テスト実行（testPrompt）
+    - リセット（resetPrompt）
+    - 編集ロック（acquireLock、releaseLock）
     - Axiosインスタンス作成（30秒タイムアウト、CORS設定）
     - エラーレスポンスインターセプター（ImporterErrorResponse標準化）
     - プラグイン管理（listPlugins、enablePlugin、disablePlugin）
@@ -237,6 +257,11 @@ src/
     - 承認・却下フロー（StoryDetailでのワークフロー）
     - ナビゲーション・ステータス別UI動作検証
     - 10テスト
+  - `PromptList.tsx` - プロンプト一覧（カテゴリフィルタ、修正状態表示）
+  - `PromptList.test.tsx` - プロンプト一覧テスト
+  - `PromptDetail.tsx` - プロンプト詳細・編集・テスト実行・リセット
+  - `PromptDetail.test.tsx` - プロンプト詳細テスト
+  - `PromptIntegration.test.tsx` - E2E統合テスト
   - `importer/` - インポーター管理コンポーネント（実装済み）
     - `ImporterPage.tsx` - インポーター管理統括ページ
     - `PluginListComponent.tsx` - プラグイン一覧・有効/無効切替

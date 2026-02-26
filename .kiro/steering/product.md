@@ -58,6 +58,15 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
   - GS-306: データ取得失敗
   - GS-308: AIプロバイダー未登録
 
+**プロンプト管理（フルスタック実装済み）**
+- **プロンプト一元管理**: DB管理化、WebUI経由の編集・リセット・テスト実行
+- **TTLキャッシュ**: 60秒インメモリキャッシュ + DB障害時フォールバック
+- **編集ロック**: 楽観的排他制御（30分タイムアウト）
+- **プレースホルダー検証**: {variable_name}構文のバリデーション
+- **テスト実行**: AIプロバイダー経由のプロンプトテスト（30秒タイムアウト）
+- **シーダー**: アプリ起動時デフォルトプロンプト自動投入（冪等性保証）
+- **テスト**: 225バックエンドテスト + フロントエンドテスト
+
 **フロントエンド（基盤完成、98%実装）**
 - **TypeScript基盤**: strict mode、型定義完備（InquiryResponse、StoryResponse等）
 - **APIクライアント**: Axios統合、エラーハンドリング、CORS対応
@@ -77,7 +86,6 @@ Ghost Squadは、自然言語での問い合わせを構造化されたユーザ
 ### 🚧 開発中機能
 - **フロントエンド統合**: レスポンシブデザイン最適化、E2Eテスト
 - **ストーリー管理**: バックエンド・フロントエンド実装完了、統合テスト・UI最適化が進行中
-- **Importer機能**: AIプロバイダー実装（OpenAI/Anthropic）、サービス層、API、フロントエンド
 
 ## ドメインモデル
 
@@ -125,6 +133,15 @@ POST   /api/stories/{id}/approve   # ストーリー承認（実装済み）
 POST   /api/stories/{id}/reject    # ストーリー却下（実装済み）
 DELETE /api/stories/{id}           # ストーリー削除（実装済み）
 POST   /api/stories/batch-approve  # 一括承認（実装済み）
+
+# 実装済み（Prompt API - 完全実装）
+GET    /api/prompts                # プロンプト一覧（カテゴリフィルタ）
+GET    /api/prompts/{key}          # プロンプト詳細
+PUT    /api/prompts/{key}          # プロンプト更新
+POST   /api/prompts/{key}/reset    # デフォルトリセット
+POST   /api/prompts/{key}/lock     # 編集ロック取得
+DELETE /api/prompts/{key}/lock     # 編集ロック解放
+POST   /api/prompts/test           # テスト実行
 
 # 将来実装
 GET    /api/templates          # テンプレート一覧
